@@ -1,0 +1,6 @@
+#include "dyson.hpp"
+#include "integration.hpp"
+#include "param.hpp"
+#include "hubbchainops.cpp"
+#include "vie2.hpp"
+#include "spectral.hpp"
