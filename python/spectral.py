@@ -6,7 +6,7 @@ import greens
 class Spectral:
   @classmethod
   def blankA(cls):
-    return cls(0,0,0,0,0,0,0,0)
+    return cls(0,0,0,0,0,0)
 
   def read_from_file(self,filepath):
     actfile = filepath+"_A.dat"
@@ -91,12 +91,12 @@ class Spectral:
 
     
 
-  def __init__(self,nt,nw,size1,es,wmax,dw,dt,A):
+  def __init__(self,nt,nw,size1,wmax,dw,dt):
     self.nt = nt
     self.nw = nw
     self.size1 = size1
-    self.es = es
+    self.es = size1*size1
     self.wmax = wmax
     self.dw = dw
     self.dt = dt
-    self.A = A
+    self.A = np.zeros((self.nt+1,self.nw,self.size1,self.size1),dtype=float)

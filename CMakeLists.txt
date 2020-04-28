@@ -1,10 +1,20 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.12)
 
-project(MySolver CXX)
+project(NEdyson)
+
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+set(CMAKE_CXX_STANDARD 11)
 
 find_package(Eigen3 REQUIRED)
-
 message(STATUS ${EIGEN3_INCLUDE_DIR})
+include_directories(SYSTEM ${EIGEN3_INCLUDE_DIR})
 
-add_executable(main hubb_chain_2b.cpp headers2/integrals.cpp headers2/spectral.cpp headers2/greens.cpp headers2/vie2.cpp headers2/greens_tstp.cpp headers2/integration.cpp headers2/dyson.cpp headers2/function.cpp  headers2/elementops.cpp headers2/mat_utils.cpp)
-target_include_directories(main PUBLIC ${EIGEN3_INCLUDE_DIR} .)
+include_directories(${CMAKE_INCLUDE_PATH})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/)
+
+add_subdirectory(src)
+
+add_subdirectory(programs)
+
+add_subdirectory(CalcA)

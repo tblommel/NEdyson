@@ -6,16 +6,9 @@
 #include <vector>
 #include <chrono>
 
-#include "headers2/spectral.hpp"
-#include "headers2/greens.hpp"
+#include "NEdyson.h"
 
-#define cdmatrix Eigen::MatrixXcd
-#define GREEN NEdyson::green_func
-#define INTEG integration::Integrator
-#define FUNC NEdyson::function
-#define SPECT NEdyson::spectral
-
-using namespace std;
+using namespace NEdyson;
 
 bool is_file_exist(std::string fileName){
 	std::ifstream infile(fileName);
@@ -36,14 +29,14 @@ int main(int argc, char *argv[]){
 	G.read_from_file(argv[1],dt,dtau);
 
 	// Check to see if there exists an extension file
-	string actfile = "";
+	std::string actfile = "";
 	actfile += argv[1];
 	actfile += "_GRExp.dat";
 	bool extexist = is_file_exist(actfile);
 
 	// If it does read it in
 	if(extexist){
-		ifstream in;
+		std::ifstream in;
 		in.open(actfile);
 		int nfit,ntp;
 		if(!(in >> nfit >> ntp)){
