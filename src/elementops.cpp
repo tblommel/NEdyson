@@ -262,6 +262,17 @@ double element_norm2(int size1, cplx *A){
 	return sqrt(ret);
 }
 
+double element_diff(int size1, const cplx *A, const cplx *B){
+  double ret = 0, imag, real;
+  int es=size1*size1;
+  for(int i=0;i<es;i++){
+    real = A[i].real()-B[i].real();
+    imag = A[i].imag()-B[i].imag();
+    ret += real*real+imag*imag;
+  }
+  return sqrt(ret);
+}
+
 
 }//nameespace
 #endif
