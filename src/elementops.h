@@ -22,9 +22,8 @@ void element_smul(int size1, cplx *z, double z0, const cplx *z1);
 void element_smul(int size1, cplx *z, cplx z0, const cplx *z1);
 void element_incr(int size1, cplx *z, cplx *z1);
 void element_incr(int size1, cplx *z, cplx z0, cplx *z1);
-
 void element_incr(int size1, cplx *z, cplx *z0, cplx *z1);
-
+double element_diff(int size1, const cplx *A, const cplx *B);
 void element_incr(int size1, cplx *z, cplx z0, cplx *z1, cplx *z2);
 void element_mult_small(cplx *z, cplx *z1, cplx *z2);
 void element_mult_large(int size1, cplx *z,  cplx *z1,  cplx *z2);
