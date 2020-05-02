@@ -1,1 +1,0 @@
-/usr/bin/c++  -O3 -DNDEBUG   CMakeFiles/math_compare.x.dir/math_compare.cpp.o  -o math_compare.x  ../src/liblibNEdyson.a 
