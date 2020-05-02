@@ -118,6 +118,9 @@ void spectral::read_from_file(const char *file){
 	in.close();
 }
 
+
+
+// See spectral notes
 void spectral::AfromG(const green_func &G, int nw, double wmax, double dt){
 	nt_ = 2*G.nt();
 	nw_ = nw;
@@ -161,6 +164,8 @@ void spectral::AfromG(const green_func &G, int nw, double wmax, double dt){
 }
 
 
+
+// see spectral notes
 void spectral::AfromG(const green_func &G, int nw, double wmax, double dt, const cplx *extdata, int nfit, int ntp){
 	nt_ = 2*G.nt();
 	nw_ = nw;
