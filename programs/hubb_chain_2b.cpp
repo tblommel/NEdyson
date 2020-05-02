@@ -94,21 +94,15 @@ int main(int argc, char *argv[]){
     start = std::chrono::system_clock::now();
     bool converged = false;
     tstp = -1;
-    
-    
-    GREEN gtemp = GREEN(k,Ntau,Nsites,-1);
-    gtemp.set_tstp(tstp,G);
-  
     for(int iter=0;iter<MatsMaxIter;iter++){
+      double err;
       // Update Mean field and Self Energy
       Hubb::Ham_MF(tstp,G,Ut,h0,hmf);
       Hubb::Sigma_2B(tstp,G,Ut,Sigma);
   
       // Solve Dyson Equation
-      NEdyson::mat_fourier(G,Sigma,MuChem,hmf.ptr(-1),Beta);
-      
-      
-      double err = distance_norm2(tstp,G,gtemp);
+      err = NEdyson::mat_fourier(G,Sigma,MuChem,hmf.ptr(-1),Beta);
+
       G.get_dm(-1,DensM);
       npart = DensM.trace().real();
       std::cout<<"iteration: "<<iter<<" | N =  "<<npart<<" |  Error = "<<err<<std::endl;
@@ -116,7 +110,6 @@ int main(int argc, char *argv[]){
         converged=true;
         break;
       }
-      gtemp.set_tstp(tstp,G);
     }
 
     if(!converged){
@@ -142,10 +135,8 @@ int main(int argc, char *argv[]){
     // to represent the quench, the free Hamiltonian is updated
     h0(RampSite-1,RampSite-1) += W0;
 
-    GREEN gtemp = GREEN(k,Ntau,Nsites,-1);
-    for(tstp=0; tstp<=SolverOrder; tstp++) gtemp.set_tstp(tstp,G);
-
     for(int iter=0; iter<=BootMaxIter; iter++){
+      double err=0;
       // Update mean field
       for(tstp=0; tstp<=SolverOrder; tstp++){
         Hubb::Ham_MF(tstp, G, Ut, h0, hmf);
@@ -157,13 +148,8 @@ int main(int argc, char *argv[]){
       }
 
       // Solve Dyson Eqn
-      dyson_start(I,G,Sigma,hmf,MuChem,Beta,dt);
+      err=dyson_start(I,G,Sigma,hmf,MuChem,Beta,dt);
 
-      double err=0.0;
-      for(tstp=0;tstp<=SolverOrder;tstp++){
-        err += distance_norm2(tstp,G,gtemp);
-      }
-      for(tstp=0; tstp<=SolverOrder; tstp++) gtemp.set_tstp(tstp,G);
       std::cout<<"bootstrapping iteration : "<<iter<<" |  Error = "<<err<<std::endl;
       if(err<BootMaxErr){
         bootstrap_converged=true;

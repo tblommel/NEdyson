@@ -1,7 +1,7 @@
 file(REMOVE_RECURSE
   "CMakeFiles/math_compare.x.dir/math_compare.cpp.o"
-  "math_compare.x.pdb"
   "math_compare.x"
+  "math_compare.x.pdb"
 )
 
 # Per-language clean rules from dependency scanning.

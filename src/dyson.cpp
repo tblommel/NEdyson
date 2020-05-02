@@ -554,6 +554,7 @@ double GTVstart(const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf,
   // Counters and sizes
   int k=I.k(), size1=G.size1(), es=G.element_size(),ntau=G.ntau(),m,l,n,i;
   cplx weight;
+  double err=0;
 
   // Matricies
   cplx *M = new cplx[k*k*es];
@@ -568,19 +569,11 @@ double GTVstart(const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf,
 
   // Boundary Conditions
   for(m=0;m<=ntau;m++){
+    element_set(size1,tmp,G.tvptr(0,m));
     for(i=0;i<es;i++){
       G.tvptr(0,m)[i] = (double)G.sig()*cplxi*G.matptr(ntau-m)[i];
     }
-  }
-  // Do the Q integrals and store in Gtv(n,m)
-  for(n=1;n<=k;n++){
-    for(m=0;m<=ntau;m++){
-      CTV2(I, Sig, G, n, m, beta, tmp);
-      CTV3(I, Sig, G, n, m, beta, stmp);
-      for(i=0;i<es;i++){
-        G.tvptr(n,m)[i] = tmp[i] + stmp[i];
-      }
-    }
+    err += element_diff(size1,tmp,G.tvptr(0,m));
   }
 
   // At each m, get n=1...k
@@ -633,12 +626,13 @@ double GTVstart(const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf,
       // Add in the integrals
       CTV2(I, Sig, G, n, m, beta, tmp);
       CTV3(I, Sig, G, n, m, beta, stmp);
-      element_incr(size1,Q+(n-1)*es,tmp);
+      element_incr(size1,stmp,tmp);
       element_incr(size1,Q+(n-1)*es,stmp);
     }
     // Solve MX=Q
     element_linsolve_left(k*size1,k*size1,size1,M,X,Q);
     for(l=0;l<k;l++){
+      err += element_diff(size1,G.tvptr(l+1,m),X+l*es);
       element_set(size1,G.tvptr(l+1,m),X+l*es);
     }
   }
@@ -649,6 +643,7 @@ double GTVstart(const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf,
   delete[] tmp;
   delete[] stmp;
   delete[] iden;
+  return err;
 }
 
 
@@ -851,11 +846,12 @@ void GTVstep(int tstp, const INTEG &I, GREEN &G, const GREEN &Sig, const functio
 }
 
 
-void GLstep(int n, const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf, double mu, double beta, double dt){
+double GLstep(int n, const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf, double mu, double beta, double dt){
   // Sizes and iterators
   int k=I.k(), size1=G.size1(), es=G.element_size(), m,l,i;
   cplx weight;
   int num = (n>=k)?(n):(k);
+  double err=0;
 
   // Matricies
   cplx *M = new cplx[k*k*es];
@@ -868,10 +864,12 @@ void GLstep(int n, const INTEG &I, GREEN &G, const GREEN &Sig, const function &h
   element_iden(size1,iden);
 
   // Initial condition
+  element_set(size1,tmp,G.lesptr(0,n));
   element_set(size1,G.lesptr(0,n),G.tvptr(n,0));
   element_conj(size1,G.lesptr(0,n));
   element_smul(size1,G.lesptr(0,n),-1);
-  
+  err+=element_diff(size1,tmp,G.lesptr(0,n));
+
   // Integrals go into Q
   memset(Q,0,sizeof(cplx)*num*es);
   Cles2_tstp(I,Sig,Sig,G,n,dt,Q);
@@ -956,8 +954,10 @@ void GLstep(int n, const INTEG &I, GREEN &G, const GREEN &Sig, const function &h
   }
 
   // Write elements into G
-  for(l=1;l<=n;l++) element_set(size1,G.lesptr(l,n),X+l*es);
-
+  for(l=1;l<=n;l++){
+    err += element_diff(size1,G.lesptr(l,n),X+l*es);
+    element_set(size1,G.lesptr(l,n),X+l*es);
+  }
   
   delete[] M;
   delete[] Q;
@@ -965,12 +965,15 @@ void GLstep(int n, const INTEG &I, GREEN &G, const GREEN &Sig, const function &h
   delete[] tmp;
   delete[] stmp;
   delete[] iden;
+  return err;
 }
 
 
-void GLstart(const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf, double mu, double beta, double dt){
+double GLstart(const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf, double mu, double beta, double dt){
+  double err=0;
   int k=I.k();
-  for(int n=0;n<=k;n++) GLstep(n,I,G,Sig,hmf,mu,beta,dt);
+  for(int n=0;n<=k;n++) err += GLstep(n,I,G,Sig,hmf,mu,beta,dt);
+  return err;
 }
 
 double dyson_start(const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf, double mu, double beta, double dt){
@@ -983,10 +986,11 @@ double dyson_start(const INTEG &I, GREEN &G, const GREEN &Sig, const function &h
 
 
 
-void dyson_step(int n, const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf, double mu, double beta, double dt){
+double dyson_step(int n, const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf, double mu, double beta, double dt){
   GRstep(n, I, G, Sig, hmf, mu, dt);
   GTVstep(n, I, G, Sig, hmf, mu, beta, dt);
   GLstep(n, I, G, Sig, hmf, mu, beta, dt);
+  return 0.;
 }
 
 

@@ -1,1 +1,1 @@
-/usr/bin/c++  -O3 -DNDEBUG   CMakeFiles/hubb_chain_2b.x.dir/hubb_chain_2b.cpp.o  -o hubb_chain_2b.x ../src/liblibNEdyson.a 
+/usr/bin/c++  -O3 -DNDEBUG   CMakeFiles/hubb_chain_2b.x.dir/hubb_chain_2b.cpp.o  -o hubb_chain_2b.x  ../src/liblibNEdyson.a 

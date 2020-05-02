@@ -9,10 +9,10 @@ file(REMOVE_RECURSE
   "CMakeFiles/libNEdyson.dir/integration.cpp.o"
   "CMakeFiles/libNEdyson.dir/mat_utils.cpp.o"
   "CMakeFiles/libNEdyson.dir/spectral.cpp.o"
-  "CMakeFiles/libNEdyson.dir/vie2.cpp.o"
   "CMakeFiles/libNEdyson.dir/utils.cpp.o"
-  "liblibNEdyson.pdb"
+  "CMakeFiles/libNEdyson.dir/vie2.cpp.o"
   "liblibNEdyson.a"
+  "liblibNEdyson.pdb"
 )
 
 # Per-language clean rules from dependency scanning.

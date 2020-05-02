@@ -1,1 +1,1 @@
-/usr/bin/c++  -O3 -DNDEBUG  -rdynamic CMakeFiles/calcA.x.dir/calcA.cpp.o  -o calcA.x ../src/liblibNEdyson.a 
+/usr/bin/c++  -O3 -DNDEBUG  -rdynamic CMakeFiles/calcA.x.dir/calcA.cpp.o  -o calcA.x  ../src/liblibNEdyson.a 

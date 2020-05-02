@@ -21,15 +21,15 @@ void G0_from_h0(GREEN &G, double mu, const cdmatrix &h0, double beta, double dt)
 void G0_from_h0(GREEN &G, const INTEG &I, double mu, const function &eps, double beta, double dt);
 
  
-void mat_fourier(GREEN &G, const GREEN &Sigma, double mu, const cplx *hmf, double beta);
+double mat_fourier(GREEN &G, const GREEN &Sigma, double mu, const cplx *hmf, double beta);
 
 
 void Extrapolate(const INTEG &I, GREEN &G, int n);
 
 
-void dyson_start(const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf, double mu, double beta, double dt);
+double dyson_start(const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf, double mu, double beta, double dt);
 
 
-void dyson_step(int n, const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf, double mu, double beta, double dt);
+double dyson_step(int n, const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf, double mu, double beta, double dt);
 }//namespace
 #endif
