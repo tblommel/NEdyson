@@ -6,6 +6,36 @@
 
 #IncludeRegexTransform: 
 
+/home/thomas/Libraries/NEdyson/src/dyson.cpp
+iostream
+-
+dyson.h
+/home/thomas/Libraries/NEdyson/src/dyson.h
+
+/home/thomas/Libraries/NEdyson/src/dyson.h
+Eigen/Eigen
+-
+unsupported/Eigen/MatrixFunctions
+-
+elementops.h
+/home/thomas/Libraries/NEdyson/src/elementops.h
+function.h
+/home/thomas/Libraries/NEdyson/src/function.h
+greens.h
+/home/thomas/Libraries/NEdyson/src/greens.h
+integration.h
+/home/thomas/Libraries/NEdyson/src/integration.h
+integrals.h
+/home/thomas/Libraries/NEdyson/src/integrals.h
+mat_utils.h
+/home/thomas/Libraries/NEdyson/src/mat_utils.h
+utils.h
+/home/thomas/Libraries/NEdyson/src/utils.h
+
+/home/thomas/Libraries/NEdyson/src/elementops.cpp
+elementops.h
+/home/thomas/Libraries/NEdyson/src/elementops.h
+
 /home/thomas/Libraries/NEdyson/src/elementops.h
 Eigen/Eigen
 -
@@ -15,6 +45,10 @@ iostream
 -
 utils.h
 /home/thomas/Libraries/NEdyson/src/utils.h
+
+/home/thomas/Libraries/NEdyson/src/function.cpp
+function.h
+/home/thomas/Libraries/NEdyson/src/function.h
 
 /home/thomas/Libraries/NEdyson/src/function.h
 complex
@@ -27,6 +61,10 @@ iostream
 -
 utils.h
 /home/thomas/Libraries/NEdyson/src/utils.h
+
+/home/thomas/Libraries/NEdyson/src/greens.cpp
+greens.h
+/home/thomas/Libraries/NEdyson/src/greens.h
 
 /home/thomas/Libraries/NEdyson/src/greens.h
 complex
@@ -49,6 +87,10 @@ function.h
 /home/thomas/Libraries/NEdyson/src/function.h
 elementops.h
 /home/thomas/Libraries/NEdyson/src/elementops.h
+greens_tstp.h
+/home/thomas/Libraries/NEdyson/src/greens_tstp.h
+
+/home/thomas/Libraries/NEdyson/src/greens_tstp.cpp
 greens_tstp.h
 /home/thomas/Libraries/NEdyson/src/greens_tstp.h
 
@@ -84,6 +126,10 @@ vie2.h
 utils.h
 /home/thomas/Libraries/NEdyson/src/utils.h
 
+/home/thomas/Libraries/NEdyson/src/integrals.cpp
+integrals.h
+/home/thomas/Libraries/NEdyson/src/integrals.h
+
 /home/thomas/Libraries/NEdyson/src/integrals.h
 elementops.h
 /home/thomas/Libraries/NEdyson/src/elementops.h
@@ -95,6 +141,10 @@ utils.h
 /home/thomas/Libraries/NEdyson/src/utils.h
 complex
 -
+
+/home/thomas/Libraries/NEdyson/src/integration.cpp
+integration.h
+/home/thomas/Libraries/NEdyson/src/integration.h
 
 /home/thomas/Libraries/NEdyson/src/integration.h
 cmath
@@ -110,8 +160,58 @@ Eigen/Eigen
 utils.h
 /home/thomas/Libraries/NEdyson/src/utils.h
 
+/home/thomas/Libraries/NEdyson/src/mat_utils.cpp
+mat_utils.h
+/home/thomas/Libraries/NEdyson/src/mat_utils.h
+
+/home/thomas/Libraries/NEdyson/src/mat_utils.h
+complex
+-
+greens.h
+/home/thomas/Libraries/NEdyson/src/greens.h
+elementops.h
+/home/thomas/Libraries/NEdyson/src/elementops.h
+mat_utils.h
+/home/thomas/Libraries/NEdyson/src/mat_utils.h
+utils.h
+/home/thomas/Libraries/NEdyson/src/utils.h
+
+/home/thomas/Libraries/NEdyson/src/spectral.cpp
+spectral.h
+/home/thomas/Libraries/NEdyson/src/spectral.h
+
+/home/thomas/Libraries/NEdyson/src/spectral.h
+complex
+-
+fstream
+-
+iostream
+-
+cmath
+-
+cstring
+-
+greens.h
+/home/thomas/Libraries/NEdyson/src/greens.h
+elementops.h
+/home/thomas/Libraries/NEdyson/src/elementops.h
+utils.h
+/home/thomas/Libraries/NEdyson/src/utils.h
+
+/home/thomas/Libraries/NEdyson/src/utils.cpp
+utils.h
+/home/thomas/Libraries/NEdyson/src/utils.h
+
 /home/thomas/Libraries/NEdyson/src/utils.h
 Eigen/Eigen
+-
+
+/home/thomas/Libraries/NEdyson/src/vie2.cpp
+vie2.h
+/home/thomas/Libraries/NEdyson/src/vie2.h
+mat_utils.h
+/home/thomas/Libraries/NEdyson/src/mat_utils.h
+chrono
 -
 
 /home/thomas/Libraries/NEdyson/src/vie2.h
@@ -1543,4 +1643,46 @@ lapacke_mangling.h
 /home/thomas/miniconda3/include/eigen3/Eigen/src/plugins/MatrixCwiseBinaryOps.h
 
 /home/thomas/miniconda3/include/eigen3/Eigen/src/plugins/MatrixCwiseUnaryOps.h
+
+/home/thomas/miniconda3/include/eigen3/unsupported/Eigen/MatrixFunctions
+cfloat
+-
+list
+-
+Eigen/Core
+-
+Eigen/LU
+-
+Eigen/Eigenvalues
+-
+src/MatrixFunctions/MatrixExponential.h
+/home/thomas/miniconda3/include/eigen3/unsupported/Eigen/src/MatrixFunctions/MatrixExponential.h
+src/MatrixFunctions/MatrixFunction.h
+/home/thomas/miniconda3/include/eigen3/unsupported/Eigen/src/MatrixFunctions/MatrixFunction.h
+src/MatrixFunctions/MatrixSquareRoot.h
+/home/thomas/miniconda3/include/eigen3/unsupported/Eigen/src/MatrixFunctions/MatrixSquareRoot.h
+src/MatrixFunctions/MatrixLogarithm.h
+/home/thomas/miniconda3/include/eigen3/unsupported/Eigen/src/MatrixFunctions/MatrixLogarithm.h
+src/MatrixFunctions/MatrixPower.h
+/home/thomas/miniconda3/include/eigen3/unsupported/Eigen/src/MatrixFunctions/MatrixPower.h
+unsupported/Eigen/MatrixFunctions
+-
+iostream
+-
+
+/home/thomas/miniconda3/include/eigen3/unsupported/Eigen/src/MatrixFunctions/MatrixExponential.h
+StemFunction.h
+/home/thomas/miniconda3/include/eigen3/unsupported/Eigen/src/MatrixFunctions/StemFunction.h
+
+/home/thomas/miniconda3/include/eigen3/unsupported/Eigen/src/MatrixFunctions/MatrixFunction.h
+StemFunction.h
+/home/thomas/miniconda3/include/eigen3/unsupported/Eigen/src/MatrixFunctions/StemFunction.h
+
+/home/thomas/miniconda3/include/eigen3/unsupported/Eigen/src/MatrixFunctions/MatrixLogarithm.h
+
+/home/thomas/miniconda3/include/eigen3/unsupported/Eigen/src/MatrixFunctions/MatrixPower.h
+
+/home/thomas/miniconda3/include/eigen3/unsupported/Eigen/src/MatrixFunctions/MatrixSquareRoot.h
+
+/home/thomas/miniconda3/include/eigen3/unsupported/Eigen/src/MatrixFunctions/StemFunction.h
 
