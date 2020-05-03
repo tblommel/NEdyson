@@ -129,7 +129,6 @@ int main(int argc, char *argv[]){
   // Bootstrapping ==========================================================================
   {
     start = std::chrono::system_clock::now();
-    
     bool bootstrap_converged=false;
     
     // to represent the quench, the free Hamiltonian is updated
@@ -148,7 +147,7 @@ int main(int argc, char *argv[]){
       }
 
       // Solve Dyson Eqn
-      err=dyson_start(I,G,Sigma,hmf,MuChem,Beta,dt);
+      err = dyson_start(I,G,Sigma,hmf,MuChem,Beta,dt);
 
       std::cout<<"bootstrapping iteration : "<<iter<<" |  Error = "<<err<<std::endl;
       if(err<BootMaxErr){
@@ -171,14 +170,11 @@ int main(int argc, char *argv[]){
   // Timestepping ===========================================================================
   start = std::chrono::system_clock::now();
 
-  GREEN gtemp = GREEN(Nt,Ntau,Nsites,-1);
   for(int tstp=k+1;tstp<=Nt;tstp++){
-
     // Extrapolate
     NEdyson::Extrapolate(I,G,tstp);
 
     for(int iter=0;iter<StepIter;iter++){
-      gtemp.set_tstp(tstp,G);
       // Update hmf
       Hubb::Ham_MF(tstp,G,Ut,h0,hmf);
       
@@ -187,24 +183,20 @@ int main(int argc, char *argv[]){
 
       // Solve Dyson Eqn
       dyson_step(tstp,I,G,Sigma,hmf,MuChem,Beta,dt);
-
-      double err=0.0;
-      err += distance_norm2(tstp,G,gtemp);
-      std::cout<<tstp << " " << iter << " " << err << std::endl;
     }
   }
 
-    end = std::chrono::system_clock::now();
-    elapsed_seconds = end-start;
-    std::cout << "Time [Propagation] = " << elapsed_seconds.count() << "s\n\n";
+  end = std::chrono::system_clock::now();
+  elapsed_seconds = end-start;
+  std::cout << "Time [Propagation] = " << elapsed_seconds.count() << "s\n\n";
+
+  str = argv[1];
+  str+="/G";
   
-    str = argv[1];
-    str+="/G";
-    
-    G.print_to_file(str,dt,dtau,16);
-  
-    A.AfromG(G,101,10,dt);
-    str = argv[1];
-    str+="/A";
-    A.print_to_file(str);
+  G.print_to_file(str,dt,dtau,16);
+
+  A.AfromG(G,101,10,dt);
+  str = argv[1];
+  str+="/A";
+  A.print_to_file(str);
 }

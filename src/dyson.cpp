@@ -955,7 +955,7 @@ double GLstep(int n, const INTEG &I, GREEN &G, const GREEN &Sig, const function 
 
   // Write elements into G
   for(l=1;l<=n;l++){
-    err += element_diff(size1,G.lesptr(l,n),X+l*es);
+    if(n<=k) err += element_diff(size1,G.lesptr(l,n),X+l*es);
     element_set(size1,G.lesptr(l,n),X+l*es);
   }
   
@@ -986,11 +986,10 @@ double dyson_start(const INTEG &I, GREEN &G, const GREEN &Sig, const function &h
 
 
 
-double dyson_step(int n, const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf, double mu, double beta, double dt){
+void dyson_step(int n, const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf, double mu, double beta, double dt){
   GRstep(n, I, G, Sig, hmf, mu, dt);
   GTVstep(n, I, G, Sig, hmf, mu, beta, dt);
   GLstep(n, I, G, Sig, hmf, mu, beta, dt);
-  return 0.;
 }
 
 
