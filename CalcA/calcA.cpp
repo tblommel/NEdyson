@@ -16,9 +16,9 @@ bool is_file_exist(std::string fileName){
 }
 
 int main(int argc, char *argv[]){
-  if(argc!=4) throw std::invalid_argument("please provide input file, nw, and wmax");
-	int nw = strtol(argv[2],NULL,10);
-	double wmax = strtod(argv[3],NULL);
+  if(argc!=5) throw std::invalid_argument("please provide G input file, A input file, nw, and wmax");
+	int nw = strtol(argv[3],NULL,10);
+	double wmax = strtod(argv[4],NULL);
 
 	// Define the structures
 	GREEN G = GREEN();
@@ -74,6 +74,6 @@ int main(int argc, char *argv[]){
 
 	// Print A to file
 	actfile = "";
-	actfile += argv[1];
+	actfile += argv[2];
 	A.print_to_file(actfile);
 }	

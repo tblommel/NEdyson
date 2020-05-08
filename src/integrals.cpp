@@ -7,10 +7,10 @@ namespace NEdyson{
 
 
 // This one does integral for every tau, and puts result into B by incrementing it!!!
-// Does not include the j==n term!!!
 // For every \tau=m...
 //   B[n,m] += \int_0^n dt A^R(n,t) B^{TV}(t,m)
 //          += \sum_{j=0}^{n-1} dt w_{n,j} A^R(n,j) B^{TV}(j,m)
+// RIGHT NOW ONLY WORKS FOR n>=k.  THIS IS FINE BECAUSE IT IS ONLY CALLED WITHIN THE STEPPING ROUTINE
 void CTV1(const INTEG &I, const GREEN &A, const GREEN &Acc, GREEN &B, int n, double dt){
   int k=I.k(), ntau=A.ntau(), size1=A.size1(), es=A.element_size(), i, j, m;
   double weight;
@@ -141,11 +141,11 @@ void CTV3(const INTEG &I, const GREEN &A, const GREEN &B, int n, int m, double b
 
 
 // Does the les_lesadv integration for every n, puts into Q via increment!!!
-// for n=0...m
+// for n=j1...j2
 //   computes the integral C_2^<[A,B](n,m) = \int_0^m dt A^<(n,t) B^A(t,m)
 //                                         = \sum_{j=0}^{max(k,m)} w_{m,j} A^<(n,j) B^A(j,m)
-// places into Q which should be size size1*size1*max(k+1,m+1)
-void Cles2_tstp(const INTEG &I, const GREEN &A, const GREEN &Acc, const GREEN &B, int m, double dt, cplx *Q){
+// places into Q which should be size size1*size1*(j2-j1+1)
+void Cles2_tstp(int j1, int j2, const INTEG &I, const GREEN &A, const GREEN &Acc, const GREEN &B, const GREEN &Bcc, int m, double dt, cplx *Q){
   int k=I.k(), size1=A.size1(), es=A.element_size(), sig=A.sig(),j,l,n,top=(m>k) ? (m):(k);
   double w;
   cplx *BA=new cplx [(top+1)*es];
@@ -155,7 +155,7 @@ void Cles2_tstp(const INTEG &I, const GREEN &A, const GREEN &Acc, const GREEN &B
   for(j=0;j<=top;j++){//fill BA from B.retptr.  BA_jm=(BR_mj)^T*
     w=I.gregory_weights(m,j);
     if(m>=j){//we have BR
-      element_conj(size1,BA+j*es,B.retptr(m,j));
+      element_conj(size1,BA+j*es,Bcc.retptr(m,j));
       element_smul(size1,BA+j*es,dt*w);
     }
     else{//dont have BR
@@ -166,7 +166,7 @@ void Cles2_tstp(const INTEG &I, const GREEN &A, const GREEN &Acc, const GREEN &B
 
   cplx *res = Q;
   //sum from j=0 to n-1, where we don't have AL
-  for(n=0;n<=top;n++){
+  for(n=j1;n<=j2;n++){
     for(j=0;j<n;j++){
       element_conj(size1,AL,Acc.lesptr(j,n));
       element_incr(size1,res,-1.,AL,BA+j*es);
@@ -176,7 +176,7 @@ void Cles2_tstp(const INTEG &I, const GREEN &A, const GREEN &Acc, const GREEN &B
 
   res = Q;
   //sum from j=n to max(k,m), here we have AL
-  for(n=0;n<=top;n++){
+  for(n=j1;n<=j2;n++){
     for(j=n;j<=top;j++){
       element_incr(size1,res,A.lesptr(n,j),BA+j*es);
     }
@@ -188,11 +188,18 @@ void Cles2_tstp(const INTEG &I, const GREEN &A, const GREEN &Acc, const GREEN &B
 }
 
 
-// Does the les_tvvt integral for each n=0...m and puts into Q via increment!!!!
+void Cles2_tstp(const INTEG &I, const GREEN &A, const GREEN &Acc, const GREEN &B, const GREEN &Bcc, int m, double dt, cplx *Q){
+  int k=I.k();
+  int num = m>=k?m:k;
+  return Cles2_tstp(0,num, I, A, Acc, B, Bcc, m, dt, Q);
+}
+
+
+// Does the les_tvvt integral for each n=j1...j2 and puts into Q via increment!!!!
 // computes C_3^<[A,B](n,m) = -i \int_0^\beta d\tau A^{TV}(n,\tau) B^{VT}(\tau,m)
 //                          = -i \dau \sum_{j=0}^{ntau} w_{ntau,j} A^{TV}_{n,j} B^{VT}_{j,m}
-// places into Q via increment.  Q should be size size1*size1*max(k+1,m+1)
-void Cles3_tstp(const INTEG &I, const GREEN &A, const GREEN &B, int m, double beta, cplx *Q){
+// places into Q via increment.  Q should be size size1*size1*(j2-j1+1)
+void Cles3_tstp(int j1, int j2, const INTEG &I, const GREEN &A, const GREEN &Acc, const GREEN &B, const GREEN &Bcc, int m, double beta, cplx *Q){
   int k=I.k(), size1=A.size1(), es=A.element_size(), sig=B.sig(),j,l,n, ntau=A.ntau();
   int top = (m>=k)?(m):(k);
   double dtau=beta/ntau;
@@ -204,12 +211,12 @@ void Cles3_tstp(const INTEG &I, const GREEN &A, const GREEN &B, int m, double be
 
   // Fill BVT first
   weight = (double)sig*cplxi*dtau;
-  for(j=0;j<=ntau;j++) element_conj(size1, BVT+j*es, B.tvptr(m,ntau-j));
+  for(j=0;j<=ntau;j++) element_conj(size1, BVT+j*es, Bcc.tvptr(m,ntau-j));
   for(l=0;l<(ntau+1)*es;l++) BVT[l]*=weight;
 
   //do the integral
   cplx *res=Q;
-  for(n=0;n<=top;n++){
+  for(n=j1;n<=j2;n++){
     bvttmp = BVT;
     ATV = A.tvptr(n,0);
     if(ntau < 2*(k+1)-1){
@@ -241,6 +248,252 @@ void Cles3_tstp(const INTEG &I, const GREEN &A, const GREEN &B, int m, double be
   }
 
   delete[] BVT;
+}
+
+
+
+void Cles3_tstp(const INTEG &I, const GREEN &A, const GREEN &Acc, const GREEN &B, const GREEN &Bcc, int m, double beta, cplx *Q){
+  int k=I.k();
+  int top = m<k?k:m;
+  return Cles3_tstp(0, top, I, A, Acc, B, Bcc, m, beta, Q);
+}
+
+
+// This does the Integral \int_t'^tstp d\bar{t} A^R(tstp,\bar{t}) B^R(\bar{t},t')
+// For every value t' from 0 to tstp
+// Places result into C(tstp,t') via increment!!
+void incr_convolution_ret(int tstp, const std::vector<bool> &mask_ret, GREEN &C, const GREEN &A, const GREEN &Acc, const GREEN &B, const GREEN &Bcc, const INTEG &I , double dt){
+  int size1 = A.size1(), es = size1*size1, k = I.k(), ntop = (tstp >= k ? tstp : k);
+  int n,m,j;
+  cplx *ctmp = new cplx[es];
+  cplx *aret;
+  cplx *btmp = new cplx[es];
+  cplx *aretf = 0;
+  
+  if(ntop == tstp){
+    aret = A.retptr(tstp,0);
+  }
+  else{ // Integration not causal, need to conjugate some values
+    aretf = new cplx[(ntop+1)*es];
+    aret = aretf;
+    for(j=0;j<=tstp;j++){
+      element_set(size1, aretf+j*es, A.retptr(tstp, j));
+    }
+    for(j=tstp+1;j<=ntop;j++){
+      element_conj(size1, aretf+j*es, Acc.retptr(j, tstp));
+      element_smul(size1, aretf+j*es, -1);
+    }
+  }
+
+  // Begin the integration. There are four cases
+  for(m=0;m<=tstp;m++){
+    if(mask_ret[m]){
+      element_set_zero(size1, ctmp);
+      if(tstp<k){ // use the I weights
+        for(j=0;j<=k;j++){
+          if(j>=m) element_incr(size1, ctmp, I.poly_integ(m,tstp,j), aret+j*es, B.retptr(j,m));
+          else{
+            element_conj(size1, btmp, Bcc.retptr(m,j));
+            element_incr(size1, ctmp, -I.poly_integ(m,tstp,j), aret+j*es, btmp);
+          }
+        }
+      }
+      else if(n-m<k){ // use information from behind m
+        for(j=0;j<=k;j++){
+          if(tstp-j>=m) element_incr(size1, ctmp, I.gregory_weights(tstp-m,j), aret+(tstp-j)*es, B.retptr(tstp-j,m));
+          else{
+            element_conj(size1, btmp, Bcc.retptr(m,tstp-j));
+            element_incr(size1, ctmp, -I.gregory_weights(tstp-m,j), aret+(tstp-j)*es, btmp);
+          }
+        }
+      }
+      else if(tstp-m <= 2*k + 2){ // Everything fine, just use Sigma weights
+        for(j=0;j<=tstp-m;j++) element_incr(size1, ctmp, I.gregory_weights(tstp-m,j), aret+(j+m)*es, B.retptr(j+m,m));
+      }
+      else{ // Everything fine, use omega and 1
+        for(j=m;j<=m+k;j++) element_incr(size1, ctmp, I.omega(j-m), aret+j*es, B.retptr(j,m));        for(j=m+k+1;j<tstp-k;j++) element_incr(size1, ctmp, aret+j*es, B.retptr(j,m));
+        for(j=tstp-k;j<=tstp;j++) element_incr(size1, ctmp, I.omega(tstp-j), aret+j*es, B.retptr(j,m));
+      }
+      element_incr(size1, C.retptr(tstp, m), dt, ctmp);
+    }
+  }
+  delete[] ctmp;
+  delete[] btmp;
+  if(aretf != 0) delete[] aretf;
+  return;
+}
+
+
+// This function does the integrals required by the TV propagation equation and then places them into C^{TV}(tstp,m) for m=0...ntau via increment!!!
+void incr_convolution_tv(int tstp, const std::vector<bool> &mask_tv, GREEN &C, const GREEN &A, const GREEN &Acc, const GREEN &B, const GREEN &Bcc, const INTEG &I, double beta, double dt){
+  int ntau = A.ntau(), size1 = A.size1(), es = size1*size1, k = I.k(), ntop = tstp>=k?tstp:k;
+  
+  int j,m,n;
+  cplx *ctmp1 = new cplx[es];
+  cplx *ctmp2 = new cplx[es];
+  cplx *bmat = B.matptr(0);
+  cplx *aret;
+  cplx *aretf=0;
+  if(ntop == tstp) aret = A.retptr(tstp, 0);
+  else{
+    aretf = new cplx[(ntop+1)*es];
+    aret = aretf;
+    for(j=0;j<=tstp;j++) element_set(size1, aretf+j*es, A.retptr(tstp, j));
+    for(j=tstp+1;j<=ntop;j++){
+      element_conj(size1, aretf+j*es, Acc.retptr(j,tstp));
+      element_smul(size1, aretf+j*es, -1);
+    }
+  }
+
+  for(m=0;m<=ntau;m++){
+    if(mask_tv[m]){
+      CTV2(I, A, B, tstp, m, beta, ctmp1);
+      CTV3(I, A, B, tstp, m, beta, ctmp2);
+      element_incr(size1, ctmp1, ctmp2);
+      element_set_zero(size1,ctmp2);
+      if(tstp<=2*k+2){
+        for(n=0;n<=ntop;n++){
+          element_incr(size1, ctmp2, I.gregory_weights(tstp, n), aret+n*es, B.tvptr(n,m));
+        }
+      }
+      else{
+        for(n=0;n<=k;n++) element_incr(size1, ctmp2, I.omega(n), aret+n*es, B.tvptr(n,m));
+        for(n=k+1;n<tstp-k;n++) element_incr(size1, ctmp2, aret+n*es, B.tvptr(n,m));
+        for(n=tstp-k;n<=tstp;n++) element_incr(size1, ctmp2, I.omega(tstp-n), aret+n*es, B.tvptr(n,m));
+      }
+      element_smul(size1, ctmp2, dt);
+      element_incr(size1, C.tvptr(tstp,m),ctmp1);
+      element_incr(size1, C.tvptr(tstp,m),ctmp2);
+    }
+  }
+
+  delete[] ctmp1;
+  delete[] ctmp2;
+  if(aretf!=0) delete[] aretf;
+  return;
+}
+
+
+  void incr_convolution_les(int tstp, const std::vector<bool> &mask_les, GREEN &C, const GREEN &A, const GREEN &Acc, const GREEN &B, const GREEN &Bcc, const INTEG &I, double beta, double dt){
+  int ntau = A.ntau(), size1 = A.size1(), es = size1*size1, k = I.k(), ntop = tstp>=k?tstp:k;
+  double dtau = beta/ntau;
+  cplx cplxi = cplx(0,1);
+  int n,j,m,l;
+
+  // Fill list of Bs to use in integration
+  cplx *badv = new cplx[(ntop+1)*es];
+  cplx *bles = new cplx[(ntop+1)*es];
+  cplx *bvt = new cplx[(ntau+1)*es];
+  cplx *ctmp1 = new cplx[es];
+  cplx *ctmp2 = new cplx[es];
+  cplx *ctmp3 = new cplx[es];
+
+  for(j=0;j<=tstp;j++){
+    element_conj(size1,badv+j*es,Bcc.retptr(tstp,j));
+    element_set(size1,bles+j*es,B.lesptr(j, tstp));
+  }
+  for(j=tstp+1;j<=ntop;j++){
+    element_set(size1, badv+j*es,B.retptr(j,tstp));
+    element_smul(size1, badv+j*es,-1);
+    element_conj(size1, bles+j*es,Bcc.lesptr(tstp, j));
+    element_smul(size1, bles+j*es,-1);
+  }
+  if(B.sig() == -1){
+    for(m=0;m<=ntau;m++) element_conj(size1, bvt+m*es, Bcc.tvptr(tstp, ntau-m));
+  }
+  else{
+    for(m=0;m<=ntau;m++){
+      element_conj(size1, bvt+m*es, Bcc.tvptr(tstp, ntau-m));
+      element_smul(size1, bvt+m*es, -1);
+    }
+  }
+
+  // Do the integrals for every t = 0...tstp
+  for(n=0;n<=tstp;n++){
+    if(mask_les[n]){
+      // integral from 0 to t AR BL
+      int nup = n>k?n:k;
+      element_set_zero(size1, ctmp1);
+      if(n<=2*k+2){ // start and sig weights
+        for(j=0;j<=nup;j++){
+          if(j<=n) element_incr(size1, ctmp1, I.gregory_weights(n,j), A.retptr(n,j), bles+j*es);
+          else{
+            element_conj(size1, ctmp2, Acc.retptr(j,n));
+            element_incr(size1, ctmp1, -I.gregory_weights(n,j), ctmp2, bles+j*es);
+          }
+        }
+      }
+      else{ // omegas and 1s
+        for(j=0;j<=k;j++) element_incr(size1, ctmp1, I.omega(j), A.retptr(n,j), bles+j*es);
+        for(j=k+1;j<n-k;j++) element_incr(size1, ctmp1, A.retptr(n,j), bles+j*es);
+        for(j=n-k;j<=n;j++) element_incr(size1, ctmp1, I.omega(n-j), A.retptr(n,j),bles+j*es);
+      }
+
+
+      // integral from 0 to tstp AL BA
+      element_set_zero(size1, ctmp3);
+      if(tstp<=2*k+2){ // start and sig weights
+        for(j=0;j<=n;j++){
+          element_conj(size1, ctmp2, Acc.lesptr(j,n));
+          element_incr(size1, ctmp3, -I.gregory_weights(tstp, j), ctmp2, badv+j*es);
+        }
+        for(j=n+1;j<=ntop;j++) element_incr(size1, ctmp3, I.gregory_weights(tstp, j), A.lesptr(n,j), badv+j*es);
+      }
+      else{ // omegas and 1s
+        for(j=0;j<=k;j++){
+          if(j>=n) element_incr(size1, ctmp3, I.omega(j), A.lesptr(n,j), badv+j*es);
+          else{
+            element_conj(size1, ctmp2, Acc.lesptr(j,n));
+            element_incr(size1, ctmp3, -I.omega(j), ctmp2, badv+j*es);
+          }
+        }
+
+        if(n<=k){ // already encountered cut
+          for(j=k+1;j<tstp-k;j++) element_incr(size1, ctmp3, A.lesptr(n,j), badv+j*es);
+        }
+        else if(n<tstp-k){ // cut is in this range
+          for(j=k+1;j<n;j++){
+            element_conj(size1, ctmp2, Acc.lesptr(j,n));
+            element_incr(size1, ctmp3, -1, ctmp2, badv+j*es);
+          }
+          for(j=n;j<tstp-k;j++) element_incr(size1, ctmp3, A.lesptr(n,j), badv+j*es);
+        }
+        else{ // cut is past this range
+          for(j=k+1;j<tstp-k;j++){
+            element_conj(size1, ctmp2, Acc.lesptr(j,n));
+            element_incr(size1, ctmp3, -1, ctmp2, badv+j*es);
+          }
+        }
+
+        for(j=tstp-k;j<=tstp;j++){
+          if(j>=n) element_incr(size1, ctmp3, I.omega(tstp-j), A.lesptr(n,j), badv+j*es);
+          else{
+            element_conj(size1, ctmp2, Acc.lesptr(j,n));
+            element_incr(size1, ctmp3, -I.omega(tstp-j), ctmp2, badv+j*es);
+          }
+        }
+      }
+
+      
+      // integral from 0 to beta ATV BVT
+      element_set_zero(size1, ctmp2);
+      for(m=0;m<=k;m++) element_incr(size1, ctmp2, I.omega(m), A.tvptr(n, m), bvt+m*es);
+      for(m=k+1;m<ntau-k;m++) element_incr(size1, ctmp2, A.tvptr(n,m), bvt+m*es);
+      for(m=ntau-k;m<=ntau;m++) element_incr(size1, ctmp2, I.omega(ntau-m), A.tvptr(n,m), bvt+m*es);
+
+      // Put into C
+      element_incr(size1, C.lesptr(n,tstp), dt, ctmp1);
+      element_incr(size1, C.lesptr(n,tstp), dt, ctmp3);
+      element_incr(size1, C.lesptr(n,tstp), dtau*cplx(0,-1), ctmp2);
+    }
+  }
+  delete[] badv;
+  delete[] bles;
+  delete[] bvt;
+  delete[] ctmp1;
+  delete[] ctmp2;
+  delete[] ctmp3;
+  return;
 }
 
 

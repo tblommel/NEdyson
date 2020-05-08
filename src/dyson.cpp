@@ -1,8 +1,6 @@
 #ifndef DYSON_IMPL
 #define DYSON_IMPL
 
-#include <iostream>
-
 #include "dyson.h"
 
 namespace NEdyson{
@@ -802,6 +800,10 @@ void GTVstep(int tstp, const INTEG &I, GREEN &G, const GREEN &Sig, const functio
 
   element_iden(size1,iden);
   cplx cplxi = cplx(0.,1.);
+
+  cplx *gtv = G.tvptr(tstp ,0);
+  int top = (ntau+1)*es;
+  for(l=0;l<top;l++) gtv[l]=0;
   
   // First do the SRM GM integral.  Put it into GRM(tstp,m)
   for(m=0;m<=ntau;m++){
@@ -872,8 +874,8 @@ double GLstep(int n, const INTEG &I, GREEN &G, const GREEN &Sig, const function 
 
   // Integrals go into Q
   memset(Q,0,sizeof(cplx)*num*es);
-  Cles2_tstp(I,Sig,Sig,G,n,dt,Q);
-  Cles3_tstp(I,Sig,G,n,beta,Q);
+  Cles2_tstp(I,Sig,Sig,G,G,n,dt,Q);
+  Cles3_tstp(I,Sig,Sig,G,G,n,beta,Q);
 
   // Set up the kxk linear problem MX=Q
   for(m=1;m<=k;m++){

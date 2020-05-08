@@ -263,8 +263,8 @@ void vie2_les_timestep(int n, GREEN &G, const GREEN &F, const GREEN &Fcc, const 
 
 	// Integrals go into Y
 	memset(Y,0,sizeof(cplx)*(num+1)*es);
-	Cles2_tstp(I,F,Fcc,G,n,dt,Y);
-	Cles3_tstp(I,F,G,n,beta,Y);
+	Cles2_tstp(I,F,Fcc,G,G,n,dt,Y);
+	Cles3_tstp(I,F,Fcc,G,G,n,beta,Y);
 	for(i=0;i<es*(num+1);i++) Y[i]*=-1;
 
 	// Set up k1xk1 linear problem
