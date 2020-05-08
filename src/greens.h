@@ -155,52 +155,52 @@ class green_func{
 		void get_mat(int i, cplx &x) const ;
 		void get_dm(int i, cplx &x) const ;
 
-		/*save data from Matricies*/
-		#define set_element                       \
-        {                                 \
-          int r,s;                        \
-          for(r=0;r<size1_;r++)           \
-            for(s=0;s<size1_;s++)          \
-              x[r*size1_+s]=M(r,s);       \
-        }
 
-		template <class Matrix>
-		void set_les(int i, int j, const Matrix &M){
-		  cplx *x = lesptr(i,j);
-		  set_element
-		}
-		
-		
-		template <class Matrix>
-		void set_ret(int i, int j, const Matrix &M){
-		  cplx *x = retptr(i,j);
-		  set_element
-		}
-		
-		
-		template <class Matrix>
-		void set_tv(int i, int j, const Matrix &M){
-		  cplx *x = tvptr(i,j);
-		  set_element
-		}
-		
-		
-		template <class Matrix>
-		void set_mat(int i, const Matrix &M){
-		  cplx *x = matptr(i);
-		  set_element
-		}
-		#undef set_element
+
+    #define set_element          \
+      {                          \
+        int r,s;                 \
+        for(r=0;r<size1_;r++)    \
+          for(s=0;s<size1_;s++)  \
+            x[r*size1_+s]=M(r,s);\
+      }
+      template <class Matrix>
+      void set_ret(int i, int j, Matrix &M) {
+        assert(i <= nt_ && j <= i);
+        cplx *x = retptr(i, j);
+        set_element
+      }
+
+      template <class Matrix>
+      void set_les(int i, int j, Matrix &M) {
+        assert(j <= nt_ && i <= j);
+        cplx *x = lesptr(i, j);
+        set_element
+      }
+
+      template <class Matrix>
+      void set_tv(int i, int j, Matrix &M) {
+        assert(i <= nt_ && j <= ntau_);
+        cplx *x = tvptr(i, j);
+        set_element
+      }
+
+      template <class Matrix>
+      void set_mat(int j, Matrix &M) {
+        assert(j <= ntau_);
+        cplx *x = matptr(j);
+        set_element
+      }
+    #undef set_element
+      
 
     // set local timestep from G
     void set_tstp(int tstp, const green_func &G);
+    void set_tstp(int tstp, const green_func_tstp &G);
+    void set_tstp_zero(int tstp);
     // give tstp to G
 		void get_tstp(int tstp, green_func_tstp &G) const;
-		/*for size 1 Matricies*/
-		void set_les(int i, int j, const cplx &x);
-		void set_ret(int i, int j, const cplx &x);
-		void set_tv(int i, int j, const cplx &x);
-		void set_mat(int j, const cplx &x);
+
 
 		/*Multiplications*/
 		void smul(int tstp, cplx weight);

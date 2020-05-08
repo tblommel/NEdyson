@@ -156,79 +156,29 @@ cplx *green_func::matptr(int i) const {
 
 
 
-
-//======================
-//FILL MATRICIES
-//======================
-
-inline void green_func::get_ret(int i, int j, cplx &x) const {
-  assert(i<=nt_ && j<=nt_);
-  if(i>=j) x=*retptr(i,j);
-  else x=-std::conj(*retptr(j,i));
-}
-
-
-inline void green_func::get_les(int i, int j, cplx &x) const {
-  assert(i<=nt_ && j<=nt_);
-  if(i>=j) x=*lesptr(i,j);
-  else x=-std::conj(*lesptr(j,i));
-}
-
-
-inline void green_func::get_tv(int i, int j, cplx &x) const {
-  assert(i<=nt_ && j<=ntau_);
-  x=*tvptr(i,j);
-}
-
-
-inline void green_func::get_vt(int i, int j, cplx &x) const {
-  assert(i<=ntau_ && j<=nt_);
-  x=*tvptr(j,ntau_-i);
-  if (sig_==1) x=std::conj(x);
-  else         x=-std::conj(x);
-}
-
-
-inline void green_func::get_mat(int i, cplx &x) const {
-  assert(i<=ntau_);
-  x=*matptr(i);
-}
-
-
-inline void green_func::get_grt(int i, int j, cplx &x) const {
-  assert(i<=nt_ && j<=nt_);
-  cplx x1;
-  get_ret(i,j,x);
-  get_les(i,j,x1);
-  x+=x1;
-}
-
-
-inline void green_func::get_adv(int i, int j, cplx &x) const {
-  assert(i<=nt_ && j<=nt_);
-  x=*retptr(j,i);
-  x=std::conj(x);
-}
-
-
-inline void green_func::get_dm(int i, cplx &x) const {
-  assert(i>=-1 && i<=nt_);
-  if(i==-1){
-    get_mat(ntau_,x);
-    x*=-1;
-  } else{
-    get_les(i,i,x);
-    x*=std::complex<double>(0.0,sig_);
+void green_func::set_tstp(int tstp, const green_func_tstp &G){
+  if(tstp == -1){
+    memcpy(mat_,G.matptr(0),sizeof(cplx)*(ntau_+1)*element_size_);
+  }
+  else{
+    memcpy(this->retptr(tstp,0),G.retptr(0),sizeof(cplx)*(tstp+1)*element_size_);
+    memcpy(this->tvptr(tstp,0),G.tvptr(0),sizeof(cplx)*(ntau_+1)*element_size_);
+    memcpy(this->lesptr(0,tstp),G.lesptr(0),sizeof(cplx)*(tstp+1)*element_size_);
   }
 }
 
 
+void green_func::set_tstp_zero(int tstp){
+  if(tstp==-1){
+    memset(matptr(0), 0, sizeof(cplx)*(ntau_+1)*element_size_);
+  }
+  else{
+    memset(retptr(tstp,0), 0, sizeof(cplx)*(tstp+1)*element_size_);
+    memset(tvptr(tstp,0), 0, sizeof(cplx)*(ntau_+1)*element_size_);
+    memset(lesptr(0,tstp), 0, sizeof(cplx)*(tstp+1)*element_size_);
+  }
+}
 
-
-
-//======================
-//SAVE FROM MATRICIES
-//======================
 
 void green_func::set_tstp(int tstp, const green_func &G){
   if(tstp == -1){
@@ -252,26 +202,6 @@ void green_func::get_tstp(int tstp, green_func_tstp &G) const {
     memcpy(G.lesptr(0),this->lesptr(0,tstp),sizeof(cplx)*(tstp+1)*element_size_);
   }
 }
-
-void green_func::set_les(int i, int j, const cplx &x){
-  *lesptr(i,j)=x;
-}
-
-
-void green_func::set_ret(int i, int j, const cplx &x){
-  *retptr(i,j)=x;
-}
-
-
-void green_func::set_tv(int i, int j, const cplx &x){
-  *tvptr(i,j)=x;
-}
-
-
-void green_func::set_mat(int i, const cplx &x){
-  *matptr(i)=x;
-}
-
 
 //======================
 //MULTIPLICATIONS

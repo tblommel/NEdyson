@@ -1,5 +1,6 @@
 add_library(libNEdyson
   dyson.cpp dyson.h
+  dyson_omp.cpp dyson_omp.h
   elementops.cpp elementops.h
   function.cpp function.h
   greens.cpp greens.h

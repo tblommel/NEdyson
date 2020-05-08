@@ -1,4 +1,5 @@
 #include "dyson.h"
+#include "dyson_omp.h"
 #include "integration.h"
 #include "param.h"
 #include "hubbchainops.h"

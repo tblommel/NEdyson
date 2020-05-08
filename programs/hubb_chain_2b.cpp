@@ -16,8 +16,8 @@ int main(int argc, char *argv[]){
   if(argc!=2) throw std::invalid_argument("please provide input file");
   
   // Parameters ========================================================================
-  int Nsites, Ntau, MatsMaxIter, oversamp, Nt, RampSite, k, SolverOrder, BootMaxIter, StepIter;
-  double HoppingT, HubbardU, MuChem, Beta, dt, dtau, W0, MatsMaxErr, BootMaxErr;
+  int Nsites, Ntau, MatsMaxIter, oversamp, Nt, RampSite, k, SolverOrder, BootMaxIter, StepIter,nw;
+  double HoppingT, HubbardU, MuChem, Beta, dt, dtau, W0, MatsMaxErr, BootMaxErr, wmax;
 
   std::chrono::time_point<std::chrono::system_clock> start, end, start_tot, end_tot;
   std::chrono::duration<double> runtime;
@@ -46,6 +46,8 @@ int main(int argc, char *argv[]){
   find_param(argv[1],"__StepIter",StepIter);
   Eigen::VectorXd ed(Nsites);
   find_param(argv[1],"__ed=",ed);
+  find_param(argv[1],"__nw",nw);
+  find_param(argv[1],"__wmax",wmax);
 
   // Define Necessary Structures =======================================================
   INTEG I = INTEG(k);
@@ -78,16 +80,6 @@ int main(int argc, char *argv[]){
   double npart = DensM.trace().real();
   std::cout << "number of particles = " << npart << std::endl;
   MuChem += HubbardU*npart/Nsites;
-
-  
-  std::string str = argv[1];
-  str+="/Gfree";
-  G.print_to_file(str,dt,dtau,16);
-  
-  A.AfromG(G,101,10,dt);
-  str = argv[1];
-  str += "/Afree";
-  A.print_to_file(str);
 
   // Matsubara Self Consistency =============================================================
   {
@@ -158,13 +150,13 @@ int main(int argc, char *argv[]){
     if(!bootstrap_converged){
       std::cout<<std::endl;
       std::cout<<" Bootstrapping did not converge. Program Ending. "<<std::endl;
+      return 0;
     }
   } // End Bootstrapping
 
   end = std::chrono::system_clock::now();
   std::chrono::duration<double> elapsed_seconds = end-start;
   std::cout << "Time [bootstrapping] = " << elapsed_seconds.count() << "s\n\n";
-
 
 
   // Timestepping ===========================================================================
@@ -194,12 +186,13 @@ int main(int argc, char *argv[]){
   elapsed_seconds = end-start;
   std::cout << "Time [Propagation] = " << elapsed_seconds.count() << "s\n\n";
 
+  std::string str;
   str = argv[1];
   str+="/G";
   
   G.print_to_file(str,dt,dtau,16);
 
-  A.AfromG(G,101,10,dt);
+  A.AfromG(G,nw,wmax,dt);
   str = argv[1];
   str+="/A";
   A.print_to_file(str);

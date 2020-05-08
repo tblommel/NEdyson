@@ -27,7 +27,7 @@ void element_iden(int size1, cplx *z){
 }
 
 // Sets Z to be a*I
-void element_iden(int size1, cplx &a, cplx *z){
+void element_iden(int size1, cplx *z, cplx a){
 	element_set_zero(size1,z);
 	for(int i=0;i<size1;i++) z[i*size1+i]=a;
 }
