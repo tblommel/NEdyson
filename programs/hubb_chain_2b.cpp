@@ -169,12 +169,14 @@ int main(int argc, char *argv[]){
 
   // Timestepping ===========================================================================
   start = std::chrono::system_clock::now();
+  GREEN Gtemp(Nt,Ntau,Nsites,-1);
 
   for(int tstp=k+1;tstp<=Nt;tstp++){
     // Extrapolate
     NEdyson::Extrapolate(I,G,tstp);
-
+    
     for(int iter=0;iter<StepIter;iter++){
+      Gtemp.set_tstp(tstp,G);
       // Update hmf
       Hubb::Ham_MF(tstp,G,Ut,h0,hmf);
       
@@ -183,6 +185,8 @@ int main(int argc, char *argv[]){
 
       // Solve Dyson Eqn
       dyson_step(tstp,I,G,Sigma,hmf,MuChem,Beta,dt);
+      double err = distance_norm2(tstp,G,Gtemp);
+      std::cout<<tstp<<" "<<iter<<err<<" "<<std::endl;
     }
   }
 
