@@ -482,7 +482,7 @@ double GRstart(const INTEG &I, GREEN &G, const GREEN &Sig, const CFUNC &hmf, dou
 
   // Initial condition
   for(i=0;i<=k;i++){
-    element_iden(size1,ncplxi,G.retptr(i,i));
+    element_iden(size1,G.retptr(i,i),ncplxi);
   }
   double err=0;
   // Fill the first k timesteps
@@ -670,7 +670,7 @@ void GRstep(int tstp, const INTEG &I, GREEN &G, const GREEN &Sig, const function
   element_iden(size1,iden);
 
   // Initial condition
-  element_iden(size1,ncplxi,G.retptr(tstp,tstp));
+  element_iden(size1,G.retptr(tstp,tstp),ncplxi);
 
   // Fill the first k timesteps
   for(l=0;l<k*k*es;l++){

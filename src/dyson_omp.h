@@ -1,11 +1,15 @@
 #ifndef DYSON_OMP_DECL
 #define DYSON_OMP_DECL
 
+#if USE_OMP == 1
+#include <omp.h>
+#endif
 #include "elementops.h"
 #include "function.h"
 #include "greens.h"
 #include "integration.h"
 #include "integrals.h"
+#include "dyson.h"
 #include "utils.h"
 
 namespace NEdyson{

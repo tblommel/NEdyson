@@ -12,10 +12,10 @@ void dyson_step_omp_ret(int threads, int tstp, const INTEG &I, GREEN &G, const G
   cplx ncplxi = cplx(0.-1), weight;
 
   // Set timestep to zero
-  memset(0,G.retptr(tstp,0),(tstp+1)*es*sizeof(cplx));
+  memset(G.retptr(tstp,0),0,(tstp+1)*es*sizeof(cplx));
 
   // Initial condition
-  element_iden(size1, ncplxi, G.retptr(tstp,tstp));
+  element_iden(size1, G.retptr(tstp,tstp), ncplxi);
 
   // Do first k values
   // Exact same as serial implementation
@@ -28,8 +28,8 @@ void dyson_step_omp_ret(int threads, int tstp, const INTEG &I, GREEN &G, const G
     cplx *iden = new cplx[es];
     element_iden(size1,iden);
 
-    memset(0,M,k*k*es*sizeof(cplx));
-    memset(0,Q,k*es*sizeof(cplx));
+    memset(M,0,k*k*es*sizeof(cplx));
+    memset(Q,0,k*es*sizeof(cplx));
     
     for(n=1;n<=k;n++){
       for(l=0;l<=k;l++){
@@ -132,10 +132,10 @@ void dyson_step_omp_ret(int threads, int tstp, const INTEG &I, GREEN &G, const G
 }
 
 
-void dyson_step_omp_tv(int threads, int n, const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf, double mu, double beta, double dt){
-  int size1 = G.size1, es = size1*size1, k = I.k(), ntau = G.ntau();
+void dyson_step_omp_tv(int threads, int tstp, const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf, double mu, double beta, double dt){
+  int size1 = G.size1(), es = size1*size1, k = I.k(), ntau = G.ntau();
   cplx cplxi = cplx(0,1);
-  for(int j=0;j<=ntau;j++) element_set_zero(size1, G.tvptr(n,j));
+  for(int j=0;j<=ntau;j++) element_set_zero(size1, G.tvptr(tstp,j));
 
 #pragma omp parallel num_threads(threads)
   {
@@ -150,14 +150,14 @@ void dyson_step_omp_tv(int threads, int n, const INTEG &I, GREEN &G, const GREEN
     for(i=0;i<=ntau;i++)
       if(i%nthreads==tid)
         mask_tv[i] == true;
-    incr_convolution_tv(n, mask_tv, G, Sig, Sig, G, G, I, beta, dt);
+    incr_convolution_tv(tstp, mask_tv, G, Sig, Sig, G, G, I, beta, dt);
     
     // Solve
     element_iden(size1, M, -bd[0]+mu);
     element_incr(size1, M, -1, hmf.ptr(tstp));
     element_incr(size1, M, -dt*I.omega(0), Sig.retptr(tstp,tstp));
     for(j=0;j<=ntau;j++){
-      if(mask[j]){
+      if(mask_tv[j]){
         element_set(size1, Q, G.tvptr(tstp,j));
         for(l=1;l<=k+1;l++){
           element_incr(size1, Q, bd[l], G.tvptr(tstp-l,j));
@@ -180,7 +180,8 @@ void dyson_step_omp_les(int threads, int tstp, const INTEG &I, GREEN &G, const G
 
   // Parallelization starts only for tstp>=2*k+1
   if(tstp < 2*k+1){
-    return GLstep(tstp, I, G, Sig, hmf, mu, beta, dt);
+    GLstep(tstp, I, G, Sig, hmf, mu, beta, dt);
+    return;
   }
   for(int j=0;j<=tstp;j++) element_set_zero(size1, G.lesptr(j,tstp));
 
@@ -189,11 +190,11 @@ void dyson_step_omp_les(int threads, int tstp, const INTEG &I, GREEN &G, const G
   {
     int i,j,l;
     cplx cplxi = cplx(0,1);
-    int nthreads = omp_get_num_threads;
+    int nthreads = omp_get_num_threads();
     int tid = omp_get_thread_num();
     std::vector<bool> mask_les(tstp+1, false);
     for(i=0;i<tstp-k;i++){
-      if(i%nthreads==tid) mask_les=true;
+      if(i%nthreads==tid) mask_les[i]=true;
     }
     cplx *bd = new cplx[k+2];
     cplx *Q = new cplx[es];
@@ -203,9 +204,9 @@ void dyson_step_omp_les(int threads, int tstp, const INTEG &I, GREEN &G, const G
 
     // Solve
     for(j=0;j<tstp-k;j++){
-      if(mask_les[j]{
+      if(mask_les[j]){
         element_iden(size1, M, -bd[0]+mu);
-        element_conj(size1, Q, Sigma.retptr(j,j));
+        element_conj(size1, Q, Sig.retptr(j,j));
         element_incr(size1, M, -dt*I.omega(0), Q);
         element_incr(size1, M, -1, hmf.ptr(tstp));
         
@@ -244,7 +245,7 @@ void dyson_step_omp_les(int threads, int tstp, const INTEG &I, GREEN &G, const G
     element_set(size1,Q,gles+(j-tstp+k)*es);
     for(l=1;l<=k+1;l++) element_incr(size1, Q, -cplxi/dt*I.bd_weights(l),G.lesptr(j-l,tstp));
     for(l=0;l<j;l++) element_incr(size1, Q, dt*I.gregory_weights(j,l),Sig.retptr(j,l), G.lesptr(l,tstp));
-    element_iden(size1, M, mu+cplxI/dt*I.bd_weights(0));
+    element_iden(size1, M, mu+cplxi/dt*I.bd_weights(0));
     element_incr(size1, M, -1, hmf.ptr(j));
     element_incr(size1, M, -dt*I.gregory_weights(j,j), Sig.retptr(j,j));
 
