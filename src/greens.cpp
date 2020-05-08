@@ -170,12 +170,12 @@ void green_func::set_tstp(int tstp, const green_func_tstp &G){
 
 void green_func::set_tstp_zero(int tstp){
   if(tstp==-1){
-    memset(matptr(0), 0, sizeof(cplx)*(ntau+1)*element_size1_);
+    memset(matptr(0), 0, sizeof(cplx)*(ntau_+1)*element_size_);
   }
   else{
-    memset(retptr(tstp,0), 0, sizeof(cplx)*(tstp+1)*element_size1_);
-    memset(tvptr(tstp,0), 0, sizeof(cplx)*(ntau_+1)*element_size1_);
-    memset(lesptr(0,tstp), 0, sizeof(cplx)*(tstp+1)*element_size1_);
+    memset(retptr(tstp,0), 0, sizeof(cplx)*(tstp+1)*element_size_);
+    memset(tvptr(tstp,0), 0, sizeof(cplx)*(ntau_+1)*element_size_);
+    memset(lesptr(0,tstp), 0, sizeof(cplx)*(tstp+1)*element_size_);
   }
 }
 

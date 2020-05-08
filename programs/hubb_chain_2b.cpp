@@ -159,7 +159,6 @@ int main(int argc, char *argv[]){
   std::cout << "Time [bootstrapping] = " << elapsed_seconds.count() << "s\n\n";
 
 
-  GREEN Gtmp = GREEN(Nt, Ntau, Nsites, -1);
   // Timestepping ===========================================================================
   start = std::chrono::system_clock::now();
 
@@ -167,8 +166,7 @@ int main(int argc, char *argv[]){
     // Extrapolate
     NEdyson::Extrapolate(I,G,tstp);
 
-    for(int iter=0;iter<StepIter;iter++){
-      Gtmp.set_tstp(tstp,G);
+    for(int iter=0;iter<StepIter-1;iter++){
       // Update hmf
       Hubb::Ham_MF(tstp,G,Ut,h0,hmf);
       
@@ -177,8 +175,6 @@ int main(int argc, char *argv[]){
 
       // Solve Dyson Eqn
       dyson_step(tstp,I,G,Sigma,hmf,MuChem,Beta,dt);
-      double err = distance_norm2(tstp,G,Gtmp);
-      std::cout<<tstp<<" "<<iter<<" "<<err<<std::endl;
     }
   }
 

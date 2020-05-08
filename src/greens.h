@@ -156,6 +156,44 @@ class green_func{
 		void get_dm(int i, cplx &x) const ;
 
 
+
+    #define set_element          \
+      {                          \
+        int r,s;                 \
+        for(r=0;r<size1_;r++)    \
+          for(s=0;s<size1_;s++)  \
+            x[r*size1_+s]=M(r,s);\
+      }
+      template <class Matrix>
+      void set_ret(int i, int j, Matrix &M) {
+        assert(i <= nt_ && j <= i);
+        cplx *x = retptr(i, j);
+        set_element
+      }
+
+      template <class Matrix>
+      void set_les(int i, int j, Matrix &M) {
+        assert(j <= nt_ && i <= j);
+        cplx *x = lesptr(i, j);
+        set_element
+      }
+
+      template <class Matrix>
+      void set_tv(int i, int j, Matrix &M) {
+        assert(i <= nt_ && j <= ntau_);
+        cplx *x = tvptr(i, j);
+        set_element
+      }
+
+      template <class Matrix>
+      void set_mat(int j, Matrix &M) {
+        assert(j <= ntau_);
+        cplx *x = matptr(j);
+        set_element
+      }
+    #undef set_element
+      
+
     // set local timestep from G
     void set_tstp(int tstp, const green_func &G);
     void set_tstp(int tstp, const green_func_tstp &G);
