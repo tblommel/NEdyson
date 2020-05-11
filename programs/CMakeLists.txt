@@ -1,14 +1,14 @@
 # List off executables to build
 set( project_EXECUTABLES
      hubb_chain_2b.x
+     hubb_chain_2b_B.x
      hubb_chain_tpp.x
-     math_compare.x
 )
 
 # Set their sources
 set( EXE_hubb_chain_2b.x_SOURCES hubb_chain_2b.cpp )
+set( EXE_hubb_chain_2b_B.x_SOURCES hubb_chain_2b_B.cpp )
 set( EXE_hubb_chain_tpp.x_SOURCES hubb_chain_tpp.cpp )
-set( EXE_math_compare.x_SOURCES math_compare.cpp )
 
 # Paths and Subdirs
 include_directories(${CMAKE_INCLUDE_PATH})

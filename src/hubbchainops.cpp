@@ -161,6 +161,28 @@ void Ham_MF(int tstp, const GREEN &G, const CFUNC &Ut, const cdmatrix &h0, CFUNC
   hmf.set_value(tstp,hmft);
 }
 
+
+// HMF_{ij}(t) = h0_{ij} + delta_{ij} U(i,i)*rho(i,i)
+void Ham_MF(int tstp, const GREEN &GU, const GREEN &GD, const CFUNC &Ut, const cdmatrix &h0U, const cdmatrix &h0D, CFUNC &hmfU, CFUNC &hmfD){
+  int nsites=GU.size1();
+  cdmatrix rho(nsites,nsites), U(nsites,nsites), hmft(nsites,nsites);
+  // update hmfU
+  hmft=h0U;
+  GD.get_dm(tstp,rho);
+  Ut.get_value(tstp,U);
+  for(int i=0;i<nsites;i++) hmft(i,i) += U(i,i)*rho(i,i);
+
+  hmfU.set_value(tstp,hmft);
+
+  // update hmfD
+  hmft=h0D;
+  GU.get_dm(tstp,rho);
+  Ut.get_value(tstp,U);
+  for(int i=0;i<nsites;i++) hmft(i,i) += U(i,i)*rho(i,i);
+
+  hmfD.set_value(tstp,hmft);
+}
+
 // Calculates polarization bubble then finishes the diagram with bubble 2
 void Sigma_2B(int tstp, const GREEN &G, const CFUNC &Ut, GREEN &Sigma){
   int nsites = G.size1();
@@ -174,6 +196,33 @@ void Sigma_2B(int tstp, const GREEN &G, const CFUNC &Ut, GREEN &Sigma){
   for(i=0;i<nsites;i++){
     for(j=0;j<nsites;j++){
       Bubble2(tstp, Sigma,i,j,G,i,j,Pol,i,j);
+    }
+  }
+}
+
+// Calculates polarization bubble then finishes the diagram with bubble 2
+void Sigma_2B(int tstp, const GREEN &GU, const GREEN &GD, const CFUNC &Ut, GREEN &SigmaU, GREEN &SigmaD){
+  int nsites = GU.size1();
+  int ntau = GU.ntau(),i,j;
+  GREEN_TSTP Pol(tstp, ntau, nsites,1);
+  
+  Polarization(tstp, GU, Pol);
+  Pol.right_multiply(Ut);
+  Pol.left_multiply(Ut);
+
+  for(i=0;i<nsites;i++){
+    for(j=0;j<nsites;j++){
+      Bubble2(tstp, SigmaD,i,j,GD,i,j,Pol,i,j);
+    }
+  }
+
+  Polarization(tstp, GD, Pol);
+  Pol.right_multiply(Ut);
+  Pol.left_multiply(Ut);
+
+  for(i=0;i<nsites;i++){
+    for(j=0;j<nsites;j++){
+      Bubble2(tstp, SigmaU,i,j,GU,i,j,Pol,i,j);
     }
   }
 }
