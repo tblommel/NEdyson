@@ -218,6 +218,7 @@ class green_func{
 		void print_to_file_tv(std::string file, double dt, double dtau, int precision=16) const ;
 		void print_to_file_les(std::string file, double dt, double dtau, int precision=16) const ;
 		void read_from_file(const char *file, double &dt, double &dtau);
+		void read_from_file_ret(const char *file, double &dt, double &dtau);
 
 
 

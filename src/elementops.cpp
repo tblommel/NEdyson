@@ -109,7 +109,7 @@ void element_incr(int size1, cplx *z, cplx *z0, cplx *z1){
 			else
 			cdmmap2(z,2,2)+=cdmmap2(z0,2,2)*cdmmap2(z1,2,2);
 			break;
-/*		case 3:
+		case 3:
 			if(z!=z0&&z!=z1)
 			cdmmap3(z,3,3).noalias()+=cdmmap3(z0,3,3)*cdmmap3(z1,3,3);
 			else
@@ -126,7 +126,7 @@ void element_incr(int size1, cplx *z, cplx *z0, cplx *z1){
 			cdmmap(z,size1,size1).noalias()+=cdmmap(z0,size1,size1)*cdmmap(z1,size1,size1);
 			else
 			cdmmap(z,size1,size1)+=cdmmap(z0,size1,size1)*cdmmap(z1,size1,size1);
-			break;*/
+			break;
 	}
 }
 

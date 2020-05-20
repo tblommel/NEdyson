@@ -438,6 +438,42 @@ void green_func::print_to_file(std::string file, double dt, double dtau, int pre
 
 
 
+void green_func::read_from_file_ret(const char *file, double &dt, double &dtau){
+  int i,j,l,size1,sg,sig,nt,ntau;
+  double real, imag, dt2, dtau2;
+  cplx *x=NULL;
+
+  std::ifstream in;
+  std::string actfile;
+  actfile = "";
+  actfile += file;
+  actfile += "_GR.dat";
+  in.open(actfile);
+  if(!(in>>nt>>ntau>>size1>>dt>>dtau>>sig)){
+    std::cerr << "Error in reading greens func from file " << actfile << std::endl;
+    abort();
+  }
+
+  if(nt!=nt_ || ntau!=ntau_ || size1!=size1_) resize(nt, ntau, size1);
+  sig_=sig;
+  sg=element_size_;
+
+  delete[] ret_;
+  ret_ = new cplx[((nt_+1)*(nt_+2))/2*element_size_];
+
+  for(i=0;i<=nt_;i++){
+    for(j=0;j<=i;j++){
+      x=retptr(i,j);
+      for(l=0;l<sg;l++){
+        if(!(in>>real>>imag)){
+          std::cerr << "Error in reading greens function.  Error in Ret in "<<actfile<<std::endl;
+        }
+        x[l]=std::complex<double>(real,imag);
+      }
+    }
+  }
+  in.close();
+}
 void green_func::read_from_file(const char *file, double &dt, double &dtau){
   int i,j,l,size1,sg,sig,nt,ntau;
   double real, imag, dt2, dtau2;

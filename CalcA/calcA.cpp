@@ -26,7 +26,7 @@ int main(int argc, char *argv[]){
 	double dt, dtau;
 	
 	// Read in the Greens function
-	G.read_from_file(argv[1],dt,dtau);
+	G.read_from_file_ret(argv[1],dt,dtau);
 
 	// Check to see if there exists an extension file
 	std::string actfile = "";
@@ -43,7 +43,6 @@ int main(int argc, char *argv[]){
 			std::cerr<<"expanded file broken"<<actfile<<std::endl;
 			abort();
 		}
-		std::cout<<nfit<<ntp<<std::endl;
 		
 		cplx *extdata = new cplx[G.nt()*(G.nt()-nfit-ntp)*G.size1()*G.size1()];
 		memset(extdata,0,G.nt()*(G.nt()-nfit-ntp)*G.size1()*G.size1());
@@ -64,6 +63,7 @@ int main(int argc, char *argv[]){
 			}
 		}
 		A.AfromG(G, nw, wmax, dt, extdata, nfit, ntp);
+    std::cout<<"hello"<<std::endl;
 		delete[] extdata;
 	}
 	else{
