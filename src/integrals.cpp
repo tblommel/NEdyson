@@ -298,7 +298,7 @@ void incr_convolution_ret(int tstp, const std::vector<bool> &mask_ret, GREEN &C,
           }
         }
       }
-      else if(n-m<k){ // use information from behind m
+      else if(tstp-m<k){ // use information from behind m
         for(j=0;j<=k;j++){
           if(tstp-j>=m) element_incr(size1, ctmp, I.gregory_weights(tstp-m,j), aret+(tstp-j)*es, B.retptr(tstp-j,m));
           else{

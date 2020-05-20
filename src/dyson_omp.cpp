@@ -9,7 +9,7 @@ namespace NEdyson{
 
 void dyson_step_omp_ret(int threads, int tstp, const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf, double mu, double dt){
   int k=I.k(), size1=G.size1(), es=G.element_size(), l,n,i;
-  cplx ncplxi = cplx(0.-1), weight;
+  cplx ncplxi = cplx(0,-1), weight;
 
   // Set timestep to zero
   memset(G.retptr(tstp,0),0,(tstp+1)*es*sizeof(cplx));
@@ -81,6 +81,7 @@ void dyson_step_omp_ret(int threads, int tstp, const INTEG &I, GREEN &G, const G
       }
     }
 
+
     delete[] M;
     delete[] Q;
     delete[] X;
@@ -106,7 +107,7 @@ void dyson_step_omp_ret(int threads, int tstp, const INTEG &I, GREEN &G, const G
     // Each thread is assigned every nthreads^th timeslice
     for(j=0;j<tstp-k;j++){
       if(j%nthreads == tid){
-        mask_ret[j] == true;
+        mask_ret[j] = true;
       }
     }
     incr_convolution_ret(tstp, mask_ret, G, Sig, Sig, G, G, I, dt);
@@ -149,7 +150,7 @@ void dyson_step_omp_tv(int threads, int tstp, const INTEG &I, GREEN &G, const GR
     for(j=0;j<=k+1;j++) bd[j] = -I.bd_weights(j)*cplxi/dt;
     for(i=0;i<=ntau;i++)
       if(i%nthreads==tid)
-        mask_tv[i] == true;
+        mask_tv[i] = true;
     incr_convolution_tv(tstp, mask_tv, G, Sig, Sig, G, G, I, beta, dt);
     
     // Solve
@@ -162,7 +163,7 @@ void dyson_step_omp_tv(int threads, int tstp, const INTEG &I, GREEN &G, const GR
         for(l=1;l<=k+1;l++){
           element_incr(size1, Q, bd[l], G.tvptr(tstp-l,j));
         }
-        element_linsolve_left(size1,size1,size1, G.tvptr(tstp, j), M, Q);
+        element_linsolve_left(size1,size1,size1, M,G.tvptr(tstp, j),  Q);
       }
     }
 

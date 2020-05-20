@@ -1,12 +1,14 @@
 # List off executables to build
 set( project_EXECUTABLES
      hubb_chain_2b.x
+     hubb_chain_2b_omp.x
      hubb_chain_2b_B.x
      hubb_chain_tpp.x
 )
 
 # Set their sources
 set( EXE_hubb_chain_2b.x_SOURCES hubb_chain_2b.cpp )
+set( EXE_hubb_chain_2b_omp.x_SOURCES hubb_chain_2b_omp.cpp )
 set( EXE_hubb_chain_2b_B.x_SOURCES hubb_chain_2b_B.cpp )
 set( EXE_hubb_chain_tpp.x_SOURCES hubb_chain_tpp.cpp )
 
