@@ -14,6 +14,7 @@ if(omp)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
 
+find_package(ALPSCore REQUIRED COMPONENTS gf)
 find_package(Eigen3 REQUIRED)
 message(STATUS ${EIGEN3_INCLUDE_DIR})
 include_directories(SYSTEM ${EIGEN3_INCLUDE_DIR})

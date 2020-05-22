@@ -15,7 +15,7 @@
 namespace NEdyson{
 
  
-void G0_from_h0(GREEN &G, double mu, const cdmatrix &h0, double beta, double dt);
+void G0_from_h0(GREEN &G, double mu, const ZMatrix &h0, double beta, double dt);
 
 
 void G0_from_h0(GREEN &G, const INTEG &I, double mu, const function &eps, double beta, double dt);

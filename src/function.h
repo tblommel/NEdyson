@@ -20,18 +20,21 @@ class function{
 		int element_size(void) const {return element_size_;}
 		int size1(void) const {return size1_;}
 		int nt(void) const {return nt_;}
-		cplx *ptr(int t) const {return data_ + (t+1)*element_size_;}
+		cplx *ptr(int t) const {
+      assert(t>=-1&&t<=nt_);
+      return data_ + (t+1)*element_size_;
+    }
 
 		void resize(int nt, int size1);
 		void set_Zero(void);
-		void set_value(int tstp, cdmatrix M);
+		void set_value(int tstp, ZMatrix M);
 		void set_value(int tstp, cplx x);
 		void set_value(int tstp, cplx *x);
-		void set_constant(cdmatrix M);
+		void set_constant(ZMatrix M);
 		void set_constant(cplx x);
 		void set_constant(cplx *x);
 		
-		void get_value(int tstp, cdmatrix &M) const;
+		void get_value(int tstp, ZMatrix &M) const;
 		void get_value(int tstp, cplx &x) const;
 		void get_value(int tstp, cplx *x) const;
 

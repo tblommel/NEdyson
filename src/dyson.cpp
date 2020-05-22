@@ -21,9 +21,9 @@ double fermi(double beta, double omega) {
 
 
 // 1/(1+exp(ometa*beta))
-dvector fermi(double beta, dvector &omega){
+DColVector fermi(double beta, DColVector &omega){
    int size=omega.size();
-   dvector tmp(size);
+   DColVector tmp(size);
    for(int i=0;i<size;i++){
       tmp(i)=fermi(beta,omega(i));
    }
@@ -44,9 +44,9 @@ double fermi_exp(double beta, double tau, double omega) {
 
 
 // exp(w*t)/(1+exp(w*b))
-dvector fermi_exp(double beta,double tau,dvector &omega){
+DColVector fermi_exp(double beta,double tau,DColVector &omega){
    int size=omega.size();
-   dvector tmp(size);
+   DColVector tmp(size);
 
    for(int i=0;i<size;i++){
       tmp(i)=fermi_exp(beta,tau,omega(i));
@@ -71,9 +71,9 @@ double bose(double beta, double omega) {
 
 
 // 1/(exp(w*b)-1)
-dvector bose(double beta,dvector &omega){
+DColVector bose(double beta,DColVector &omega){
    int size=omega.size();
-   dvector tmp(size);
+   DColVector tmp(size);
    for(int i=0;i<size;i++){
       tmp(i)=bose(beta,omega(i));
    }
@@ -91,9 +91,9 @@ double bose_exp(double beta, double tau, double omega) {
 
 
 // exp(w*t)/(exp(w*b)-1)
-dvector bose_exp(double beta,double tau,dvector &omega){
+DColVector bose_exp(double beta,double tau,DColVector &omega){
    int size=omega.size();
-   dvector tmp(size);
+   DColVector tmp(size);
 
    for(int i=0;i<size;i++){
       tmp(i)=bose_exp(beta,tau,omega(i));
@@ -105,10 +105,10 @@ dvector bose_exp(double beta,double tau,dvector &omega){
 
 // gives an interpolation of a function on the domain [tstp-k,tstp]
 // eps(tinterp) = sum_{l=0}^k eps(tstp-k+l) * sum_{p=0}^k (tinterp+k-tstp)^p P_{pl}
-cdmatrix interpolate(int tstp, double tinterp, const INTEG &I, const function &eps){
+ZMatrix interpolate(int tstp, double tinterp, const INTEG &I, const function &eps){
   int size = eps.size1(), p,l,k=I.k();
   double timk=-tstp+k+tinterp;
-  cdmatrix res(size,size), tmp(size,size);
+  ZMatrix res(size,size), tmp(size,size);
   res.setZero();
   double weight,pref;
 
@@ -134,8 +134,11 @@ cdmatrix interpolate(int tstp, double tinterp, const INTEG &I, const function &e
 // c2=(1+sqrt(3)/3)/2
 void propagator_exp(int tstp, const INTEG &I, function &Ut, const function &eps, double dt){
   int size = Ut.size1();
-  cdmatrix eps1(size,size), eps2(size,size);
-  cdmatrix arg1(size,size), arg2(size,size);
+  assert(tstp<=Ut.nt());
+  assert(size==eps.size1());
+
+  ZMatrix eps1(size,size), eps2(size,size);
+  ZMatrix arg1(size,size), arg2(size,size);
   
   int n = (tstp<I.k())?(I.k()):(tstp);
 
@@ -146,27 +149,31 @@ void propagator_exp(int tstp, const INTEG &I, function &Ut, const function &eps,
   arg1=-cplx(0.,dt)*(a1*eps1+a2*eps2);
   arg2=-cplx(0.,dt)*(a2*eps1+a1*eps2);
 
-  cdmatrix res(size,size);
+  ZMatrix res(size,size);
   Ut.get_value(tstp-1,res);
   res=arg1.exp()*arg2.exp()*res;
   Ut.set_value(tstp,res);
 }
 
 
-// Gives the free greens function from a non constant hamiltonian
+// Gives the free greens function from a non-constant hamiltonian
 void G0_from_h0(GREEN &G, const INTEG &I, double mu, const function &eps, double beta, double dt){
+  assert(G.size1()==eps.size1());
+  assert(G.nt()==eps.nt());
+  assert(G.nt()>I.k());
+
   int nt=G.nt(), ntau=G.ntau(), size=G.size1(), sig=G.sig(),m,n;
   double tau, t, dtau=beta/ntau;
   
-  cdmatrix iden = cdmatrix::Identity(size,size);
-  cdmatrix tmp(size,size), mHmu(size,size), tmp1(size,size), tmp2(size,size);
+  ZMatrix iden = ZMatrix::Identity(size,size);
+  ZMatrix tmp(size,size), mHmu(size,size), tmp1(size,size), tmp2(size,size);
   eps.get_value(-1,tmp);
   mHmu=mu*iden-tmp;
   function Ut(nt,size);
 
-  Eigen::SelfAdjointEigenSolver<cdmatrix> eigensolver(mHmu);
-  cdmatrix evec0(size,size),value(size,size);
-  dvector eval0(size), eval0m(size);
+  Eigen::SelfAdjointEigenSolver<ZMatrix> eigensolver(mHmu);
+  ZMatrix evec0(size,size),value(size,size);
+  DColVector eval0(size), eval0m(size);
   evec0=eigensolver.eigenvectors();
   eval0=eigensolver.eigenvalues();
   eval0m=-eval0;
@@ -224,21 +231,23 @@ void G0_from_h0(GREEN &G, const INTEG &I, double mu, const function &eps, double
 // G^{TV}(n,\tau) = -is U_{n,0} f_s(h-mu) exp((h-mu)\tau)
 // G^R(n,j) = -iU_{n,j} = U_{n,0} (U_{j,0})^\dagger
 // G^L(j,n) = -siU_{j,0} f_s(h-mu) (U_{n,0})^\dagger
-void G0_from_h0(GREEN &G, double mu, const cdmatrix &H0, double beta, double h){
+void G0_from_h0(GREEN &G, double mu, const ZMatrix &H0, double beta, double h){
+  assert(G.size1()==H0.rows());
+
   int nt=G.nt(),ntau=G.ntau(), size = G.size1();
   int sign=G.sig();
   double tau,t,dtau=beta/ntau;
-  cdmatrix idm(size,size);
-  cdmatrix Udt(size,size);
-  cdmatrix IHdt(size,size);
-  cdmatrix Hmu(size,size);
-  cdmatrix evec0(size,size),value(size,size);
-  dvector eval0(size),eval0m(size);
+  ZMatrix idm(size,size);
+  ZMatrix Udt(size,size);
+  ZMatrix IHdt(size,size);
+  ZMatrix Hmu(size,size);
+  ZMatrix evec0(size,size),value(size,size);
+  DColVector eval0(size),eval0m(size);
 
   idm = Eigen::MatrixXcd::Identity(size,size);
   Hmu = -H0 + mu * idm;
 
-  Eigen::SelfAdjointEigenSolver<cdmatrix> eigensolver(Hmu);
+  Eigen::SelfAdjointEigenSolver<ZMatrix> eigensolver(Hmu);
   evec0=eigensolver.eigenvectors();
   eval0=eigensolver.eigenvalues();
   eval0m=(-1.0)*eval0;
@@ -258,7 +267,7 @@ void G0_from_h0(GREEN &G, double mu, const cdmatrix &H0, double beta, double h){
     Udt = IHdt.exp();
 
     NEdyson::function Ut(nt,size);
-    cdmatrix Un(size,size);
+    ZMatrix Un(size,size);
     Ut.set_value(-1,idm);
     Ut.set_value(0,idm);
     for(int n=1;n<=nt;n++){
@@ -267,7 +276,7 @@ void G0_from_h0(GREEN &G, double mu, const cdmatrix &H0, double beta, double h){
       Ut.set_value(n,Un);
     }
 
-    cdmatrix expp(size,size);
+    ZMatrix expp(size,size);
     for(int m=0;m<=ntau;m++){
       tau=m*dtau;
       for(int n=0;n<=nt;n++){
@@ -286,11 +295,11 @@ void G0_from_h0(GREEN &G, double mu, const cdmatrix &H0, double beta, double h){
     }else if(sign==1){
       value=-1.0*evec0*bose(beta,eval0m).asDiagonal()*evec0.adjoint();
     } 
-    cdmatrix exppt1(size,size);
-    cdmatrix exppt2(size,size);
+    ZMatrix exppt1(size,size);
+    ZMatrix exppt2(size,size);
     for(int m=0;m<=nt;m++){
       for(int n=0;n<=m;n++){
-        cdmatrix tmp(size,size);
+        ZMatrix tmp(size,size);
         Ut.get_value(m,exppt1);
         Ut.get_value(n,exppt2);
         tmp = std::complex<double>(0,-1.0)*exppt1*exppt2.adjoint();
@@ -317,6 +326,7 @@ double mat_fourier(GREEN &G, const GREEN &Sigma, double mu, const cplx *h0, doub
   assert(G.sig()==Sigma.sig());
   sg=G.element_size();
   ss=Sigma.element_size();
+  assert(sg==ss);
   ntau=G.ntau();
   dtau=beta/ntau;
   
@@ -399,6 +409,8 @@ double mat_fourier(GREEN &G, const GREEN &Sigma, double mu, const cplx *h0, doub
 // Extrapolation ==========================================================================================
 // Extrapolates a Green's function object from [n-k-1,n-1] to n
 void Extrapolate(const INTEG &I, GREEN &G, int n){
+  assert(n>I.k());
+  assert(n<=G.nt());
   int k=I.k(), size1=G.size1(), ntau=G.ntau(),l,j,es=size1*size1,jcut;
   double *pref= new double[k+1];
   for(l=0;l<=k;l++) pref[l]=0;
@@ -466,6 +478,13 @@ void Extrapolate(const INTEG &I, GREEN &G, int n){
 
 // Start Functions =======================================================================================
 double GRstart(const INTEG &I, GREEN &G, const GREEN &Sig, const CFUNC &hmf, double mu, double dt){
+  assert(G.size1()==Sig.size1());
+  assert(G.size1()==hmf.size1());
+  assert(G.nt()==Sig.nt());
+  assert(G.nt()==hmf.nt());
+  assert(G.nt()>=I.k());
+  assert(G.sig()==Sig.sig());
+
   // Counters and sizes
   int k=I.k(), size1=G.size1(), es=G.element_size(),m,l,n,i;
   
@@ -549,6 +568,14 @@ double GRstart(const INTEG &I, GREEN &G, const GREEN &Sig, const CFUNC &hmf, dou
 
 
 double GTVstart(const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf, double mu, double beta, double dt){
+  assert(G.size1()==Sig.size1());
+  assert(G.size1()==hmf.size1());
+  assert(G.nt()==Sig.nt());
+  assert(G.nt()==hmf.nt());
+  assert(G.ntau()==Sig.ntau());
+  assert(G.nt()>=I.k());
+  assert(G.sig()==Sig.sig());
+
   // Counters and sizes
   int k=I.k(), size1=G.size1(), es=G.element_size(),ntau=G.ntau(),m,l,n,i;
   cplx weight;
@@ -653,7 +680,14 @@ double GTVstart(const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf,
 
 // i dt' GR(t,t-t') - GR(t-t')hmf(t-t') - \int_0^t' GR(t,t-s) SR(t-s,t-t') = 0
 void GRstep(int tstp, const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf, double mu, double dt){
-  
+  assert(G.size1()==Sig.size1());
+  assert(G.size1()==hmf.size1());
+  assert(G.nt()==Sig.nt());
+  assert(G.nt()==hmf.nt());
+  assert(G.nt()>=I.k());
+  assert(G.sig()==Sig.sig());
+  assert(tstp>I.k());
+
   // Counters and sizes
   int k=I.k(), size1=G.size1(), es=G.element_size(),m,l,n,i;
   
@@ -783,6 +817,14 @@ void GRstep(int tstp, const INTEG &I, GREEN &G, const GREEN &Sig, const function
 
 // idt GRM(tstp,m) - hmf(tstp) GRM(t,m) - \int_0^t dT SR(t,T) GRM(T,m) = \int_0^{beta} dT SRM(t,T) GM(T-m)
 void GTVstep(int tstp, const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf, double mu, double beta, double dt){
+  assert(G.size1()==Sig.size1());
+  assert(G.size1()==hmf.size1());
+  assert(G.nt()==Sig.nt());
+  assert(G.nt()==hmf.nt());
+  assert(G.nt()>=I.k());
+  assert(G.ntau()==Sig.ntau());
+  assert(G.sig()==Sig.sig());
+  assert(tstp>I.k());
   
   // Counters and sizes
   int k=I.k(), size1=G.size1(), es=G.element_size(), ntau=G.ntau(), m, l, n, i;
@@ -849,6 +891,13 @@ void GTVstep(int tstp, const INTEG &I, GREEN &G, const GREEN &Sig, const functio
 
 
 double GLstep(int n, const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf, double mu, double beta, double dt){
+  assert(G.size1()==Sig.size1());
+  assert(G.size1()==hmf.size1());
+  assert(G.nt()==Sig.nt());
+  assert(G.nt()==hmf.nt());
+  assert(G.nt()>=I.k());
+  assert(G.sig()==Sig.sig());
+
   // Sizes and iterators
   int k=I.k(), size1=G.size1(), es=G.element_size(), m,l,i;
   cplx weight;
@@ -979,6 +1028,13 @@ double GLstart(const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf, 
 }
 
 double dyson_start(const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf, double mu, double beta, double dt){
+  assert(G.size1()==Sig.size1());
+  assert(G.size1()==hmf.size1());
+  assert(G.nt()==Sig.nt());
+  assert(G.nt()==hmf.nt());
+  assert(G.nt()>=I.k());
+  assert(G.sig()==Sig.sig());
+
   double err=0;
   err += GRstart(I, G, Sig, hmf, mu, dt);
   err += GTVstart(I, G, Sig, hmf, mu, beta, dt);
@@ -989,6 +1045,15 @@ double dyson_start(const INTEG &I, GREEN &G, const GREEN &Sig, const function &h
 
 
 void dyson_step(int n, const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf, double mu, double beta, double dt){
+  assert(G.size1()==Sig.size1());
+  assert(G.size1()==hmf.size1());
+  assert(G.nt()==Sig.nt());
+  assert(G.ntau()==Sig.ntau());
+  assert(G.nt()==hmf.nt());
+  assert(G.nt()>=I.k());
+  assert(G.sig()==Sig.sig());
+  assert(n>I.k());
+
   GRstep(n, I, G, Sig, hmf, mu, dt);
   GTVstep(n, I, G, Sig, hmf, mu, beta, dt);
   GLstep(n, I, G, Sig, hmf, mu, beta, dt);

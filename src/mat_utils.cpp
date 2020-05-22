@@ -136,7 +136,7 @@ void set_first_order_tail(cplx *gmat, cplx *one, double beta, int sg, int ntau, 
 
 void force_mat_herm(green_func &G){
 	int ntau=G.ntau(), m;
-	cdmatrix Gmat,Gmat_herm;
+	ZMatrix Gmat,Gmat_herm;
 	for(m=0;m<=ntau;m++){
 		G.get_mat(m,Gmat);
 		Gmat_herm=0.5*(Gmat+Gmat.adjoint());

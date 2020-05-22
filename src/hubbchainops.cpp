@@ -5,7 +5,7 @@
 
 namespace Hubb{
 
-cdmatrix EWMult(cdmatrix X1, cdmatrix X2, cdmatrix X3){
+ZMatrix EWMult(ZMatrix X1, ZMatrix X2, ZMatrix X3){
   return X1.cwiseProduct(X2.cwiseProduct(X3));
 }
 
@@ -150,9 +150,9 @@ void Polarization(int tstp, const GREEN &G, GREEN_TSTP &Pol){
 
 
 // HMF_{ij}(t) = h0_{ij} + delta_{ij} U(i,i)*rho(i,i)
-void Ham_MF(int tstp, const GREEN &G, const CFUNC &Ut, const cdmatrix &h0, CFUNC &hmf){
+void Ham_MF(int tstp, const GREEN &G, const CFUNC &Ut, const ZMatrix &h0, CFUNC &hmf){
   int nsites=G.size1();
-  cdmatrix rho(nsites,nsites), U(nsites,nsites), hmft(nsites,nsites);
+  ZMatrix rho(nsites,nsites), U(nsites,nsites), hmft(nsites,nsites);
   hmft=h0;
   G.get_dm(tstp,rho);
   Ut.get_value(tstp,U);
@@ -163,9 +163,9 @@ void Ham_MF(int tstp, const GREEN &G, const CFUNC &Ut, const cdmatrix &h0, CFUNC
 
 
 // HMF_{ij}(t) = h0_{ij} + delta_{ij} U(i,i)*rho(i,i)
-void Ham_MF(int tstp, const GREEN &GU, const GREEN &GD, const CFUNC &Ut, const cdmatrix &h0U, const cdmatrix &h0D, CFUNC &hmfU, CFUNC &hmfD){
+void Ham_MF(int tstp, const GREEN &GU, const GREEN &GD, const CFUNC &Ut, const ZMatrix &h0U, const ZMatrix &h0D, CFUNC &hmfU, CFUNC &hmfD){
   int nsites=GU.size1();
-  cdmatrix rho(nsites,nsites), U(nsites,nsites), hmft(nsites,nsites);
+  ZMatrix rho(nsites,nsites), U(nsites,nsites), hmft(nsites,nsites);
   // update hmfU
   hmft=h0U;
   GD.get_dm(tstp,rho);

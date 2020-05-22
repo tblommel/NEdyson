@@ -8,6 +8,14 @@ namespace NEdyson{
 #if USE_OMP == 1
 
 void dyson_step_omp_ret(int threads, int tstp, const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf, double mu, double dt){
+  assert(G.size1()==Sig.size1());
+  assert(G.size1()==hmf.size1());
+  assert(G.nt()==Sig.nt());
+  assert(G.nt()==hmf.nt());
+  assert(G.nt()>=I.k());
+  assert(G.sig()==Sig.sig());
+  assert(tstp>I.k());
+  
   int k=I.k(), size1=G.size1(), es=G.element_size(), l,n,i;
   cplx ncplxi = cplx(0,-1), weight;
 
@@ -134,6 +142,15 @@ void dyson_step_omp_ret(int threads, int tstp, const INTEG &I, GREEN &G, const G
 
 
 void dyson_step_omp_tv(int threads, int tstp, const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf, double mu, double beta, double dt){
+  assert(G.size1()==Sig.size1());
+  assert(G.size1()==hmf.size1());
+  assert(G.nt()==Sig.nt());
+  assert(G.nt()==hmf.nt());
+  assert(G.nt()>=I.k());
+  assert(G.sig()==Sig.sig());
+  assert(tstp>I.k());
+  assert(G.ntau()==Sig.ntau());
+  
   int size1 = G.size1(), es = size1*size1, k = I.k(), ntau = G.ntau();
   cplx cplxi = cplx(0,1);
   for(int j=0;j<=ntau;j++) element_set_zero(size1, G.tvptr(tstp,j));
@@ -176,6 +193,14 @@ void dyson_step_omp_tv(int threads, int tstp, const INTEG &I, GREEN &G, const GR
 
 
 void dyson_step_omp_les(int threads, int tstp, const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf, double mu, double beta, double dt){
+  assert(G.size1()==Sig.size1());
+  assert(G.size1()==hmf.size1());
+  assert(G.nt()==Sig.nt());
+  assert(G.nt()==hmf.nt());
+  assert(G.nt()>=I.k());
+  assert(G.sig()==Sig.sig());
+  assert(tstp>I.k());
+  
   cplx cplxi = cplx(0,1);
   int k = I.k(), size1 = G.size1(), es = size1*size1, ntop = (tstp>k?tstp:k);
 
@@ -262,6 +287,15 @@ void dyson_step_omp_les(int threads, int tstp, const INTEG &I, GREEN &G, const G
 
 
 void dyson_step_omp(int omp_threads, int n, const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf, double mu, double beta, double dt){
+  assert(G.size1()==Sig.size1());
+  assert(G.size1()==hmf.size1());
+  assert(G.nt()==Sig.nt());
+  assert(G.nt()==hmf.nt());
+  assert(G.nt()>=I.k());
+  assert(G.sig()==Sig.sig());
+  assert(tstp>I.k());
+  assert(G.ntau()==Sig.ntau());
+
   int threads = (omp_threads == -1 ? omp_get_max_threads() : omp_threads);
   dyson_step_omp_ret(threads, n, I, G, Sig, hmf, mu, dt);
   dyson_step_omp_tv(threads, n, I, G, Sig, hmf, mu, beta, dt);

@@ -56,7 +56,7 @@ int main(int argc, char *argv[]){
 
   CFUNC hmf = CFUNC(Nt, Nsites);
   CFUNC h0f = CFUNC(Nt,Nsites);
-  cdmatrix h0(Nsites,Nsites), DensM(Nsites,Nsites);
+  ZMatrix h0(Nsites,Nsites), DensM(Nsites,Nsites);
   CFUNC Ut = CFUNC(Nt, Nsites);
   
   SPECT A = SPECT();
@@ -71,7 +71,7 @@ int main(int argc, char *argv[]){
     h0(i,i) = ed(i);
   }
   h0f.set_constant(h0);
-  Ut.set_constant(HubbardU*cdmatrix::Identity(Nsites,Nsites));
+  Ut.set_constant(HubbardU*ZMatrix::Identity(Nsites,Nsites));
   
   NEdyson::G0_from_h0(G,MuChem,h0,Beta,dt);
 

@@ -92,6 +92,7 @@ class green_func{
 		
 		template <class Matrix>
 		void get_adv(int i, int j, Matrix &M) const {
+		  assert(i<=nt_ && j<=nt_);
 		  get_ret(j,i,M);
 		  M.adjointInPlace();
 		}
@@ -204,6 +205,7 @@ class green_func{
 
 		/*Multiplications*/
 		void smul(int tstp, cplx weight);
+    // Only for calculating self-energy in the hubbard model
 		void right_multiply(int tstp, const function &ft, cplx weight=1.);
 		void left_multiply(int tstp, const function &ft, cplx weight=1.);
 		void right_multiply(int tstp, cplx *f0, cplx *ft, cplx weight=1.);

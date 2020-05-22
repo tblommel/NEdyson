@@ -1,4 +1,5 @@
 add_library(libNEdyson
+  molHFsolver.cpp molHFsolver.h
   dyson.cpp dyson.h
   dyson_omp.cpp dyson_omp.h
   elementops.cpp elementops.h
@@ -19,3 +20,7 @@ add_library(libNEdyson
 target_include_directories(libNEdyson INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_definitions(libNEdyson PUBLIC 
   DATA_DIR="${PROJECT_SOURCE_DIR}/../NEdyson/data/")
+target_link_libraries(libNEdyson PUBLIC
+  alps::alps-gf
+  Eigen3::Eigen
+)

@@ -13,9 +13,9 @@
 
 
 namespace Hubb{
-  void Ham_MF(int tstp, const GREEN &G, const CFUNC &U, const cdmatrix &h0, CFUNC &hmf);
+  void Ham_MF(int tstp, const GREEN &G, const CFUNC &U, const ZMatrix &h0, CFUNC &hmf);
 
-  void Ham_MF(int tstp, const GREEN &GU, const GREEN &GD, const CFUNC &Ut, const cdmatrix &h0U, const cdmatrix &h0D, CFUNC &hmfU, CFUNC &hmfD);
+  void Ham_MF(int tstp, const GREEN &GU, const GREEN &GD, const CFUNC &Ut, const ZMatrix &h0U, const ZMatrix &h0D, CFUNC &hmfU, CFUNC &hmfD);
 
   void Sigma_2B(int tstp, const GREEN &G, const CFUNC &Ut, GREEN &Sigma);
 

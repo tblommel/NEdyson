@@ -76,10 +76,10 @@ void function::set_Zero(void){
 
 
 
-void function::set_value(int tstp, cdmatrix M){
+void function::set_value(int tstp, ZMatrix M){
 	assert(M.rows()==M.cols() && M.rows()==size1_ && tstp<=nt_ && tstp >= -1);
 	cplx *ft=ptr(tstp);
-	Eigen::Map<Eigen::Matrix<cplx,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> >(ft,size1_,size1_)=M;
+	ZMatrixMap(ft,size1_,size1_)=M;
 }
 
 
@@ -97,13 +97,14 @@ void function::set_value(int tstp, cplx *x){
 
 
 
-void function::set_constant(cdmatrix M){
+void function::set_constant(ZMatrix M){
 	assert(M.rows()==M.cols() && M.rows()==size1_);
 	for(int i=-1;i<=nt_;i++) set_value(i,M);
 }
 
 
 void function::set_constant(cplx x){
+  assert(size1_==1);
 	for(int i=-1;i<=nt_;i++) set_value(i,x);
 }
 
@@ -113,10 +114,10 @@ void function::set_constant(cplx *x){
 }
 
 
-void function::get_value(int tstp, cdmatrix &M) const {
+void function::get_value(int tstp, ZMatrix &M) const {
 	assert(M.rows()==M.cols() && M.rows()==size1_ && tstp<=nt_ && tstp >= -1);
 	cplx *ft=ptr(tstp);
-	M=Eigen::Map<Eigen::Matrix<cplx,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> >(ft,size1_,size1_);
+	M=ZMatrixMap(ft,size1_,size1_);
 }
 
 
