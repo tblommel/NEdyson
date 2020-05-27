@@ -14,7 +14,6 @@
 #include "elementops.h"
 #include "greens_tstp.h"
 
-
 namespace NEdyson{
 
 class green_func{
@@ -222,6 +221,17 @@ class green_func{
 		void read_from_file(const char *file, double &dt, double &dtau);
 		void read_from_file_ret(const char *file, double &dt, double &dtau);
 
+    
+		void print_to_file(H5Easy::File File, std::string path) const ;
+    void print_to_file_ret(H5Easy::File File, std::string path) const ;
+		void print_to_file_mat(H5Easy::File File, std::string path) const ;
+		void print_to_file_les(H5Easy::File File, std::string path) const ;
+		void print_to_file_tv(H5Easy::File File, std::string path) const ;
+    void read_from_file(h5e::File File, std::string path) ;
+    void read_from_file_mat(h5e::File File, std::string path) ;
+    void read_from_file_ret(h5e::File File, std::string path) ;
+    void read_from_file_les(h5e::File File, std::string path) ;
+    void read_from_file_tv(h5e::File File, std::string path) ;
 
 
 	private:

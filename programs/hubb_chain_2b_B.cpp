@@ -14,7 +14,6 @@ using namespace NEdyson;
 
 int main(int argc, char *argv[]){
   if(argc!=2) throw std::invalid_argument("please provide input file");
-  
   // Parameters ========================================================================
   int Nsites, Ntau, MatsMaxIter, oversamp, Nt, RampSite, k, SolverOrder, BootMaxIter, StepIter,nw;
   double HoppingT, HubbardU, MuChem, Beta, dt, dtau, W0, MatsMaxErr, BootMaxErr, wmax, B;

@@ -13,6 +13,7 @@ using namespace NEdyson;
 
 
 int main(int argc, char *argv[]){
+
   if(argc!=2) throw std::invalid_argument("please provide input file");
   
   // Parameters ========================================================================
@@ -74,6 +75,16 @@ int main(int argc, char *argv[]){
   Ut.set_constant(HubbardU*ZMatrix::Identity(Nsites,Nsites));
   
   NEdyson::G0_from_h0(G,MuChem,h0,Beta,dt);
+
+  std::string str;
+  str = argv[1];
+  str+="/Gfree_const.h5";
+  h5e::File h5Gfree(str, h5e::File::Overwrite | h5e::File::ReadWrite | h5e::File::Create);
+  G.print_to_file(h5Gfree,"");
+  
+  str = argv[1];
+  str+="/G";  
+  G.print_to_file_mat(str,dt,dtau,16);
 
   G.get_dm(-1,DensM);
   std::cout.precision(17);
@@ -186,7 +197,6 @@ int main(int argc, char *argv[]){
   elapsed_seconds = end-start;
   std::cout << "Time [Propagation] = " << elapsed_seconds.count() << "s\n\n";
 
-  std::string str;
   str = argv[1];
   str+="/G";
   

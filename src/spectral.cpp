@@ -59,6 +59,8 @@ spectral& spectral::operator=(const spectral &A){
 
 // Get pointer
 double *spectral::ptr(int t, int w) const {
+  assert(w<nw_);
+  assert(t<=nt_);
 	return A_ + (t*nw_ + w)*es_;
 }
 

@@ -5,6 +5,12 @@ project(NEdyson)
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 set(CMAKE_CXX_STANDARD 11)
 
+
+find_package(ALPSCore REQUIRED COMPONENTS gf)
+find_package(Eigen3 REQUIRED)
+message(STATUS ${EIGEN3_INCLUDE_DIR})
+find_package(HDF5 REQUIRED COMPONENTS C)
+
 option(omp "Build with OpenMP functionality" OFF)
 if(omp)
   message(STATUS "Build with OpenMP functionality")
@@ -14,17 +20,26 @@ if(omp)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
 
-find_package(ALPSCore REQUIRED COMPONENTS gf)
-find_package(Eigen3 REQUIRED)
-message(STATUS ${EIGEN3_INCLUDE_DIR})
-include_directories(SYSTEM ${EIGEN3_INCLUDE_DIR})
 
-include_directories(${CMAKE_INCLUDE_PATH})
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/)
+#fetch HighFive from GitHub
+include(CPM)
+CPMAddPackage(
+    NAME HighFive
+    GITHUB_REPOSITORY BlueBrain/HighFive
+    GIT_TAG master
+    OPTIONS
+    "HIGHFIVE_USE_BOOST OFF"
+    "HIGHFIVE_USE_EIGEN ON"
+    "HIGHFIVE_UNIT_TESTS OFF"
+    "HIGHFIVE_EXAMPLES OFF"
+)
+
 
 add_subdirectory(src)
-
 add_subdirectory(programs)
-
 add_subdirectory(CalcA)
+
+
+enable_testing()
+add_subdirectory(${PROJECT_SOURCE_DIR}/deps/catch2)
+add_subdirectory(tests)

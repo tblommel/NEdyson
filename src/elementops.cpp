@@ -169,15 +169,27 @@ void element_mult_small(cplx *z, cplx *z1, cplx *z2){
 void element_mult_large(int size1, cplx *z, cplx *z1, cplx *z2){
 	switch(size1){
 		case 2:
+			if(z!=z1&&z!=z2)
+			ZMatrixMap2(z,2,2).noalias()=ZMatrixMap2(z1,2,2)*ZMatrixMap2(z2,2,2);
+			else
 			ZMatrixMap2(z,2,2)=ZMatrixMap2(z1,2,2)*ZMatrixMap2(z2,2,2);
 			break;
 		case 3:
+			if(z!=z1&&z!=z2)
+			ZMatrixMap3(z,3,3).noalias()=ZMatrixMap3(z1,3,3)*ZMatrixMap3(z2,3,3);
+			else
 			ZMatrixMap3(z,3,3)=ZMatrixMap3(z1,3,3)*ZMatrixMap3(z2,3,3);
 			break;
 		case 4:
+			if(z!=z1&&z!=z2)
+			ZMatrixMap4(z,4,4).noalias()=ZMatrixMap4(z1,4,4)*ZMatrixMap4(z2,4,4);
+			else
 			ZMatrixMap4(z,4,4)=ZMatrixMap4(z1,4,4)*ZMatrixMap4(z2,4,4);
 			break;
 		default:
+			if(z!=z1&&z!=z2)
+			ZMatrixMap(z,size1,size1).noalias()=ZMatrixMap(z1,size1,size1)*ZMatrixMap(z2,size1,size1);
+			else
 			ZMatrixMap(z,size1,size1)=ZMatrixMap(z1,size1,size1)*ZMatrixMap(z2,size1,size1);
 			break;
 	}

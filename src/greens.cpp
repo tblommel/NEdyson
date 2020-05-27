@@ -64,7 +64,7 @@ green_func::green_func(const green_func &g){
     tv_ = new cplx[(nt_+1)*(ntau_+1)*element_size_];
     memcpy(les_,g.les_,sizeof(cplx)*((nt_+1)*(nt_+2))/2*element_size_);
     memcpy(ret_,g.ret_,sizeof(cplx)*((nt_+1)*(nt_+2))/2*element_size_);
-    memcpy(tv_,g.tv_,sizeof(cplx)*((nt_+1)*(nt_+2))/2*element_size_);
+    memcpy(tv_,g.tv_,sizeof(cplx)*((nt_+1)*(ntau_+1))*element_size_);
   } else {
     les_=0;
     ret_=0;
@@ -98,7 +98,7 @@ green_func& green_func::operator=(const green_func &g){
   }
   memcpy(les_,g.les_,sizeof(cplx)*((nt_+1)*(nt_+2))/2*element_size_);
   memcpy(ret_,g.ret_,sizeof(cplx)*((nt_+1)*(nt_+2))/2*element_size_);
-  memcpy(tv_,g.tv_,sizeof(cplx)*((nt_+1)*(nt_+2))/2*element_size_);
+  memcpy(tv_,g.tv_,sizeof(cplx)*((nt_+1)*(ntau_+1))*element_size_);
   return *this;
 }
 
@@ -157,6 +157,7 @@ cplx *green_func::matptr(int i) const {
 
 
 void green_func::set_tstp(int tstp, const green_func_tstp &G){
+  assert(tstp>=-1 && tstp<=nt_ && tstp==G.tstp() && G.size1()==size1_ && G.ntau()==ntau_);
   if(tstp == -1){
     memcpy(mat_,G.matptr(0),sizeof(cplx)*(ntau_+1)*element_size_);
   }
@@ -169,6 +170,7 @@ void green_func::set_tstp(int tstp, const green_func_tstp &G){
 
 
 void green_func::set_tstp_zero(int tstp){
+  assert(tstp>=-1 && tstp <=nt_);
   if(tstp==-1){
     memset(matptr(0), 0, sizeof(cplx)*(ntau_+1)*element_size_);
   }
@@ -181,6 +183,7 @@ void green_func::set_tstp_zero(int tstp){
 
 
 void green_func::set_tstp(int tstp, const green_func &G){
+  assert(tstp>=-1 && tstp<=nt_ && tstp<=G.nt() && G.size1()==size1_ && G.ntau()==ntau_);
   if(tstp == -1){
     memcpy(mat_,G.mat_,sizeof(cplx)*(ntau_+1)*element_size_);
   }
@@ -193,6 +196,7 @@ void green_func::set_tstp(int tstp, const green_func &G){
 
 
 void green_func::get_tstp(int tstp, green_func_tstp &G) const {
+  assert(tstp>=-1 && tstp<=nt_ && tstp==G.tstp() && G.size1()==size1_ && G.ntau()==ntau_);
   if(tstp == -1){
     memcpy(G.matptr(0),mat_,sizeof(cplx)*(ntau_+1)*element_size_);
   }
@@ -208,6 +212,7 @@ void green_func::get_tstp(int tstp, green_func_tstp &G) const {
 //======================
 
 void green_func::smul(int tstp, cplx weight){
+  assert(tstp>=-1 && tstp<=nt_);
   if(tstp==-1){
     int len = (ntau_+1)*element_size_;
     for(int i=0;i<len;i++) mat_[i]*=weight;
@@ -229,6 +234,7 @@ void green_func::smul(int tstp, cplx weight){
 
 
 void green_func::right_multiply(int tstp, cplx *f0, cplx *ft, cplx weight){
+  assert(tstp>=-1 && tstp<=nt_);
   int m;
   cplx *x0, *xtmp, *ftmp;
   xtmp = new cplx[element_size_];
@@ -276,11 +282,15 @@ void green_func::right_multiply(int tstp, cplx *f0, cplx *ft, cplx weight){
 
 
 void green_func::right_multiply(int tstp, const function &ft, cplx weight){
+  assert(tstp>=-1 && tstp<=nt_);
+  assert(ft.nt()>=tstp);
+  assert(size1_==ft.size1());
   this->right_multiply(tstp,ft.ptr(-1),ft.ptr(0),weight);
 }
 
 
 void green_func::left_multiply(int tstp, cplx *f0, cplx *ft, cplx weight){
+  assert(tstp>=-1 && tstp<=nt_);
   int m;
   cplx *x0, *ftmp, *xtmp;
   
@@ -327,6 +337,9 @@ void green_func::left_multiply(int tstp, cplx *f0, cplx *ft, cplx weight){
 
 
 void green_func::left_multiply(int tstp, const function &ft, cplx weight){
+  assert(tstp>=-1 && tstp<=nt_);
+  assert(ft.nt()>=tstp);
+  assert(size1_==ft.size1());
   this->left_multiply(tstp,ft.ptr(-1),ft.ptr(0),weight);
 }
 
@@ -598,9 +611,107 @@ void green_func::read_from_file(const char *file, double &dt, double &dtau){
 }
 
 
+void green_func::print_to_file_mat(h5e::File File, std::string path) const {
+  std::vector<size_t> dims(1);
+  dims[0]=(ntau_+1)*element_size_;
+  h5e::detail::createGroupsToDataSet(File, path+"/GM");
+  h5::DataSet dataset = File.createDataSet<cplx>(path+"/GM",h5::DataSpace(dims));
+  dataset.write(mat_);
+  File.flush();
+}
 
+void green_func::print_to_file_ret(h5e::File File, std::string path) const {
+  std::vector<size_t> dims(1);
+  dims[0]=((nt_+1)*(nt_+2))/2*element_size_;
+  h5e::detail::createGroupsToDataSet(File, path+"/GR");
+  h5::DataSet dataset = File.createDataSet<cplx>(path+"/GR",h5::DataSpace(dims));
+  dataset.write(ret_);
+  File.flush();
+}
+
+void green_func::print_to_file_les(h5e::File File, std::string path) const {
+  std::vector<size_t> dims(1);
+  dims[0]=((nt_+1)*(nt_+2))/2*element_size_;
+  h5e::detail::createGroupsToDataSet(File, path+"/GL");
+  h5::DataSet dataset = File.createDataSet<cplx>(path+"/GL",h5::DataSpace(dims));
+  dataset.write(les_);
+  File.flush();
+}
+
+void green_func::print_to_file_tv(h5e::File File, std::string path) const {
+  std::vector<size_t> dims(1);
+  dims[0]=((nt_+1)*(ntau_+1))*element_size_;
+  h5e::detail::createGroupsToDataSet(File, path+"/GTV");
+  h5::DataSet dataset = File.createDataSet<cplx>(path+"/GTV",h5::DataSpace(dims));
+  dataset.write(tv_);
+  File.flush();
+}
+
+void green_func::print_to_file(h5e::File File, std::string path) const {
+  green_func::print_to_file_mat(File,path);
+  green_func::print_to_file_ret(File,path);
+  green_func::print_to_file_les(File,path);
+  green_func::print_to_file_tv(File,path);
+  h5e::dump(File,path+"/nt",nt_);
+  h5e::dump(File,path+"/ntau",ntau_);
+  h5e::dump(File,path+"/sig",sig_);
+  h5e::dump(File,path+"/nao",size1_);
+}
+
+void green_func::read_from_file_tv(h5e::File File,std::string path) {
+  h5::DataSet dataset = File.getDataSet(path+"/GTV");
+  size_t len = dataset.getElementCount();
+  delete [] tv_;
+  tv_ = new cplx[len];
+  dataset.read(tv_);
+  File.flush();
+}
+
+void green_func::read_from_file_ret(h5e::File File,std::string path) {
+  h5::DataSet dataset = File.getDataSet(path+"/GR");
+  size_t len = dataset.getElementCount();
+  delete [] ret_;
+  ret_ = new cplx[len];
+  dataset.read(ret_);
+  File.flush();
+}
+
+void green_func::read_from_file_les(h5e::File File, std::string path) {
+  h5::DataSet dataset = File.getDataSet(path+"/GL");
+  size_t len = dataset.getElementCount();
+  delete [] les_;
+  les_ = new cplx[len];
+  dataset.read(les_);
+  File.flush();
+}
+
+void green_func::read_from_file_mat(h5e::File File,std::string path) {
+  h5::DataSet dataset = File.getDataSet(path+"/GM");
+  size_t len = dataset.getElementCount();
+  delete [] mat_;
+  mat_ = new cplx[len];
+  dataset.read(mat_);
+  File.flush();
+}
+
+void green_func::read_from_file(h5e::File File, std::string path) {
+  green_func::read_from_file_mat(File,path);
+  green_func::read_from_file_les(File,path);
+  green_func::read_from_file_ret(File,path);
+  green_func::read_from_file_tv(File,path);
+  nt_ = h5e::load<int>(File, path+"/nt");
+  sig_ = h5e::load<int>(File,path+"/sig");
+  ntau_ = h5e::load<int>(File,path+"/ntau");
+  size1_ = h5e::load<int>(File,path+"/nao");
+  element_size_=size1_*size1_;
+}
 
 double distance_norm2(int tstp, GREEN &G1, GREEN &G2){
+  assert(G1.size1()==G2.size1());
+  assert(G1.ntau()==G2.ntau());
+  assert(tstp<=G1.nt());
+  assert(tstp<=G2.nt());
+
   int size1 = G1.size1(), ntau=G1.ntau(),i;
   double err = 0;
   cplx *tmp = new cplx[size1*size1];
@@ -631,18 +742,6 @@ double distance_norm2(int tstp, GREEN &G1, GREEN &G2){
   delete[] tmp;
   return err;
 }
-
-
-
-
-
-
-
-
-
-
-
-#undef cplx
 
 }//Namespace
 #endif

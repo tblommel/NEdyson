@@ -106,10 +106,26 @@ namespace Integration{
 		}
 		
 		int k(void) const {return k_;}
-		double poly_interp(int a, int l) const {return poly_interp_[a*(k_+1)+l];}
-		double poly_diff(int m, int l) const {return poly_diff_[m*(k_+1)+l];}
-		double poly_integ(int m, int n, int l) const {return poly_integ_[m*(k_+1)*(k_+1)+n*(k_+1)+l];}
-		double bd_weights(int l) const {return bd_weights_[l];}
+		double poly_interp(int a, int l) const {
+      assert(a<=k_);
+      assert(l<=k_);
+      return poly_interp_[a*(k_+1)+l];
+    }
+		double poly_diff(int m, int l) const {
+      assert(m<=k_);
+      assert(l<=k_);
+      return poly_diff_[m*(k_+1)+l];
+    }
+		double poly_integ(int m, int n, int l) const {
+      assert(m<=k_);
+      assert(n<=k_);
+      assert(l<=k_);
+      return poly_integ_[m*(k_+1)*(k_+1)+n*(k_+1)+l];
+    }
+		double bd_weights(int l) const {
+      assert(l<=k_+1);
+      return bd_weights_[l];
+    }
 		double gregory_weights(int n, int j) const {
 			if(n<=k_&&j<=k_){
 				return gregory_start_[n*(k_+1)+j];
@@ -123,19 +139,27 @@ namespace Integration{
 				else if(j<n-k_) return 1;
 				else return gregory_omega_[n-j];
 			}
-			
-//			if(n>2*k_){
-//				if(j>k_&&j<n-k_) return 1;
-//				else if(j<=k_) return gregory_omega_[j];
-//				else return gregory_omega_[n-j];
-//			}
-//			else if(n>k_) return gregory_Omega_[(n-k_-1)*(k_+1)+j];
-//			else return gregory_start_[n*(k_+1)+j];
 		}
-		double omega(int j) const {return gregory_omega_[j];}
-		double start(int i, int j) const {return gregory_start_[i*(k_+1)+j];}
-		double Omega(int i, int j) const {return gregory_Omega_[i*(k_+1)+j];}
-		double rcorr(int m, int j, int l) const {return rcorr_[m*(k_+1)*(k_+1)+j*(k_+1)+l];}
+		double omega(int j) const {
+      assert(j<=k_);
+      return gregory_omega_[j];
+    }
+		double start(int i, int j) const {
+      assert(i<=k_);
+      assert(j<=k_);
+      return gregory_start_[i*(k_+1)+j];
+    }
+		double Omega(int i, int j) const {
+      assert(i<=k_);
+      assert(j<=k_);
+      return gregory_Omega_[i*(k_+1)+j];
+    }
+		double rcorr(int m, int j, int l) const {
+      assert(m<=k_);
+      assert(j<=k_);
+      assert(l<=k_);
+      return rcorr_[m*(k_+1)*(k_+1)+j*(k_+1)+l];
+    }
 		
 
 		private:

@@ -293,7 +293,7 @@ void dyson_step_omp(int omp_threads, int n, const INTEG &I, GREEN &G, const GREE
   assert(G.nt()==hmf.nt());
   assert(G.nt()>=I.k());
   assert(G.sig()==Sig.sig());
-  assert(tstp>I.k());
+  assert(n>I.k());
   assert(G.ntau()==Sig.ntau());
 
   int threads = (omp_threads == -1 ? omp_get_max_threads() : omp_threads);

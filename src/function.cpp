@@ -145,7 +145,28 @@ void function::printf(void) const {
 }
 
 
+void function::read_from_file(h5e::File File, std::string path) {
+  h5::DataSet dataset = File.getDataSet(path+"/ft");
+  size_t len = dataset.getElementCount();
+  delete [] data_;
+  data_ = new cplx[len];
+  dataset.read(data_);
+  File.flush();
+  size1_ = h5e::load<int>(File, path+"/nao");
+  nt_ = h5e::load<int>(File, path+"/nt");
+}
 
+
+void function::print_to_file(h5e::File File, std::string path) const {
+  std::vector<size_t> dims(1);
+  dims[0]=((nt_+2))*element_size_;
+  h5e::detail::createGroupsToDataSet(File, path+"/ft");
+  h5::DataSet dataset = File.createDataSet<cplx>(path+"/ft",h5::DataSpace(dims));
+  dataset.write(data_);
+  File.flush();
+  h5e::dump(File,path+"/nt",nt_);
+  h5e::dump(File,path+"/nao",size1_);
+}
 
 } //namespace func
 #endif// FUNCTION_IMPL

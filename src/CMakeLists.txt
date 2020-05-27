@@ -1,5 +1,5 @@
 add_library(libNEdyson
-  molHFsolver.cpp molHFsolver.h
+  molHFSolver.cpp molHFSolver.h
   dyson.cpp dyson.h
   dyson_omp.cpp dyson_omp.h
   elementops.cpp elementops.h
@@ -23,4 +23,5 @@ target_compile_definitions(libNEdyson PUBLIC
 target_link_libraries(libNEdyson PUBLIC
   alps::alps-gf
   Eigen3::Eigen
+  HighFive
 )

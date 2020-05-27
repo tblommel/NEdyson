@@ -263,7 +263,7 @@ void G0_from_h0(GREEN &G, double mu, const ZMatrix &H0, double beta, double h){
   }
 
   if(nt >=0 ){
-    IHdt = std::complex<double>(0,-1.0) * h * H0;
+    IHdt = std::complex<double>(0,1.0) * h * Hmu;
     Udt = IHdt.exp();
 
     NEdyson::function Ut(nt,size);

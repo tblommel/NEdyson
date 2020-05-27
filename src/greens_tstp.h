@@ -30,10 +30,22 @@ class green_func_tstp{
 		int element_size(void) const {return element_size_;}
 		int sig(void) const {return sig_;}
 
-		inline cplx *retptr(int i) const {return data_ + i*element_size_;}
-		inline cplx *tvptr(int i) const {return data_ + (tstp_+1+i)*element_size_;}
-		inline cplx *lesptr(int i) const {return data_ + (tstp_+2+ntau_+i)*element_size_;}
-		inline cplx *matptr(int i) const {return data_ + i* element_size_;}
+		inline cplx *retptr(int i) const {
+      assert(tstp_>=0 && i<=tstp_ && i>=0);
+      return data_ + i*element_size_;
+    }
+		inline cplx *tvptr(int i) const {
+      assert(tstp_>=0 && i<=ntau_ && i>=0);
+      return data_ + (tstp_+1+i)*element_size_;
+    }
+		inline cplx *lesptr(int i) const {
+      assert(tstp_>=0 && i<=tstp_ && i>=0);
+      return data_ + (tstp_+2+ntau_+i)*element_size_;
+    }
+		inline cplx *matptr(int i) const {
+      assert(tstp_==-1 && i<=ntau_ && i>=0);
+      return data_ + i* element_size_;
+    }
 
     void left_multiply(cplx *f0, cplx *ft, cplx weight = 1.0);
     void right_multiply(cplx *f0, cplx *ft, cplx weight = 1.0);

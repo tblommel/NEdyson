@@ -18,6 +18,13 @@ void vie2_mat_fourier(GREEN &G, const GREEN &F, const GREEN &Fcc, const GREEN &Q
 	int ntau = G.ntau(), m, r, p, l, sig=G.sig(), es=G.element_size(), matsub_one, size1=G.size1();
 	double dtau = beta/ntau;
 	matsub_one = (sig==-1) ? 1.0 : 0.0;
+
+  assert(G.ntau()==F.ntau());
+  assert(G.ntau()==Fcc.ntau());
+  assert(G.ntau()==Q.ntau());
+  assert(G.size1()==F.size1());
+  assert(G.size1()==Fcc.size1());
+  assert(G.size1()==Q.size1());
 	
 	if(ntau%2==1){
 		std::cout<<"must have ntau even. aborting..."<<std::endl;
@@ -99,6 +106,14 @@ void vie2_mat_fourier(GREEN &G, const GREEN &F, const GREEN &Fcc, const GREEN &Q
 // \sum_{l=m+1}^k M_{nl}G^R_{lm} = Q^R_{nm}-\sum_{l=0}^m M_{nl}G^R{lm}
 // M_{nl} = \delta_{nl}+dtI_{mnl}F^R{nl}
 void vie2_ret_start(GREEN &G, const GREEN &F, const GREEN &Fcc, const GREEN &Q, const INTEG &I, double dt){
+  assert(G.size1()==F.size1());
+  assert(G.size1()==Fcc.size1());
+  assert(G.size1()==Q.size1());
+  assert(G.nt()>=I.k());
+  assert(Q.nt()>=I.k());
+  assert(F.nt()>=I.k());
+  assert(Fcc.nt()>=I.k());
+
 	int k=I.k(), size1=G.size1(), es=G.element_size(), m,n,l,i;
 	cplx *M, *X, *Y, *iden, *tmp, *stmp;
 	double dnl,weight;
@@ -175,7 +190,18 @@ void vie2_ret_start(GREEN &G, const GREEN &F, const GREEN &Fcc, const GREEN &Q, 
 // M_nl = \delta_nl = dt*w_nl*F^R_nl
 // Y_n = Q_nm - C_2^TV[F,G](n,m) - C_3^TV[F,G](n,m) - M_n0 G^TV_0m
 void vie2_tv_start(GREEN &G, const GREEN &F, const GREEN &Fcc, const GREEN &Q, const INTEG &I, double dt, double beta){
-	int k=I.k(), ntau=G.ntau(), size1=G.size1(), es=G.element_size(),m,n,l,i;
+  assert(G.size1()==F.size1());
+  assert(G.size1()==Fcc.size1());
+  assert(G.size1()==Q.size1());
+  assert(G.nt()>=I.k());
+  assert(Q.nt()>=I.k());
+  assert(F.nt()>=I.k());
+  assert(Fcc.nt()>=I.k());
+  assert(G.ntau()==F.ntau());
+  assert(G.ntau()==Fcc.ntau());
+  assert(G.ntau()==Q.ntau());
+	
+  int k=I.k(), ntau=G.ntau(), size1=G.size1(), es=G.element_size(),m,n,l,i;
 	int k1=k+1;
 	cplx *M, *Y, *X, *iden, *tmp, *stmp, weight, cplxi=cplx(0.,1.);
 	double dnl;
@@ -247,7 +273,19 @@ void vie2_tv_start(GREEN &G, const GREEN &F, const GREEN &Fcc, const GREEN &Q, c
 
 
 void vie2_les_timestep(int n, GREEN &G, const GREEN &F, const GREEN &Fcc, const GREEN &Q, double beta, double dt, const INTEG &I){
-	int k=I.k(), ntau=G.ntau(), sig=G.sig(), m,l,i, k1=k+1, size1=G.size1(), es=size1*size1;
+  assert(G.size1()==F.size1());
+  assert(G.size1()==Fcc.size1());
+  assert(G.size1()==Q.size1());
+  assert(n>I.k());
+  assert(G.nt()>=n);
+  assert(Q.nt()>=n);
+  assert(F.nt()>=n);
+  assert(Fcc.nt()>=I.k());
+  assert(G.ntau()==F.ntau());
+  assert(G.ntau()==Fcc.ntau());
+  assert(G.ntau()==Q.ntau());
+	
+  int k=I.k(), ntau=G.ntau(), sig=G.sig(), m,l,i, k1=k+1, size1=G.size1(), es=size1*size1;
 	double dtau=beta/ntau, dml;
 	cplx *M, *X, *Y, *tmp, *stmp, weight, cplxi, *iden, *Fptr;
 	int num = (n>=k)?n:k;
@@ -331,7 +369,18 @@ void vie2_les_timestep(int n, GREEN &G, const GREEN &F, const GREEN &Fcc, const 
 
 
 void vie2_les_start(GREEN &G, const GREEN &F, const GREEN &Fcc, const GREEN &Q, const INTEG &I, double dt, double beta){
-	int k=I.k();
+  assert(G.size1()==F.size1());
+  assert(G.size1()==Fcc.size1());
+  assert(G.size1()==Q.size1());
+  assert(G.nt()>=I.k());
+  assert(Q.nt()>=I.k());
+  assert(F.nt()>=I.k());
+  assert(Fcc.nt()>=I.k());
+  assert(G.ntau()==F.ntau());
+  assert(G.ntau()==Fcc.ntau());
+  assert(G.ntau()==Q.ntau());
+
+  int k=I.k();
 	for(int i=0;i<=k;i++){
 		vie2_les_timestep(i,G,F,Fcc,Q,beta,dt,I);
 	}
@@ -339,7 +388,18 @@ void vie2_les_start(GREEN &G, const GREEN &F, const GREEN &Fcc, const GREEN &Q, 
 
 
 void vie2_start(GREEN &TPP, const GREEN &PhixU, const GREEN &UxPhi, const GREEN &Phi, double beta, double dt, const INTEG &I){
-	vie2_ret_start(TPP, PhixU, UxPhi, Phi, I, dt);
+  assert(TPP.size1()==PhixU.size1());
+  assert(TPP.size1()==UxPhi.size1());
+  assert(TPP.size1()==Phi.size1());
+  assert(TPP.nt()>=I.k());
+  assert(PhixU.nt()>=I.k());
+  assert(UxPhi.nt()>=I.k());
+  assert(Phi.nt()>=I.k());
+  assert(TPP.ntau()==Phi.ntau());
+  assert(TPP.ntau()==UxPhi.ntau());
+  assert(TPP.ntau()==PhixU.ntau());
+	
+  vie2_ret_start(TPP, PhixU, UxPhi, Phi, I, dt);
 	vie2_tv_start( TPP, PhixU, UxPhi, Phi, I, dt, beta);
 	vie2_les_start(TPP, PhixU, UxPhi, Phi, I, dt, beta);
 }
@@ -349,6 +409,14 @@ void vie2_start(GREEN &TPP, const GREEN &PhixU, const GREEN &UxPhi, const GREEN 
 // solves G^R(n,n-t') + \int_0^{t'} G^R(n,n-t~) F^R(n-t~,n-t') = Q^R(n,n-t')
 // for t' = 0...n
 void vie2_ret_timestep(int n, GREEN &G, const GREEN &F, const GREEN &Fcc, const GREEN &Q, const INTEG &I, double dt){
+  assert(G.size1()==F.size1());
+  assert(G.size1()==Fcc.size1());
+  assert(G.size1()==Q.size1());
+  assert(n>I.k());
+  assert(G.nt()>=n);
+  assert(Q.nt()>=n);
+  assert(F.nt()>=n);
+  assert(Fcc.nt()>=I.k());
 	
 	int k=I.k(), size1=G.size1(), es=size1*size1, m,i,l,j;
 	cplx *M, *Y, *X, *tmp, *stmp, *iden, cplxi=cplx(0.,1.);
@@ -428,6 +496,18 @@ void vie2_ret_timestep(int n, GREEN &G, const GREEN &F, const GREEN &Fcc, const 
 
 // Same as dyson tv stepping routine
 void vie2_tv_timestep(int n, GREEN &G, const GREEN &F, const GREEN &Fcc, const GREEN &Phi, const INTEG &I, double dt, double beta){
+  assert(G.size1()==F.size1());
+  assert(G.size1()==Fcc.size1());
+  assert(G.size1()==Phi.size1());
+  assert(n>I.k());
+  assert(G.nt()>=n);
+  assert(Phi.nt()>=n);
+  assert(F.nt()>=n);
+  assert(Fcc.nt()>=I.k());
+  assert(G.ntau()==F.ntau());
+  assert(G.ntau()==Fcc.ntau());
+  assert(G.ntau()==Phi.ntau());
+
 	int ntau=G.ntau(), k=I.k(), m,i, size1=G.size1(), es=size1*size1;
 	cplx *M, *Y, *iden, weight, *tmp, *stmp, *Gptr, *Pptr;
 	double dtau=beta/ntau;
@@ -481,7 +561,19 @@ void vie2_tv_timestep(int n, GREEN &G, const GREEN &F, const GREEN &Fcc, const G
 
 
 void vie2_timestep(int tstp, GREEN &TPP, const GREEN &PhixU, const GREEN &UxPhi, const GREEN &Phi, double beta, double dt, const INTEG &I){
-	vie2_ret_timestep(tstp, TPP, UxPhi, PhixU, Phi, I, dt);
+  assert(TPP.size1()==PhixU.size1());
+  assert(TPP.size1()==UxPhi.size1());
+  assert(TPP.size1()==Phi.size1());
+  assert(tstp>I.k());
+  assert(TPP.nt()>=tstp);
+  assert(Phi.nt()>=tstp);
+  assert(PhixU.nt()>=tstp);
+  assert(UxPhi.nt()>=I.k());
+  assert(TPP.ntau()==PhixU.ntau());
+  assert(TPP.ntau()==UxPhi.ntau());
+  assert(TPP.ntau()==Phi.ntau());
+
+  vie2_ret_timestep(tstp, TPP, UxPhi, PhixU, Phi, I, dt);
 	vie2_tv_timestep(tstp, TPP, PhixU, UxPhi, Phi, I, dt, beta);
 	vie2_les_timestep(tstp, TPP, PhixU, UxPhi, Phi, beta, dt, I);
 }

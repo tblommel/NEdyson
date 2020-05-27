@@ -5,12 +5,17 @@
 
 #include <Eigen/Eigen>
 #include <alps/numeric/tensors.hpp>
+#include <highfive/H5Easy.hpp>
+//#include <highfive/H5File.hpp>
 
 #define INTEG Integration::Integrator
 #define CFUNC NEdyson::function
 #define GREEN NEdyson::green_func
 #define GREEN_TSTP NEdyson::green_func_tstp
 #define SPECT NEdyson::spectral
+
+namespace h5 = HighFive;
+namespace h5e= H5Easy;
 
 namespace NEdyson {
 

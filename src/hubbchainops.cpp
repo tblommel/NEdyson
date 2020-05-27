@@ -100,6 +100,16 @@ void get_bubble_2_tstp(int tstp, cplx *sret, cplx *stv, cplx *sles, int ss, int 
 
 
 void Bubble2(int tstp, GREEN &Sigma, int s1, int s2, const GREEN &G, int g1, int g2, const GREEN_TSTP &Pol, int p1, int p2){
+  assert(tstp == Pol.tstp());
+  assert(tstp <= G.nt());
+  assert(tstp <= Sigma.nt());
+  assert(Sigma.size1() == G.size1());
+  assert(Sigma.size1() == Pol.size1());
+  assert(Sigma.ntau() == G.ntau());
+  assert(Sigma.ntau() == Pol.ntau());
+  assert(s1>=0 && s2>=0 && g1>=0 && g2>=0 && p1>=0 && p2>=0);
+  assert(s1<Sigma.size1() && s2<Sigma.size1() && g1<G.size1() && g2<G.size1() && p1<Pol.size1() && p2<Pol.size1());
+
   int ntau = Pol.ntau();
   if(tstp == -1) get_bubble_2_mat(Sigma.matptr(0),Sigma.size1(),s1,s2,G.matptr(0),G.size1(),g1,g2,Pol.matptr(0),Pol.size1(),p1,p2,ntau);
   else get_bubble_2_tstp(tstp,Sigma.retptr(tstp,0),Sigma.tvptr(tstp,0),Sigma.lesptr(0,tstp),Sigma.size1(),s1,s2,
@@ -110,6 +120,16 @@ void Bubble2(int tstp, GREEN &Sigma, int s1, int s2, const GREEN &G, int g1, int
 
 
 void Bubble2(int tstp, GREEN &Sigma, int s1, int s2, const GREEN &G, int g1, int g2, const GREEN &Pol, int p1, int p2){
+  assert(tstp <= Sigma.nt());
+  assert(tstp <= G.nt());
+  assert(tstp <= Pol.nt());
+  assert(Sigma.size1() == G.size1());
+  assert(Sigma.size1() == Pol.size1());
+  assert(Sigma.ntau() == G.ntau());
+  assert(Sigma.ntau() == Pol.ntau());
+  assert(s1>=0 && s2>=0 && g1>=0 && g2>=0 && p1>=0 && p2>=0);
+  assert(s1<Sigma.size1() && s2<Sigma.size1() && g1<G.size1() && g2<G.size1() && p1<Pol.size1() && p2<Pol.size1());
+  
   int ntau = G.ntau();
   if(tstp == -1) get_bubble_2_mat(Sigma.matptr(0),Sigma.size1(),s1,s2,G.matptr(0),G.size1(),g1,g2,Pol.matptr(0),Pol.size1(),p1,p2,ntau);
   else get_bubble_2_tstp(tstp,Sigma.retptr(tstp,0),Sigma.tvptr(tstp,0),Sigma.lesptr(0,tstp),Sigma.size1(),s1,s2,
@@ -120,6 +140,16 @@ void Bubble2(int tstp, GREEN &Sigma, int s1, int s2, const GREEN &G, int g1, int
 
 
 void Bubble1(int tstp, GREEN_TSTP &Pol, int p1, int p2, const GREEN &A, int a1, int a2, const GREEN &B, int b1, int b2){
+  assert(tstp == Pol.tstp());
+  assert(tstp <= A.nt());
+  assert(tstp <= B.nt());
+  assert(Pol.size1() == A.size1());
+  assert(Pol.size1() == B.size1());
+  assert(A.ntau() == B.ntau());
+  assert(A.ntau() == Pol.ntau());
+  assert(p1>=0 && p2>=0 && a1>=0 && a2>=0 && b1>=0 && b2>=0);
+  assert(p1<Pol.size1() && p2<Pol.size1() && a1<A.size1() && a2<A.size1() && b1<B.size1() && b2<B.size1());
+  
   int ntau = Pol.ntau();
   if(tstp == -1) get_bubble_1_mat(Pol.matptr(0),Pol.size1(),p1,p2,A.matptr(0),A.size1(),a1,a2,B.matptr(0),B.size1(),b1,b2,B.sig(), ntau);
   else get_bubble_1_tstp(tstp, Pol.retptr(0),Pol.tvptr(0),Pol.lesptr(0),Pol.size1(),p1,p2,
@@ -129,6 +159,16 @@ void Bubble1(int tstp, GREEN_TSTP &Pol, int p1, int p2, const GREEN &A, int a1, 
 
 
 void Bubble1(int tstp, GREEN &Pol, int p1, int p2, const GREEN_TSTP &A, int a1, int a2, const GREEN &B, int b1, int b2){
+  assert(tstp == A.tstp());
+  assert(tstp <= Pol.nt());
+  assert(tstp <= B.nt());
+  assert(Pol.size1() == A.size1());
+  assert(Pol.size1() == B.size1());
+  assert(Pol.ntau() == A.ntau());
+  assert(Pol.ntau() == B.ntau());
+  assert(p1>=0 && p2>=0 && a1>=0 && a2>=0 && b1>=0 && b2>=0);
+  assert(p1<Pol.size1() && p2<Pol.size1() && a1<A.size1() && a2<A.size1() && b1<B.size1() && b2<B.size1());
+
   int ntau = Pol.ntau();
   if(tstp == -1) get_bubble_1_mat(Pol.matptr(0),Pol.size1(),p1,p2,A.matptr(0),A.size1(),a1,a2,B.matptr(0),B.size1(),b1,b2,B.sig(), ntau);
   else get_bubble_1_tstp(tstp, Pol.retptr(tstp,0),Pol.tvptr(tstp,0),Pol.lesptr(0,tstp),Pol.size1(),p1,p2,
@@ -139,6 +179,11 @@ void Bubble1(int tstp, GREEN &Pol, int p1, int p2, const GREEN_TSTP &A, int a1, 
 
 // P_ij(t,t') = -iG_ij(t,t')G_ji(t',t)
 void Polarization(int tstp, const GREEN &G, GREEN_TSTP &Pol){
+  assert(tstp <= G.nt());
+  assert(tstp == Pol.tstp());
+  assert(G.ntau() == Pol.ntau());
+  assert(G.size1() == Pol.size1());
+
   int nsites=G.size1(),i,j;
   for(i=0;i<nsites;i++){
     for(j=0;j<nsites;j++){
@@ -151,6 +196,14 @@ void Polarization(int tstp, const GREEN &G, GREEN_TSTP &Pol){
 
 // HMF_{ij}(t) = h0_{ij} + delta_{ij} U(i,i)*rho(i,i)
 void Ham_MF(int tstp, const GREEN &G, const CFUNC &Ut, const ZMatrix &h0, CFUNC &hmf){
+  assert(tstp <= G.nt());
+  assert(G.nt() == Ut.nt());
+  assert(G.nt() == hmf.nt());
+  assert(G.size1() == Ut.size1());
+  assert(G.size1() == hmf.size1());
+  assert(G.size1() == h0.rows());
+  assert(G.size1() == h0.cols());
+
   int nsites=G.size1();
   ZMatrix rho(nsites,nsites), U(nsites,nsites), hmft(nsites,nsites);
   hmft=h0;
@@ -164,6 +217,22 @@ void Ham_MF(int tstp, const GREEN &G, const CFUNC &Ut, const ZMatrix &h0, CFUNC 
 
 // HMF_{ij}(t) = h0_{ij} + delta_{ij} U(i,i)*rho(i,i)
 void Ham_MF(int tstp, const GREEN &GU, const GREEN &GD, const CFUNC &Ut, const ZMatrix &h0U, const ZMatrix &h0D, CFUNC &hmfU, CFUNC &hmfD){
+  assert(tstp <= GU.nt());
+  assert(GU.nt() == GD.nt());
+  assert(GU.nt() == Ut.nt());
+  assert(GU.nt() == hmfU.nt());
+  assert(GU.nt() == hmfD.nt());
+  assert(GU.ntau() == GD.ntau());
+  assert(GU.sig() == GD.sig());
+  assert(GU.size1() == Ut.size1());
+  assert(GU.size1() == GD.size1());
+  assert(GU.size1() == hmfU.size1());
+  assert(GU.size1() == hmfD.size1());
+  assert(GU.size1() == h0U.rows());
+  assert(GU.size1() == h0U.cols());
+  assert(GU.size1() == h0D.rows());
+  assert(GU.size1() == h0D.cols());
+
   int nsites=GU.size1();
   ZMatrix rho(nsites,nsites), U(nsites,nsites), hmft(nsites,nsites);
   // update hmfU
@@ -185,6 +254,13 @@ void Ham_MF(int tstp, const GREEN &GU, const GREEN &GD, const CFUNC &Ut, const Z
 
 // Calculates polarization bubble then finishes the diagram with bubble 2
 void Sigma_2B(int tstp, const GREEN &G, const CFUNC &Ut, GREEN &Sigma){
+  assert(tstp <= G.nt());
+  assert(G.nt() == Ut.nt());
+  assert(G.nt() == Sigma.nt());
+  assert(G.ntau() == Sigma.ntau());
+  assert(G.sig() == Sigma.sig());
+  assert(G.size1() == Ut.size1());
+  assert(G.size1() == Sigma.size1());
   int nsites = G.size1();
   int ntau = G.ntau(),i,j;
   GREEN_TSTP Pol(tstp, ntau, nsites,1);
@@ -202,6 +278,22 @@ void Sigma_2B(int tstp, const GREEN &G, const CFUNC &Ut, GREEN &Sigma){
 
 // Calculates polarization bubble then finishes the diagram with bubble 2
 void Sigma_2B(int tstp, const GREEN &GU, const GREEN &GD, const CFUNC &Ut, GREEN &SigmaU, GREEN &SigmaD){
+  assert(tstp <= GU.nt());
+  assert(GU.nt() == GD.nt());
+  assert(GU.nt() == Ut.nt());
+  assert(GU.nt() == SigmaU.nt());
+  assert(GU.nt() == SigmaD.nt());
+  assert(GU.ntau() == GD.ntau());
+  assert(GU.ntau() == SigmaU.ntau());
+  assert(GU.ntau() == SigmaD.ntau());
+  assert(GU.sig() == SigmaU.sig());
+  assert(GU.sig() == SigmaD.sig());
+  assert(GU.sig() == GD.sig());
+  assert(GU.size1() == Ut.size1());
+  assert(GU.size1() == GD.size1());
+  assert(GU.size1() == SigmaU.size1());
+  assert(GU.size1() == SigmaD.size1());
+
   int nsites = GU.size1();
   int ntau = GU.ntau(),i,j;
   GREEN_TSTP Pol(tstp, ntau, nsites,1);
@@ -229,6 +321,23 @@ void Sigma_2B(int tstp, const GREEN &GU, const GREEN &GD, const CFUNC &Ut, GREEN
 
 // For each value from 0 to tstp calculate phi bubble, then multiply by U and evaluate TPP using vie2 routines.  Only input is G and U
 void GenTPP(int tstp, double dt, double beta, const GREEN &G, GREEN &Phi, const CFUNC &Ut, GREEN &PhixU, GREEN &UxPhi, GREEN &TPP, const INTEG &I){
+  assert(tstp > I.k());
+  assert(tstp <= G.nt());
+  assert(G.nt() == Ut.nt());
+  assert(G.nt() == TPP.nt());
+  assert(G.nt() == Phi.nt());
+  assert(G.nt() == PhixU.nt());
+  assert(G.nt() == UxPhi.nt());
+  assert(G.ntau() == TPP.ntau());
+  assert(G.ntau() == Phi.ntau());
+  assert(G.ntau() == PhixU.ntau());
+  assert(G.ntau() == UxPhi.ntau());
+  assert(G.size1() == Ut.size1());
+  assert(G.size1() == TPP.size1());
+  assert(G.size1() == PhixU.size1());
+  assert(G.size1() == UxPhi.size1());
+  assert(G.size1() == Phi.size1());
+
   int size1=G.size1(),n1,n2;
 
   for(n1=0;n1<size1;n1++){
@@ -251,6 +360,22 @@ void GenTPP(int tstp, double dt, double beta, const GREEN &G, GREEN &Phi, const 
 
 // Same as tstp version but does this on the kxk square for start up routine
 void GenTPP(double dt, double beta, const GREEN &G, GREEN &Phi, const CFUNC &Ut, GREEN &PhixU, GREEN &UxPhi, GREEN &TPP, const INTEG &I){
+  assert(G.nt() >= I.k());
+  assert(G.nt() == Ut.nt());
+  assert(G.nt() == TPP.nt());
+  assert(G.nt() == Phi.nt());
+  assert(G.nt() == PhixU.nt());
+  assert(G.nt() == UxPhi.nt());
+  assert(G.ntau() == TPP.ntau());
+  assert(G.ntau() == Phi.ntau());
+  assert(G.ntau() == PhixU.ntau());
+  assert(G.ntau() == UxPhi.ntau());
+  assert(G.size1() == Ut.size1());
+  assert(G.size1() == TPP.size1());
+  assert(G.size1() == PhixU.size1());
+  assert(G.size1() == UxPhi.size1());
+  assert(G.size1() == Phi.size1());
+  
   int size1=G.size1(),n1,n2,k=I.k();
   
   for(int tstp=0;tstp<=k;tstp++){
@@ -273,6 +398,18 @@ void GenTPP(double dt, double beta, const GREEN &G, GREEN &Phi, const CFUNC &Ut,
 
 // Calculates Sigma by contracting UTU with G to get sigma
 void Sigma_TPP(int tstp, const GREEN &G, const CFUNC &Ut, const GREEN &TPP, GREEN &Sigma){
+  assert(G.nt() == Ut.nt());
+  assert(G.nt() == TPP.nt());
+  assert(G.nt() == Sigma.nt());
+  assert(G.ntau() == TPP.ntau());
+  assert(G.ntau() == Sigma.ntau());
+  assert(G.sig() == Sigma.sig());
+  assert(tstp <= G.nt() && tstp >=-1);
+  assert(G.size1() == Ut.size1());
+  assert(G.size1() == TPP.size1());
+  assert(G.size1() == Sigma.size1());
+  
+
   int ntau = G.ntau();
   int size1 = G.size1(),n1,n2;
 

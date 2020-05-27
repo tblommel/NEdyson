@@ -40,6 +40,9 @@ class function{
 
 		void printf(void) const;
 
+		void print_to_file(H5Easy::File File, std::string path) const ;
+    void read_from_file(h5e::File File, std::string path) ;
+
 	private:
 		cplx *data_;
 		int nt_;
