@@ -91,7 +91,7 @@ pipeline {
         unstable {
             echo 'DEBUG: Build is unstable'
             setBuildStatus('Jenkins build is unstable', 'ERROR')
-            emailext to: 'siskakov+jenkins.status@umich.edu',
+            emailext to: 'tblommel@umich.edu',
                      recipientProviders: [brokenTestsSuspects(), culprits(), requestor()],
                      subject: 'NEdyson: Jenkins build is unstable',
                      attachLog: true,
@@ -101,7 +101,7 @@ pipeline {
         failure {
             echo 'DEBUG: Build failed'
             setBuildStatus('Jenkins build failed', 'FAILURE')
-            emailext to: 'siskakov+jenkins.status@umich.edu',
+            emailext to: 'tblommel@umich.edu',
                      recipientProviders: [brokenTestsSuspects(), culprits(), requestor()],
                      subject: 'NEdyson: Jenkins build has failed',
                      attachLog: true,
@@ -110,7 +110,7 @@ pipeline {
         }
         changed {
             echo 'DEBUG: Build status changed'
-            emailext to: 'siskakov+jenkins.status@umich.edu',
+            emailext to: 'tblommel@umich.edu',
                      recipientProviders: [brokenTestsSuspects(), culprits(), requestor()],
                      subject: 'NEdyson: Jenkins build status changed',
                      attachLog: true,
