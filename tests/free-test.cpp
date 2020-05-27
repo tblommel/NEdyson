@@ -20,7 +20,6 @@ TEST_CASE("Const Free Function Calculation")
   NEdyson::G0_from_h0(G,MuChem,h0,Beta,dt);
 
   h5e::File file(std::string(TEST_DATA_DIR)+"/Gfree_const.h5", h5e::File::Overwrite);
-  G.print_to_file(file,"");
   Gcheck.read_from_file(file,"");
 
   ZColVector GR = ZColVectorMap(G.retptr(0,0),(Nt+1)*(Nt+2)/2*Nsites*Nsites);
