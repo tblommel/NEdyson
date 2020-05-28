@@ -16,4 +16,5 @@ target_link_libraries(runtests PRIVATE
 include(CTest)
 include(Catch)
 
-catch_discover_tests(runtests)
+add_test(NAME NEdyson_tests
+  COMMAND runtests -o report.xml -r junit)

@@ -52,7 +52,7 @@ pipeline {
     }
 
     environment {
-        COMPILERS = 'gcc_7.3.0,llvm_5.0.1,intel_19.0.2.187'
+        COMPILERS = 'gcc_7.3.0'
         CONFIGS = 'Debug,Release'
     }
 
