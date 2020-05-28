@@ -36,7 +36,7 @@ def sub_pipe(name, compiler, build_config) {
               call_phase('make', name, compiler, build_config)
               echo "Test step with compiler=${compiler} build=${build_config}"
               call_phase('test', name, compiler, build_config)
-              junit "${build_dir_name(name)}/test/report.xml"
+              junit "${build_dir_name(name)}/tests/report.xml"
             }
         }
     }
