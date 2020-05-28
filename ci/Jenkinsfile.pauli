@@ -16,7 +16,7 @@ def call_phase(phase, name, compiler, build_config) {
 void setBuildStatus(String message, String state) {
   step([
       $class: "GitHubCommitStatusSetter",
-      reposSource: [$class: "ManuallyEnteredRepositorySource", url: "https://github.com/tblommel/NEdyson"],
+      reposSource: [$class: "ManuallyEnteredRepositorySource", url: "https://github.com/tblommel+jenkins.status/NEdyson"],
       contextSource: [$class: "ManuallyEnteredCommitContextSource", context: "ci/jenkins/build-status"],
       errorHandlers: [[$class: "ChangingBuildStatusErrorHandler", result: "UNSTABLE"]],
       statusResultSource: [ $class: "ConditionalStatusResultSource", results: [[$class: "AnyBuildResult", message: message, state: state]] ]
@@ -92,7 +92,7 @@ pipeline {
         unstable {
             echo 'DEBUG: Build is unstable'
             setBuildStatus('Jenkins build is unstable', 'ERROR')
-            emailext to: 'tblommel@umich.edu',
+            emailext to: 'tblommel+jenkins.status@umich.edu',
                      recipientProviders: [brokenTestsSuspects(), culprits(), requestor()],
                      subject: 'NEdyson: Jenkins build is unstable',
                      attachLog: true,
@@ -102,7 +102,7 @@ pipeline {
         failure {
             echo 'DEBUG: Build failed'
             setBuildStatus('Jenkins build failed', 'FAILURE')
-            emailext to: 'tblommel@umich.edu',
+            emailext to: 'tblommel+jenkins.status@umich.edu',
                      recipientProviders: [brokenTestsSuspects(), culprits(), requestor()],
                      subject: 'NEdyson: Jenkins build has failed',
                      attachLog: true,
@@ -111,7 +111,7 @@ pipeline {
         }
         changed {
             echo 'DEBUG: Build status changed'
-            emailext to: 'tblommel@umich.edu',
+            emailext to: 'tblommel+jenkins.status@umich.edu',
                      recipientProviders: [brokenTestsSuspects(), culprits(), requestor()],
                      subject: 'NEdyson: Jenkins build status changed',
                      attachLog: true,
