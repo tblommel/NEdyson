@@ -35,8 +35,6 @@ TEST_CASE("Hubbard Chain Self-Energy Computations")
     Hubb::Ham_MF(t,G,Ut,h0,hmf);
     Hubb::Sigma_2B(t, G, Ut, Sig);
   }
-  REQUIRE(false);
-
   ZColVectorMap hmfVec = ZColVectorMap(hmf.ptr(-1), (Nt+2)*Nsites*Nsites);
   ZColVectorMap hmfcheckVec = ZColVectorMap(hmfcheck.ptr(-1), (Nt+2)*Nsites*Nsites);
   REQUIRE((hmfVec-hmfcheckVec).norm() < 1e-12);
