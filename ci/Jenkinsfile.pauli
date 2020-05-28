@@ -7,7 +7,7 @@ def call_phase(phase, name, compiler, build_config) {
           export COMPILER=${compiler}
           export BUILD_CONFIG=${build_config}
           export BUILD_DIR='${build_dir_name(name)}'
-          BUILD_DIR/ci/build.jenkins.pauli.sh
+          $BUILD_DIR/ci/build.jenkins.pauli.sh
        """
 }
 
