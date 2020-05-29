@@ -321,7 +321,7 @@ void Sigma_2B(int tstp, const GREEN &GU, const GREEN &GD, const CFUNC &Ut, GREEN
 
 // For each value from 0 to tstp calculate phi bubble, then multiply by U and evaluate TPP using vie2 routines.  Only input is G and U
 void GenTPP(int tstp, double dt, double beta, const GREEN &G, GREEN &Phi, const CFUNC &Ut, GREEN &PhixU, GREEN &UxPhi, GREEN &TPP, const INTEG &I){
-  assert(tstp > I.k());
+  assert(tstp > I.k() || tstp ==-1);
   assert(tstp <= G.nt());
   assert(G.nt() == Ut.nt());
   assert(G.nt() == TPP.nt());
