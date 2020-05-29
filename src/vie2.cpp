@@ -278,7 +278,6 @@ void vie2_les_timestep(int n, GREEN &G, const GREEN &F, const GREEN &Fcc, const 
   assert(G.size1()==F.size1());
   assert(G.size1()==Fcc.size1());
   assert(G.size1()==Q.size1());
-  assert(n>I.k());
   assert(G.nt()>=n);
   assert(Q.nt()>=n);
   assert(F.nt()>=n);
