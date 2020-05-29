@@ -259,7 +259,9 @@ void vie2_tv_start(GREEN &G, const GREEN &F, const GREEN &Fcc, const GREEN &Q, c
 		element_linsolve_left(k1*size1,k1*size1,size1,M,X,Y);
 
 		// Put result into G
-		for(l=0;l<=k;l++) element_set(size1, G.tvptr(l,m), X+l*es);
+		for(l=0;l<=k;l++){
+      element_set(size1, G.tvptr(l,m), X+l*es);
+    }
 	}
 
 	delete[] M;

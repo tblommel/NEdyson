@@ -3,6 +3,7 @@ add_executable(runtests
   tests-def.h
   dyson-test.cpp
   free-test.cpp
+  vie2-test.cpp
   integration-test.cpp
   hubb-test.cpp
   molHFSolver-test.cpp)
