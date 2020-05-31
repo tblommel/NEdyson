@@ -1,32 +1,16 @@
 #include "NEdyson.h"
 #include "utils.h"
+
 using namespace NEdyson;
 int main(int argc, char *argv[]){
   GREEN G;
   double dt,dtau;
-  G.read_from_file("/home/thomas/Libraries/NEdyson/TPP_test_TPP",dt,dtau);
-
-  h5e::File file("/home/thomas/Libraries/NEdyson/tests/data/vie2_test_data.h5", h5e::File::Overwrite);
-  G.print_to_file(file,"TPP");
-
-  G.read_from_file("/home/thomas/Libraries/NEdyson/TPP_test_PHIxU",dt,dtau);
-  G.print_to_file(file,"PHIxU");
-
-  G.read_from_file("/home/thomas/Libraries/NEdyson/TPP_test_UxPHI",dt,dtau);
-  G.print_to_file(file,"UxPHI");
-
-  G.read_from_file("/home/thomas/Libraries/NEdyson/TPP_test_Phi",dt,dtau);
-  G.print_to_file(file,"Phi");
-
-  G.read_from_file("/home/thomas/Libraries/NEdyson/TPP_test_Sigma",dt,dtau);
-  G.print_to_file(file,"Sigma");
-
-  G.read_from_file("/home/thomas/Libraries/NEdyson/TPP_test_G",dt,dtau);
-  G.print_to_file(file,"G");
-
-
-
-
+  h5e::File readfile("/home/thomas/Libraries/NEdyson/tests/data/Gfree_const.h5",h5e::File::ReadWrite);
+  G.read_from_file(readfile,"");
+  G.print_to_file("/home/thomas/Libraries/NEdyson/Gfree",0.1,9./30.);
+  
+  return 1;
+/*
   CFUNC Ut(G.nt(), G.size1());
   CFUNC eps_mf(G.nt(), G.size1());
 
@@ -46,5 +30,5 @@ int main(int argc, char *argv[]){
 
 
   return 1;
-  
+  */
 }

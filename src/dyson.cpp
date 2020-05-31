@@ -105,10 +105,10 @@ DColVector bose_exp(double beta,double tau,DColVector &omega){
 
 // gives an interpolation of a function on the domain [tstp-k,tstp]
 // eps(tinterp) = sum_{l=0}^k eps(tstp-k+l) * sum_{p=0}^k (tinterp+k-tstp)^p P_{pl}
-ZMatrix interpolate(int tstp, double tinterp, const INTEG &I, const function &eps){
-  int size = eps.size1(), p,l,k=I.k();
+ZMatrix interpolate(int tstp, double tinterp, const INTEG &I, cplx *eps, int size){
+  int p,l,k=I.k(),es=size*size;
   double timk=-tstp+k+tinterp;
-  ZMatrix res(size,size), tmp(size,size);
+  ZMatrix res(size,size);
   res.setZero();
   double weight,pref;
 
@@ -119,11 +119,12 @@ ZMatrix interpolate(int tstp, double tinterp, const INTEG &I, const function &ep
       pref*=timk;
       weight+=pref*I.poly_interp(p,l);
     }
-    eps.get_value(tstp-k+l,tmp);
+    ZMatrixMap tmp = ZMatrixMap(eps+(tstp-k+l)*es,size,size);
     res += weight*tmp;
   }
   return res;
 }
+
 
 
 // evaluates Ut(tstp) by the approximation exp(-I*(a1*eps(tstp-1+c1)+a2*eps(tstp-1+c2)))
@@ -132,18 +133,18 @@ ZMatrix interpolate(int tstp, double tinterp, const INTEG &I, const function &ep
 // a2=(3+2sqrt(3))/12
 // c1=(1-sqrt(3)/3)/2
 // c2=(1+sqrt(3)/3)/2
-void propagator_exp(int tstp, const INTEG &I, function &Ut, const function &eps, double dt){
+void propagator_exp(int tstp, const INTEG &I, function &Ut, cplx *ht, double dt){
   int size = Ut.size1();
   assert(tstp<=Ut.nt());
-  assert(size==eps.size1());
+  assert(tstp>0);
 
   ZMatrix eps1(size,size), eps2(size,size);
   ZMatrix arg1(size,size), arg2(size,size);
   
   int n = (tstp<I.k())?(I.k()):(tstp);
 
-  eps1 = interpolate(n,tstp-1./2-sqrt(3.)/6.,I,eps);
-  eps2 = interpolate(n,tstp-1./2+sqrt(3.)/6.,I,eps);
+  eps1 = interpolate(n,tstp-1./2-sqrt(3.)/6.,I,ht,size);
+  eps2 = interpolate(n,tstp-1./2+sqrt(3.)/6.,I,ht,size);
   double a1 = (3.-2*sqrt(3.))/12.;
   double a2 = (3.+2*sqrt(3.))/12.;
   arg1=-cplx(0.,dt)*(a1*eps1+a2*eps2);
@@ -157,17 +158,13 @@ void propagator_exp(int tstp, const INTEG &I, function &Ut, const function &eps,
 
 
 // Gives the free greens function from a non-constant hamiltonian
-void G0_from_h0(GREEN &G, const INTEG &I, double mu, const function &eps, double beta, double dt){
-  assert(G.size1()==eps.size1());
-  assert(G.nt()==eps.nt());
-  assert(G.nt()>I.k());
-
+void G0_from_h0(GREEN &G, const INTEG &I, double mu, cplx *hM, cplx *ht, double beta, double dt){
   int nt=G.nt(), ntau=G.ntau(), size=G.size1(), sig=G.sig(),m,n;
   double tau, t, dtau=beta/ntau;
   
   ZMatrix iden = ZMatrix::Identity(size,size);
-  ZMatrix tmp(size,size), mHmu(size,size), tmp1(size,size), tmp2(size,size);
-  eps.get_value(-1,tmp);
+  ZMatrix mHmu(size,size), tmp1(size,size), tmp2(size,size);
+  ZMatrixMap tmp = ZMatrixMap(hM,size,size);
   mHmu=mu*iden-tmp;
   function Ut(nt,size);
 
@@ -190,7 +187,7 @@ void G0_from_h0(GREEN &G, const INTEG &I, double mu, const function &eps, double
   Ut.set_value(-1,iden);
   Ut.set_value(0,iden);
   for(int tstp=1;tstp<=nt;tstp++){
-    propagator_exp(tstp,I,Ut,eps,dt);
+    propagator_exp(tstp,I,Ut,ht,dt);
   }
   // Multiply by exp(i*mu*t)
   for(int tstp=1;tstp<=nt;tstp++){
@@ -201,11 +198,11 @@ void G0_from_h0(GREEN &G, const INTEG &I, double mu, const function &eps, double
   
   // TV
   for(n=0;n<=nt;n++){
-    Ut.get_value(n,tmp);
+    Ut.get_value(n,tmp1);
     for(m=0;m<=ntau;m++){
       tau=m*dtau;
-      if(sig==-1) value = cplx(0.,1.)*tmp*evec0*fermi_exp(beta,tau,eval0m).asDiagonal()*evec0.adjoint();
-      else if(sig==1) value = cplx(0.,1.)*tmp*evec0*bose_exp(beta,tau,eval0m).asDiagonal()*evec0.adjoint();
+      if(sig==-1) value = cplx(0.,1.)*tmp1*evec0*fermi_exp(beta,tau,eval0m).asDiagonal()*evec0.adjoint();
+      else if(sig==1) value = cplx(0.,1.)*tmp1*evec0*bose_exp(beta,tau,eval0m).asDiagonal()*evec0.adjoint();
       G.set_tv(n,m,value);
     }
   }
@@ -225,6 +222,14 @@ void G0_from_h0(GREEN &G, const INTEG &I, double mu, const function &eps, double
   }
 }
 
+
+void G0_from_h0(GREEN &G, const INTEG &I, double mu, const function &eps, double beta, double dt){
+  assert(G.size1()==eps.size1());
+  assert(G.nt()==eps.nt());
+  assert(G.nt()>I.k());
+  G0_from_h0(G, I, mu, eps.ptr(-1), eps.ptr(0), beta, dt);
+
+}
 
 // Gives free green's function from constant hamiltonian
 // G^M(\tau) = s f_s(mu-h) exp((mu-h)\tau)
@@ -477,11 +482,9 @@ void Extrapolate(const INTEG &I, GREEN &G, int n){
 
 
 // Start Functions =======================================================================================
-double GRstart(const INTEG &I, GREEN &G, const GREEN &Sig, const CFUNC &hmf, double mu, double dt){
+double dyson_start_ret(const INTEG &I, GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double dt){
   assert(G.size1()==Sig.size1());
-  assert(G.size1()==hmf.size1());
   assert(G.nt()==Sig.nt());
-  assert(G.nt()==hmf.nt());
   assert(G.nt()>=I.k());
   assert(G.sig()==Sig.sig());
 
@@ -528,7 +531,7 @@ double GRstart(const INTEG &I, GREEN &G, const GREEN &Sig, const CFUNC &hmf, dou
 
           // Delta energy term
           if(n==l){
-            element_set(size1,tmp,hmf.ptr(l));
+            element_set(size1,tmp,hmf+l*es);
             for(i=0;i<es;i++) M[es*((n-m-1)*(k-m))+(i/size1)*(k-m)*(size1)+(l-m-1)*size1+i%size1] += mu*iden[i]-tmp[i];
           }
 
@@ -567,15 +570,9 @@ double GRstart(const INTEG &I, GREEN &G, const GREEN &Sig, const CFUNC &hmf, dou
 }
 
 
-double GTVstart(const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf, double mu, double beta, double dt){
-  assert(G.size1()==Sig.size1());
-  assert(G.size1()==hmf.size1());
-  assert(G.nt()==Sig.nt());
-  assert(G.nt()==hmf.nt());
-  assert(G.ntau()==Sig.ntau());
-  assert(G.nt()>=I.k());
-  assert(G.sig()==Sig.sig());
 
+
+double dyson_start_tv(const INTEG &I, GREEN &G, const GREEN &Sig, cplx *hmf, double mu, double beta, double dt){
   // Counters and sizes
   int k=I.k(), size1=G.size1(), es=G.element_size(),ntau=G.ntau(),m,l,n,i;
   cplx weight;
@@ -625,7 +622,7 @@ double GTVstart(const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf,
 
         // Delta energy term
         if(l==n){
-          element_set(size1,tmp,hmf.ptr(l));
+          element_set(size1,tmp,hmf+l*es);
           for(i=0;i<es;i++) M[es*(n-1)*k+(i/size1)*k*size1+(l-1)*size1+i%size1] += mu*iden[i]-tmp[i];
         }
 
@@ -673,21 +670,10 @@ double GTVstart(const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf,
 
 
 
-
-
-
 // Step Functions ==========================================================================================
 
 // i dt' GR(t,t-t') - GR(t-t')hmf(t-t') - \int_0^t' GR(t,t-s) SR(t-s,t-t') = 0
-void GRstep(int tstp, const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf, double mu, double dt){
-  assert(G.size1()==Sig.size1());
-  assert(G.size1()==hmf.size1());
-  assert(G.nt()==Sig.nt());
-  assert(G.nt()==hmf.nt());
-  assert(G.nt()>=I.k());
-  assert(G.sig()==Sig.sig());
-  assert(tstp>I.k());
-
+void dyson_step_ret(int tstp, const INTEG &I, GREEN &G, const GREEN &Sig, cplx *hmf, double mu, double dt){
   // Counters and sizes
   int k=I.k(), size1=G.size1(), es=G.element_size(),m,l,n,i;
   
@@ -726,7 +712,7 @@ void GRstep(int tstp, const INTEG &I, GREEN &G, const GREEN &Sig, const function
 
       // Delta Energy term
       if(l==n){
-        element_set(size1,tmp,hmf.ptr(tstp-n));
+        element_set(size1,tmp,hmf+(tstp-n)*es);
         for(i=0;i<es;i++) M[es*k*(l-1)+(i/size1)*k*size1+(n-1)*size1+i%size1] += mu*iden[i] - tmp[i];
       }
 
@@ -788,7 +774,7 @@ void GRstep(int tstp, const INTEG &I, GREEN &G, const GREEN &Sig, const function
     }
 
     // Set up mm
-    element_set(size1,M,hmf.ptr(tstp-n));
+    element_set(size1,M,hmf+(tstp-n)*es);
     element_smul(size1,M,-1);
     element_incr(size1,M,-w0,Sig.retptr(tstp-n,tstp-n));
     for(i=0;i<es;i++) M[i] += (mu+bdweight[0])*iden[i];
@@ -814,18 +800,8 @@ void GRstep(int tstp, const INTEG &I, GREEN &G, const GREEN &Sig, const function
   return;
 }
 
-
 // idt GRM(tstp,m) - hmf(tstp) GRM(t,m) - \int_0^t dT SR(t,T) GRM(T,m) = \int_0^{beta} dT SRM(t,T) GM(T-m)
-void GTVstep(int tstp, const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf, double mu, double beta, double dt){
-  assert(G.size1()==Sig.size1());
-  assert(G.size1()==hmf.size1());
-  assert(G.nt()==Sig.nt());
-  assert(G.nt()==hmf.nt());
-  assert(G.nt()>=I.k());
-  assert(G.ntau()==Sig.ntau());
-  assert(G.sig()==Sig.sig());
-  assert(tstp>I.k());
-  
+void dyson_step_tv(int tstp, const INTEG &I, GREEN &G, const GREEN &Sig, cplx *hmf, double mu, double beta, double dt){
   // Counters and sizes
   int k=I.k(), size1=G.size1(), es=G.element_size(), ntau=G.ntau(), m, l, n, i;
   cplx weight;
@@ -846,18 +822,9 @@ void GTVstep(int tstp, const INTEG &I, GREEN &G, const GREEN &Sig, const functio
   cplx *gtv = G.tvptr(tstp ,0);
   int top = (ntau+1)*es;
   for(l=0;l<top;l++) gtv[l]=0;
-  
-  // First do the SRM GM integral.  Put it into GRM(tstp,m)
-  for(m=0;m<=ntau;m++){
-    CTV2(I, Sig, G, tstp, m, beta, tmp);
-    CTV3(I, Sig, G, tstp, m, beta, stmp);
-    for(i=0;i<es;i++){
-      G.tvptr(tstp,m)[i] = tmp[i] + stmp[i];
-    }
-  }
 
-  // Next do the SR GRM integral.  Adds to GRM(tstp,m)
-  CTV1(I, Sig, Sig, G, tstp, dt);
+  Ctv_tstp(tstp, G, Sig, Sig, G, G, I, beta, dt);
+
 
   // Put derivatives into GRM(tstp,m)
   for(l=1;l<=k+1;l++){
@@ -871,7 +838,7 @@ void GTVstep(int tstp, const INTEG &I, GREEN &G, const GREEN &Sig, const functio
   
   // Make M
   weight = cplxi/dt*I.bd_weights(0);
-  resptr = hmf.ptr(tstp);
+  resptr = hmf+(tstp)*es;
   weight2= -dt*I.omega(0);
   Gptr = Sig.retptr(tstp,tstp);
   for(i=0;i<es;i++) M[i] = (weight+mu)*iden[i] - resptr[i] + weight2*Gptr[i];
@@ -889,14 +856,7 @@ void GTVstep(int tstp, const INTEG &I, GREEN &G, const GREEN &Sig, const functio
   delete[] Q;
 }
 
-
-double GLstep(int n, const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf, double mu, double beta, double dt){
-  assert(G.size1()==Sig.size1());
-  assert(G.size1()==hmf.size1());
-  assert(G.nt()==Sig.nt());
-  assert(G.nt()==hmf.nt());
-  assert(G.nt()>=I.k());
-  assert(G.sig()==Sig.sig());
+double dyson_step_les(int n, const INTEG &I, GREEN &G, const GREEN &Sig, cplx *hmf, double mu, double beta, double dt){
 
   // Sizes and iterators
   int k=I.k(), size1=G.size1(), es=G.element_size(), m,l,i;
@@ -922,7 +882,7 @@ double GLstep(int n, const INTEG &I, GREEN &G, const GREEN &Sig, const function 
   err+=element_diff(size1,tmp,G.lesptr(0,n));
 
   // Integrals go into Q
-  memset(Q,0,sizeof(cplx)*num*es);
+  memset(Q,0,sizeof(cplx)*(num+1)*es);
   Cles2_tstp(I,Sig,Sig,G,G,n,dt,Q);
   Cles3_tstp(I,Sig,Sig,G,G,n,beta,Q);
 
@@ -945,7 +905,7 @@ double GLstep(int n, const INTEG &I, GREEN &G, const GREEN &Sig, const function 
 
       // Delta energy term
       if(m==l){
-        element_set(size1,tmp,hmf.ptr(l));
+        element_set(size1,tmp,hmf+l*es);
         for(i=0;i<es;i++){
           M[es*(m-1)*k+(i/size1)*k*size1+(l-1)*size1+i%size1] += mu*iden[i]-tmp[i];
         }
@@ -985,7 +945,7 @@ double GLstep(int n, const INTEG &I, GREEN &G, const GREEN &Sig, const function 
   for(m=k+1;m<=n;m++){
     // Set up M
     sigmm=Sig.retptr(m,m);
-    element_set(size1,M,hmf.ptr(m));
+    element_set(size1,M,hmf+m*es);
     element_smul(size1,M,-1);
     for(i=0;i<es;i++) M[i] += bd0*iden[i] + nhw*sigmm[i];
 
@@ -1020,12 +980,13 @@ double GLstep(int n, const INTEG &I, GREEN &G, const GREEN &Sig, const function 
 }
 
 
-double GLstart(const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf, double mu, double beta, double dt){
+double dyson_start_les(const INTEG &I, GREEN &G, const GREEN &Sig, cplx *hmf, double mu, double beta, double dt){
   double err=0;
   int k=I.k();
-  for(int n=0;n<=k;n++) err += GLstep(n,I,G,Sig,hmf,mu,beta,dt);
+  for(int n=0;n<=k;n++) err += dyson_step_les(n,I,G,Sig,hmf,mu,beta,dt);
   return err;
 }
+
 
 double dyson_start(const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf, double mu, double beta, double dt){
   assert(G.size1()==Sig.size1());
@@ -1036,9 +997,9 @@ double dyson_start(const INTEG &I, GREEN &G, const GREEN &Sig, const function &h
   assert(G.sig()==Sig.sig());
 
   double err=0;
-  err += GRstart(I, G, Sig, hmf, mu, dt);
-  err += GTVstart(I, G, Sig, hmf, mu, beta, dt);
-  err += GLstart(I, G, Sig, hmf, mu, beta, dt);
+  err += dyson_start_ret(I, G, Sig, hmf.ptr(0), mu, dt);
+  err += dyson_start_tv(I, G, Sig, hmf.ptr(0), mu, beta, dt);
+  err += dyson_start_les(I, G, Sig, hmf.ptr(0), mu, beta, dt);
   return err;
 }
 
@@ -1052,11 +1013,11 @@ void dyson_step(int n, const INTEG &I, GREEN &G, const GREEN &Sig, const functio
   assert(G.nt()==hmf.nt());
   assert(G.nt()>=I.k());
   assert(G.sig()==Sig.sig());
-  assert(n>I.k());
+  assert(tstp>I.k());
 
-  GRstep(n, I, G, Sig, hmf, mu, dt);
-  GTVstep(n, I, G, Sig, hmf, mu, beta, dt);
-  GLstep(n, I, G, Sig, hmf, mu, beta, dt);
+  dyson_step_ret(n, I, G, Sig, hmf.ptr(0), mu, dt);
+  dyson_step_tv(n, I, G, Sig, hmf.ptr(0), mu, beta, dt);
+  dyson_step_les(n, I, G, Sig, hmf.ptr(0), mu, beta, dt);
 }
 
 

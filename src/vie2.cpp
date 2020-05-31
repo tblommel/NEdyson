@@ -519,7 +519,7 @@ void vie2_tv_timestep(int n, GREEN &G, const GREEN &F, const GREEN &Fcc, const G
 	tmp = new cplx[es];
 	stmp = new cplx[es];
 	element_iden(size1,iden);
-
+/*
 	// First do the FTV GM integral.  Put into GTV(tstp, m)
 	for(m=0;m<=ntau;m++){
 		CTV2(I,F,G,n,m,beta,tmp);
@@ -530,7 +530,9 @@ void vie2_tv_timestep(int n, GREEN &G, const GREEN &F, const GREEN &Fcc, const G
 
 	// Next do the FR GTV integral. Adds to GTV(tstp,m) for all m
 	CTV1(I,F,Fcc,G,n,dt);
-
+*/
+  Ctv_tstp(n, G, F, Fcc, G, G, I, beta, dt);
+  
 	weight = dt*I.omega(0);
 	// Do the solving
 	for(m=0;m<=ntau;m++){

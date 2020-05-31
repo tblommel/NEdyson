@@ -88,6 +88,36 @@ void spectral::print_to_file(std::string file, int precision) const {
 	out.close();
 }
 
+void spectral::print_to_file(h5e::File File, std::string path) const {
+  h5e::dump(File,path+"/nt",nt_);
+  h5e::dump(File,path+"/nw",nw_);
+  h5e::dump(File,path+"/nao",size1_);
+  h5e::dump(File,path+"/wmax",wmax_);
+  h5e::dump(File,path+"/dw",dw_);
+  h5e::dump(File,path+"/dt",dt_);
+  std::vector<size_t> dims(1);
+  dims[0] = (nt_+1)*nw_*es_;
+  h5e::detail::createGroupsToDataSet(File, path+"/A");
+  h5::DataSet dataset = File.createDataSet<double>(path+"/A",h5::DataSpace(dims));
+  dataset.write(A_);
+  File.flush();
+}
+
+void spectral::read_from_file(h5e::File File, std::string path) {
+  h5::DataSet dataset = File.getDataSet(path+"/A");
+  size_t len = dataset.getElementCount();
+  delete[] A_;
+  A_ = new double[len];
+  dataset.read(A_);
+  File.flush();
+  nt_ = h5e::load<int>(File, path+"/nt");
+  nw_ = h5e::load<int>(File, path+"/nw");
+  size1_ = h5e::load<int>(File, path+"/nao");
+  wmax_ = h5e::load<double>(File, path+"/wmax");
+  dw_ = h5e::load<double>(File, path+"/dw");
+  dt_ = h5e::load<double>(File, path+"/dt");
+}
+
 void spectral::read_from_file(const char *file){
 	int i,j,l;
 	double *x=NULL;

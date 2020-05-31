@@ -6,13 +6,11 @@
 namespace NEdyson{
 
 
-// This one does integral for every tau, and puts result into B by incrementing it!!!
+// This one does integral for every tau, and puts result into C by incrementing it!!!
 // For every \tau=m...
-//   B[n,m] += \int_0^n dt A^R(n,t) B^{TV}(t,m)
+//   C[n,m] += \int_0^n dt A^R(n,t) B^{TV}(t,m)
 //          += \sum_{j=0}^{n-1} dt w_{n,j} A^R(n,j) B^{TV}(j,m)
-// Note this does not inclue the j==n term in the sum. This is because in the timestepping routine that term is unknown and needs to yet be solved for.
-// RIGHT NOW ONLY WORKS FOR n>=k.  THIS IS FINE BECAUSE IT IS ONLY CALLED WITHIN THE STEPPING ROUTINE
-void CTV1(const INTEG &I, const GREEN &A, const GREEN &Acc, GREEN &B, int n, double dt){
+void CTV1(const INTEG &I, cplx *ctv, const GREEN &A, const GREEN &Acc, const GREEN &B, int n, double dt){
   assert(n>=I.k());
   assert(n<=A.nt());
   assert(A.nt() == B.nt());
@@ -28,8 +26,9 @@ void CTV1(const INTEG &I, const GREEN &A, const GREEN &Acc, GREEN &B, int n, dou
   cplx *Atmp = new cplx[es];
   cplx *resptr;
   cplx *Gptr;
+  int ntop = (n>k)?n:k;
 
-  for(j=0;j<n;j++){
+  for(j=0;j<=ntop;j++){
     weight = I.gregory_weights(n,j);
     if(j>n){ // Dont have AR
       element_conj(size1,Atmp,Acc.retptr(j,n));
@@ -40,7 +39,7 @@ void CTV1(const INTEG &I, const GREEN &A, const GREEN &Acc, GREEN &B, int n, dou
     }
     element_smul(size1,Atmp,dt);
 
-    resptr=B.tvptr(n,0);
+    resptr=ctv;
     Gptr=B.tvptr(j,0);
     if(weight != 1){
       for(m=0;m<=ntau;m++){
@@ -167,6 +166,36 @@ void CTV3(const INTEG &I, const GREEN &A, const GREEN &B, int n, int m, double b
   }
   for(int l=0;l<es;l++) res[l]*=dtau;
 }
+
+
+
+// This function calls CTV1,2,3 to do the convolutions necessary for the timestepping of the TV component
+// Results get put into C.tv(tstp,m) m=0...ntau.  Not by increment
+void Ctv_tstp(int tstp, GREEN &C, const GREEN &A, const GREEN &Acc, const GREEN &B, const GREEN &Bcc, const INTEG &I, double beta, double dt) {
+
+  int ntau = C.ntau(), size1 = C.size1(), es = size1*size1;
+  cplx *ctv = new cplx[(ntau+1)*es];
+  cplx *tmp = new cplx[es];
+  
+  for(int m=0;m<=ntau;m++){
+    CTV2(I,A,B,tstp,m,beta,ctv+m*es);
+    CTV3(I,A,B,tstp,m,beta,tmp);
+    element_incr(size1, ctv+m*es, tmp);
+  }
+
+  CTV1(I,ctv,A,Acc,B,tstp,dt);
+
+  for(int m=0;m<=ntau;m++){
+    element_set(size1, C.tvptr(tstp,m), ctv+m*es);
+  }
+
+  delete[] ctv;
+  delete[] tmp;
+}
+
+
+
+
 
 
 // Does the les_lesadv integration for every n, puts into Q via increment!!!

@@ -13,8 +13,8 @@ add_library(libNEdyson
   spectral.cpp spectral.h
   vie2.cpp vie2.h
   utils.cpp utils.h
-  NEdyson.h
-  param.h
+  NEdyson.cpp  NEdyson.h
+  param.cpp param.h
 )
 
 target_include_directories(libNEdyson INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})

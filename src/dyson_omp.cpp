@@ -206,7 +206,7 @@ void dyson_step_omp_les(int threads, int tstp, const INTEG &I, GREEN &G, const G
 
   // Parallelization starts only for tstp>=2*k+1
   if(tstp < 2*k+1){
-    GLstep(tstp, I, G, Sig, hmf, mu, beta, dt);
+    dyson_step_les(tstp, I, G, Sig, hmf.ptr(0), mu, beta, dt);
     return;
   }
   for(int j=0;j<=tstp;j++) element_set_zero(size1, G.lesptr(j,tstp));

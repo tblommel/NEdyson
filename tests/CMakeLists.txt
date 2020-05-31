@@ -1,7 +1,10 @@
 add_executable(runtests
   tests-main.cpp
+  integrals-test.cpp
   tests-def.h
   dyson-test.cpp
+  spectral-test.cpp
+  dyson_omp-test.cpp
   free-test.cpp
   vie2-test.cpp
   integration-test.cpp

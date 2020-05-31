@@ -611,7 +611,7 @@ void green_func::read_from_file(const char *file, double &dt, double &dtau){
 }
 
 
-void green_func::print_to_file_mat(h5e::File File, std::string path) const {
+void green_func::print_to_file_mat(h5e::File &File, std::string path) const {
   std::vector<size_t> dims(1);
   dims[0]=(ntau_+1)*element_size_;
   h5e::detail::createGroupsToDataSet(File, path+"/GM");
@@ -620,7 +620,7 @@ void green_func::print_to_file_mat(h5e::File File, std::string path) const {
   File.flush();
 }
 
-void green_func::print_to_file_ret(h5e::File File, std::string path) const {
+void green_func::print_to_file_ret(h5e::File &File, std::string path) const {
   std::vector<size_t> dims(1);
   dims[0]=((nt_+1)*(nt_+2))/2*element_size_;
   h5e::detail::createGroupsToDataSet(File, path+"/GR");
@@ -629,7 +629,7 @@ void green_func::print_to_file_ret(h5e::File File, std::string path) const {
   File.flush();
 }
 
-void green_func::print_to_file_les(h5e::File File, std::string path) const {
+void green_func::print_to_file_les(h5e::File &File, std::string path) const {
   std::vector<size_t> dims(1);
   dims[0]=((nt_+1)*(nt_+2))/2*element_size_;
   h5e::detail::createGroupsToDataSet(File, path+"/GL");
@@ -638,7 +638,7 @@ void green_func::print_to_file_les(h5e::File File, std::string path) const {
   File.flush();
 }
 
-void green_func::print_to_file_tv(h5e::File File, std::string path) const {
+void green_func::print_to_file_tv(h5e::File &File, std::string path) const {
   std::vector<size_t> dims(1);
   dims[0]=((nt_+1)*(ntau_+1))*element_size_;
   h5e::detail::createGroupsToDataSet(File, path+"/GTV");
@@ -647,7 +647,7 @@ void green_func::print_to_file_tv(h5e::File File, std::string path) const {
   File.flush();
 }
 
-void green_func::print_to_file(h5e::File File, std::string path) const {
+void green_func::print_to_file(h5e::File &File, std::string path) const {
   green_func::print_to_file_mat(File,path);
   green_func::print_to_file_ret(File,path);
   green_func::print_to_file_les(File,path);
@@ -658,43 +658,63 @@ void green_func::print_to_file(h5e::File File, std::string path) const {
   h5e::dump(File,path+"/nao",size1_);
 }
 
-void green_func::read_from_file_tv(h5e::File File,std::string path) {
+void green_func::read_from_file_tv(h5e::File &File,std::string path) {
   h5::DataSet dataset = File.getDataSet(path+"/GTV");
   size_t len = dataset.getElementCount();
   delete [] tv_;
   tv_ = new cplx[len];
   dataset.read(tv_);
   File.flush();
+  nt_ = h5e::load<int>(File, path+"/nt");
+  sig_ = h5e::load<int>(File,path+"/sig");
+  ntau_ = h5e::load<int>(File,path+"/ntau");
+  size1_ = h5e::load<int>(File,path+"/nao");
+  element_size_=size1_*size1_;
 }
 
-void green_func::read_from_file_ret(h5e::File File,std::string path) {
+void green_func::read_from_file_ret(h5e::File &File,std::string path) {
   h5::DataSet dataset = File.getDataSet(path+"/GR");
   size_t len = dataset.getElementCount();
   delete [] ret_;
   ret_ = new cplx[len];
   dataset.read(ret_);
   File.flush();
+  nt_ = h5e::load<int>(File, path+"/nt");
+  sig_ = h5e::load<int>(File,path+"/sig");
+  ntau_ = h5e::load<int>(File,path+"/ntau");
+  size1_ = h5e::load<int>(File,path+"/nao");
+  element_size_=size1_*size1_;
 }
 
-void green_func::read_from_file_les(h5e::File File, std::string path) {
+void green_func::read_from_file_les(h5e::File &File, std::string path) {
   h5::DataSet dataset = File.getDataSet(path+"/GL");
   size_t len = dataset.getElementCount();
   delete [] les_;
   les_ = new cplx[len];
   dataset.read(les_);
   File.flush();
+  nt_ = h5e::load<int>(File, path+"/nt");
+  sig_ = h5e::load<int>(File,path+"/sig");
+  ntau_ = h5e::load<int>(File,path+"/ntau");
+  size1_ = h5e::load<int>(File,path+"/nao");
+  element_size_=size1_*size1_;
 }
 
-void green_func::read_from_file_mat(h5e::File File,std::string path) {
+void green_func::read_from_file_mat(h5e::File &File,std::string path) {
   h5::DataSet dataset = File.getDataSet(path+"/GM");
   size_t len = dataset.getElementCount();
   delete [] mat_;
   mat_ = new cplx[len];
   dataset.read(mat_);
   File.flush();
+  nt_ = h5e::load<int>(File, path+"/nt");
+  sig_ = h5e::load<int>(File,path+"/sig");
+  ntau_ = h5e::load<int>(File,path+"/ntau");
+  size1_ = h5e::load<int>(File,path+"/nao");
+  element_size_=size1_*size1_;
 }
 
-void green_func::read_from_file(h5e::File File, std::string path) {
+void green_func::read_from_file(h5e::File &File, std::string path) {
   green_func::read_from_file_mat(File,path);
   green_func::read_from_file_les(File,path);
   green_func::read_from_file_ret(File,path);

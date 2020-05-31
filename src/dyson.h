@@ -30,9 +30,9 @@ void Extrapolate(const INTEG &I, GREEN &G, int n);
 double dyson_start(const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf, double mu, double beta, double dt);
 
 
-double GLstep(int n, const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf, double mu, double beta, double dt);
-
+double dyson_step_les(int n, const INTEG &I, GREEN &G, const GREEN &Sig, cplx *hmf, double mu, double beta, double dt);
 
 void dyson_step(int n, const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf, double mu, double beta, double dt);
+
 }//namespace
 #endif

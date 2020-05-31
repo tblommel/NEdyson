@@ -3,6 +3,7 @@
 
 #include <fstream>
 #include <cstring>
+#include <Eigen/Eigen>
 
 void find_param(char *file, const  char *flag, int &x){
 	std::string actfile;

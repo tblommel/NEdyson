@@ -46,6 +46,8 @@ class spectral{
 		// Input/Output
 		void print_to_file(std::string file, int precision=16) const;
 		void read_from_file(const char *file);
+    void read_from_file(h5e::File File, std::string path);
+    void print_to_file(h5e::File File, std::string path) const;
 		
 		// Actually Calculate
 		void AfromG(const green_func &G, int nw, double wmax, double dt);

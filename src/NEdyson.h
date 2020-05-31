@@ -1,3 +1,6 @@
+#ifndef NEDYSON
+#define NEDYSON
+
 #include "dyson.h"
 #include "dyson_omp.h"
 #include "integration.h"
@@ -7,3 +10,5 @@
 #include "spectral.h"
 #include "greens.h"
 #include "utils.h"
+
+#endif

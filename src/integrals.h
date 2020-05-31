@@ -9,11 +9,13 @@
 
 namespace NEdyson{
 
-void CTV1(const INTEG &I, const GREEN &A, const GREEN &Acc, GREEN &B, int n, double dt);
+void CTV1(const INTEG &I, cplx *ctv, const GREEN &A, const GREEN &Acc, const GREEN &B, int n, double dt);
 
 void CTV2(const INTEG &I, const GREEN &A, const GREEN &B, int n, int m, double beta, cplx *res);
 
 void CTV3(const INTEG &I, const GREEN &A, const GREEN &B, int n, int m, double beta, cplx *res);
+
+void Ctv_tstp(int tstp, GREEN &C, const GREEN &A, const GREEN &Acc, const GREEN &B, const GREEN &Bcc, const INTEG &I, double beta, double dt);
 
 void Cles2_tstp(const INTEG &I, const GREEN &A, const GREEN &Acc, const GREEN &B, const GREEN &Bcc, int m, double dt, cplx *Q);
 
