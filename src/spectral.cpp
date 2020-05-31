@@ -163,6 +163,7 @@ void spectral::AfromG(const green_func &G, int nw, double wmax, double dt){
 	dt_ = dt;
 	delete[] A_;
 	A_ = new double[(nt_+1)*nw_*es_];
+	memset(A_,0,sizeof(double)*(nt_+1)*nw_*es_);
 
 
 	int ita, iw, itr;

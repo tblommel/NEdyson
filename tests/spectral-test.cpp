@@ -21,7 +21,9 @@ TEST_CASE("Spectral function calculations"){
 
   DColVectorMap ATestVM = DColVectorMap(ATest.ptr(0,0),(ATest.nt()+1)*ATest.nw()*4);
   DColVectorMap AActVM = DColVectorMap(AAct.ptr(0,0),(AAct.nt()+1)*AAct.nw()*4);
+std::cout<<ATest.nt()<<" "<<ATest.nw()<<" "<<AAct.nt()<<" "<<AAct.nw()<<std::endl;
 
+std::cout<<ATestVM.norm()<<" "<<AActVM.norm();
   REQUIRE((ATestVM-AActVM).norm() < 10e-12);
 }
 
@@ -66,5 +68,6 @@ TEST_CASE("Expanded Spectral function calculations"){
   DColVectorMap ATestVM = DColVectorMap(ATest.ptr(0,0),(ATest.nt()+1)*ATest.nw()*4);
   DColVectorMap AActVM = DColVectorMap(AAct.ptr(0,0),(AAct.nt()+1)*AAct.nw()*4);
 
+std::cout<<ATestVM.norm()<<" "<<AActVM.norm();
   REQUIRE((ATestVM-AActVM).norm() < 1e-12);
 }

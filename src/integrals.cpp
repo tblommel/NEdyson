@@ -11,7 +11,6 @@ namespace NEdyson{
 //   C[n,m] += \int_0^n dt A^R(n,t) B^{TV}(t,m)
 //          += \sum_{j=0}^{n-1} dt w_{n,j} A^R(n,j) B^{TV}(j,m)
 void CTV1(const INTEG &I, cplx *ctv, const GREEN &A, const GREEN &Acc, const GREEN &B, int n, double dt){
-  assert(n>=I.k());
   assert(n<=A.nt());
   assert(A.nt() == B.nt());
   assert(A.nt() == Acc.nt());

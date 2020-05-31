@@ -1013,7 +1013,7 @@ void dyson_step(int n, const INTEG &I, GREEN &G, const GREEN &Sig, const functio
   assert(G.nt()==hmf.nt());
   assert(G.nt()>=I.k());
   assert(G.sig()==Sig.sig());
-  assert(tstp>I.k());
+  assert(n>I.k());
 
   dyson_step_ret(n, I, G, Sig, hmf.ptr(0), mu, dt);
   dyson_step_tv(n, I, G, Sig, hmf.ptr(0), mu, beta, dt);
