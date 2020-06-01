@@ -67,7 +67,7 @@ public:
 };
 
 
-class SigmaSolverSpin{
+class molHFSolverSpin{
 protected:
   const int nao_;
   static constexpr int ns_ = 2;
@@ -78,7 +78,7 @@ private:
   mutable ZMatrix rho_T;
 
 public:
-  SigmaSolverSpin(const DTensor<4> &U_int) : Uijkl_(U_int),
+  molHFSolverSpin(const DTensor<4> &U_int) : Uijkl_(U_int),
                                              nao_(U_int.shape()[0]) {}
 
   int nao() const {return nao_;}
