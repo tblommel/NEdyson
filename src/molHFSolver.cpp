@@ -11,7 +11,7 @@
 namespace NEdyson {
 
 void molHFSolver::solve_HF_loop(int tstp, ZTensor<3> &hmf, const ZTensor<2> &rho) const {
-  assert(tstp <= hmf.shape()[0]);
+  assert(tstp < hmf.shape()[0]);
   assert(tstp >= 0);
   assert(hmf.shape()[1] == nao_);
   assert(hmf.shape()[2] == nao_);
@@ -33,7 +33,7 @@ void molHFSolver::solve_HF_loop(int tstp, ZTensor<3> &hmf, const ZTensor<2> &rho
 
   
 void molHFSolver::solve_HF(int tstp, ZTensor<3> &hmf, const ZTensor<2> &rho) const {
-  assert(tstp <= hmf.shape()[0]);
+  assert(tstp < hmf.shape()[0]);
   assert(tstp >= 0);
   assert(hmf.shape()[1] == nao_);
   assert(hmf.shape()[2] == nao_);
@@ -56,7 +56,7 @@ void molHFSolver::solve_HF(int tstp, ZTensor<3> &hmf, const ZTensor<2> &rho) con
 
 
 void molHFSolverDecomp::solve_HF_loop(int tstp, ZTensor<3> &hmf, const ZTensor<2> &rho) const {
-  assert(tstp <= hmf.shape()[0]);
+  assert(tstp < hmf.shape()[0]);
   assert(tstp >= 0);
   assert(hmf.shape()[1] == nao_);
   assert(hmf.shape()[2] == nao_);
@@ -79,7 +79,7 @@ void molHFSolverDecomp::solve_HF_loop(int tstp, ZTensor<3> &hmf, const ZTensor<2
 }
 
 void molHFSolverDecomp::solve_HF(int tstp, ZTensor<3> &hmf, const ZTensor<2> &rho) const {
-  assert(tstp <= hmf.shape()[0]);
+  assert(tstp < hmf.shape()[0]);
   assert(tstp >= 0);
   assert(hmf.shape()[1] == nao_);
   assert(hmf.shape()[2] == nao_);
@@ -110,17 +110,130 @@ void molHFSolverDecomp::solve_HF(int tstp, ZTensor<3> &hmf, const ZTensor<2> &rh
 }
 
   
-void molHFSolverSpin::solve_HF(int tstp, ZTensor<4> &hmf, const ZTensor<3> &rho) const {
-
-
-
-
-
+void molHFSolverSpin::solve_HF_loop(int tstp, ZTensor<4> &hmf, const ZTensor<3> &rho) const {
+  assert(tstp >= 0);
+  assert(hmf.shape()[0] > tstp);
+  assert(hmf.shape()[1] == 2);
+  assert(hmf.shape()[2] == nao_);
+  assert(hmf.shape()[3] == nao_);
+  assert(rho.shape()[0] == 2);
+  assert(hmf.shape()[1] == nao_);
+  assert(hmf.shape()[2] == nao_);
+  
+  for(int s=0; s<ns_; ++s){
+    for(int i=0; i<nao_; ++i){
+      for(int j=0; j<nao_; ++j){
+        for(int k=0; k<nao_; ++k){
+          for(int l=0; l<nao_; ++l){
+            hmf(tstp,s,i,j) -= Uijkl_(i,l,k,j) * rho(s, k, l);
+            for(int sp=0; sp<ns_; sp++){
+              hmf(tstp,s,i,j) += rho(sp,k,l) * Uijkl_(i,j,k,l);
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
 
+void molHFSolverSpin::solve_HF(int tstp, ZTensor<4> &hmf, const ZTensor<3> &rho) const {
+  assert(tstp >= 0);
+  assert(hmf.shape()[0] > tstp);
+  assert(hmf.shape()[1] == 2);
+  assert(hmf.shape()[2] == nao_);
+  assert(hmf.shape()[3] == nao_);
+  assert(rho.shape()[0] == 2);
+  assert(hmf.shape()[1] == nao_);
+  assert(hmf.shape()[2] == nao_);
+
+  int nao2 = nao_ * nao_;
+  int nao3 = nao2 * nao_;
+  
+  for(int s=0; s<ns_; ++s){
+    rho_T = ZMatrixConstMap(rho.data() + s*nao2, nao_, nao_).transpose();
+    ZRowVectorMap rho_T_flat(rho_T.data(), nao2);
+
+    // Fock
+    for(int i=0; i<nao_; ++i){
+      DMatrixConstMap Ui_lk_j(Uijkl_.data() + i*nao3, nao2, nao_);
+      ZColVectorMap(hmf.data() + tstp*2*nao2 + s*nao2 + i*nao_, nao_).noalias() -= rho_T_flat * Ui_lk_j;
+    }
+
+    // Hartree
+    for(int sp=0; sp<ns_; sp++){
+      ZColVectorMap(hmf.data() + tstp*2*nao2 + s*nao2, nao2).noalias() += DMatrixConstMap(Uijkl_.data(),nao2,nao2) * ZColVectorConstMap(rho.data() + sp*nao2 ,nao2,nao2);
+    }
+  }
+}
 
 
+void molHFSolverSpinDecomp::solve_HF_loop(int tstp, ZTensor<4> &hmf, const ZTensor<3> &rho) const {
+  assert(tstp >= 0);
+  assert(hmf.shape()[0] > tstp);
+  assert(hmf.shape()[1] == 2);
+  assert(hmf.shape()[2] == nao_);
+  assert(hmf.shape()[3] == nao_);
+  assert(rho.shape()[0] == 2);
+  assert(hmf.shape()[1] == nao_);
+  assert(hmf.shape()[2] == nao_);
+  
+  for(int s=0; s<ns_; ++s){
+    for(int i=0; i<nao_; ++i){
+      for(int j=0; j<nao_; ++j){
+        for(int a=0; a<nalpha_; ++a){
+          for(int sp=0; sp<ns_; ++sp){
+            for(int k=0; k<nao_; ++k){
+              for(int l=0; l<nao_; ++l){
+                hmf(tstp,s,i,j) += Vija_(i,j,a) * Vija_(k,l,a) * rho(sp, k, l);
+                if(s==sp)
+                  hmf(tstp,s,i,j) -= Vija_(i,l,a) * Vija_(k,j,a) * rho(s,k,l);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+void molHFSolverSpinDecomp::solve_HF(int tstp, ZTensor<4> &hmf, const ZTensor<3> &rho) const {
+  assert(tstp >= 0);
+  assert(hmf.shape()[0] > tstp);
+  assert(hmf.shape()[1] == 2);
+  assert(hmf.shape()[2] == nao_);
+  assert(hmf.shape()[3] == nao_);
+  assert(rho.shape()[0] == 2);
+  assert(hmf.shape()[1] == nao_);
+  assert(hmf.shape()[2] == nao_);
+
+  int nao2 = nao_*nao_;
+
+  rho_T = ZMatrixConstMap(rho.data(), nao_, nao_) + ZMatrixConstMap(rho.data() + nao2, nao_, nao_);
+
+  // Hartree
+  auto VmapIa = DMatrixConstMap(Vija_.data(),nao2, nalpha_);
+  auto RhomapI= ZRowVectorConstMap(rho_T.data(), nao2);
+  Xa_ = RhomapI * VmapIa;
+  ZRowVectorMap(hmf.data() + tstp*2*nao2, nao2).noalias() += Xa_ * VmapIa.transpose();
+  ZRowVectorMap(hmf.data() + tstp*2*nao2 + nao2, nao2).noalias() += Xa_ * VmapIa.transpose();
+
+  // Fock
+  auto tmp_12_3 = ZMatrixMap(tmp_.data(), nao2, nao_);
+  auto tmp_1_23 = ZMatrixMap(tmp_.data(), nao_, nao2);
+  auto V_kj_a_T = DMatrixConstMap(Vija_.data(), nao2, nalpha_).transpose();
+  ZRowVectorMap rho_T_flat(rho_T.data(), nao2);
+  
+  for(int i=0; i<nao_; i++){
+    auto V_i_l_a = DMatrixConstMap(Vija_.data() + i*nalpha_*nao_, nao_, nalpha_);
+    tmp_1_23 = V_i_l_a * V_kj_a_T;
+    for(int s=0; s<ns_; s++){
+      rho_T = ZMatrixConstMap(rho.data() + s*nao2,nao_,nao_).transpose();
+      ZRowVectorMap(hmf.data() + tstp*2*nao2 + s*nao2 + i*nao_, nao_).noalias() -= rho_T_flat * tmp_12_3;
+    }    
+  }
+}
 
 
 } // namespace

@@ -79,11 +79,45 @@ private:
 
 public:
   molHFSolverSpin(const DTensor<4> &U_int) : Uijkl_(U_int),
-                                             nao_(U_int.shape()[0]) {}
+                                             nao_(U_int.shape()[0]),
+                                             rho_T(nao_,nao_) {}
 
   int nao() const {return nao_;}
 
-  // hmf must have size (2,nt+1,nao,nao)
+  // hmf must have size (nt,2,nao,nao)
+  // rho must have size (2,nao,nao)
+  void solve_HF(int tstp, ZTensor<4> &hmf, const ZTensor<3> &rho) const;
+
+  void solve_HF_loop(int tstp, ZTensor<4> &hmf, const ZTensor<3> &rho) const;
+};
+
+
+class molHFSolverSpinDecomp{
+protected:
+  const int nao_;
+  const int nalpha_;
+  static constexpr int ns_ = 2;
+
+  const DTensor<3> &Vija_;
+
+private:
+  mutable ZMatrix rho_T;
+  mutable ZTensor<3> tmp_;
+  mutable ZRowVector Xa_;
+
+public:
+  molHFSolverSpinDecomp(const DTensor<3> &Vija) : Vija_(Vija),
+                                             nao_(Vija.shape()[0]),
+                                             nalpha_(Vija.shape()[2]),
+                                             rho_T(nao_,nao_),
+                                             tmp_(nao_,nao_,nao_),
+                                             Xa_(nalpha_) {}
+
+  int nao() const {return nao_;}
+  
+  int nalpha() const {return nalpha_;}
+
+  // hmf must have size (nt,2,nao,nao)
   // rho must have size (2,nao,nao)
   void solve_HF(int tstp, ZTensor<4> &hmf, const ZTensor<3> &rho) const;
 
