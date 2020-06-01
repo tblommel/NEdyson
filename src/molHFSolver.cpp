@@ -10,7 +10,7 @@
 
 namespace NEdyson {
 
-void molHFSolver::solve_HF_loop(int tstp, const ZTensor<2> &rho, ZTensor<3> &hmf) const {
+void molHFSolver::solve_HF_loop(int tstp, ZTensor<3> &hmf, const ZTensor<2> &rho) const {
   assert(tstp <= hmf.shape()[0]);
   assert(tstp >= 0);
   assert(hmf.shape()[1] == nao_);
@@ -32,7 +32,7 @@ void molHFSolver::solve_HF_loop(int tstp, const ZTensor<2> &rho, ZTensor<3> &hmf
 }
 
   
-void molHFSolver::solve_HF(int tstp, const ZTensor<2> &rho, ZTensor<3> &hmf) const {
+void molHFSolver::solve_HF(int tstp, ZTensor<3> &hmf, const ZTensor<2> &rho) const {
   assert(tstp <= hmf.shape()[0]);
   assert(tstp >= 0);
   assert(hmf.shape()[1] == nao_);
@@ -55,58 +55,73 @@ void molHFSolver::solve_HF(int tstp, const ZTensor<2> &rho, ZTensor<3> &hmf) con
 }
 
 
-/*
-void molHFSolverSpin::solve_HF_loop(int tstp, ZMatrix &rhoU, CFUNC &hmfU, ZMatrix &rhoD, CFUNC &hmfD) const {
-  assert(tstp <= hmfU.nt());
-  assert(tstp <= hmfD.nt());
+void molHFSolverDecomp::solve_HF_loop(int tstp, ZTensor<3> &hmf, const ZTensor<2> &rho) const {
+  assert(tstp <= hmf.shape()[0]);
   assert(tstp >= 0);
-  assert(hmfU.size1() == size1_);
-  assert(rhoU.rows() == size1_);
-  assert(rhoU.cols() == size1_);
-  assert(hmfD.size1() == size1_);
-  assert(rhoD.rows() == size1_);
-  assert(rhoD.cols() == size1_);
+  assert(hmf.shape()[1] == nao_);
+  assert(hmf.shape()[2] == nao_);
+  assert(rho.shape()[1] == nao_);
+  assert(rho.shape()[2] == nao_);
+  
+  ZMatrixMap hmfMap = ZMatrixMap(hmf.data()+tstp*nao_*nao_,nao_,nao_);
 
-  ZMatrixMap hmfMap = ZMatrixMap(hmf.ptr(tstp),size1_,size1_);
-
-  for(int i=0; i<size1_; i++){
-    for(int j=0; j<size1_; j++){
-      for(int k=0; k<size1_; k++){
-        for(int l=0; l<size1_; l++){
-          hmfMap(i,j) += rho(k,l) * (2*Vijkl_(i,j,k,l) - Vijkl_(i,l,k,j));
+  for(int i=0;i<nao_;i++){
+    for(int j=0;j<nao_;j++){
+      for(int k=0;k<nao_;k++){
+        for(int l=0;l<nao_;l++){
+          for(int a=0;a<nalpha_;a++){
+            hmfMap(i,j) += rho(k,l) * (2 * Vija_(i,j,a) * Vija_(k,l,a) - Vija_(i,l,a) * Vija_(k,j,a));
+          }
         }
       }
     }
   }
 }
 
-  
-void molHFSolverSpin::solve_HF(int tstp, ZMatrix &rhoU, CFUNC &hmfU, ZMatrix &rhoD, CFUNC &hmfD) const 
-{
-  assert(tstp <= hmfU.nt());
-  assert(tstp <= hmfD.nt());
+void molHFSolverDecomp::solve_HF(int tstp, ZTensor<3> &hmf, const ZTensor<2> &rho) const {
+  assert(tstp <= hmf.shape()[0]);
   assert(tstp >= 0);
-  assert(hmfU.size1() == size1_);
-  assert(rhoU.rows() == size1_);
-  assert(rhoU.cols() == size1_);
-  assert(hmfD.size1() == size1_);
-  assert(rhoD.rows() == size1_);
-  assert(rhoD.cols() == size1_);
-
-  int size12 = size1_*size1_;
-  int size13 = size12*size1_;
+  assert(hmf.shape()[1] == nao_);
+  assert(hmf.shape()[2] == nao_);
+  assert(rho.shape()[1] == nao_);
+  assert(rho.shape()[2] == nao_);
   
-  rho_T = rho.transpose();
-  ZRowVectorMap rho_T_flat(rho_T.data(), size12);
+  int nao2 = nao_ * nao_;
 
-  for(int i=0; i<size1_; ++i){
-    DMatrixConstMap V_i_lk_j = DMatrixConstMap(Vijkl_.data() + i*size13, size12, size1_);
-    ZColVectorMap(hmf.ptr(tstp)+i*size1_, size1_).noalias() -= rho_T_flat * V_i_lk_j;
+  // Hartree Diagram
+  auto VmapIa = DMatrixConstMap(Vija_.data(), nao2, nalpha_);
+  auto RhomapI = ZRowVectorConstMap(rho.data(), nao2);
+  Xa_ = RhomapI * VmapIa;
+  auto hmfmapI = ZRowVectorMap(hmf.data()+tstp*nao2, nao2);
+  hmfmapI.noalias() += 2 * Xa_ * VmapIa.transpose();
+
+  // Fock Diagram
+  auto tmp_12_3 = ZMatrixMap(tmp_.data(), nao2, nao_);
+  auto tmp_1_23 = ZMatrixMap(tmp_.data(), nao_, nao2);
+  auto V_kj_a_T = DMatrixConstMap(Vija_.data(), nao2, nalpha_).transpose();
+  rho_T = ZMatrixConstMap(rho.data(), nao_, nao_).transpose();
+  ZRowVectorMap rho_T_flat(rho_T.data(), nao2);
+  
+  for(int i=0;i<nao_;i++){
+    auto V_i_l_a = DMatrixConstMap(Vija_.data() + i*nao_*nalpha_, nao_, nalpha_);
+    tmp_1_23 = V_i_l_a * V_kj_a_T;
+    ZRowVectorMap(hmf.data() + tstp*nao2 + i*nao_, nao_).noalias() -= rho_T_flat * tmp_12_3;
   }
-  
-  ZColVectorMap(hmf.ptr(tstp), size12).noalias() += 2*DMatrixConstMap(Vijkl_.data(),size12,size12) * ZColVectorMap(rho.data(), size12);
 }
 
-*/
+  
+void molHFSolverSpin::solve_HF(int tstp, ZTensor<4> &hmf, const ZTensor<3> &rho) const {
+
+
+
+
+
+}
+
+
+
+
+
+
 } // namespace
 #endif

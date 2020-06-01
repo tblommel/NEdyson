@@ -25,10 +25,41 @@ TEST_CASE("Sigma HF")
   molHFSolver test_solver(U_int);
   
   for(int t=0;t<=nt;t++){
-    test_solver.solve_HF(t,rho,hmf);
-    test_solver.solve_HF_loop(t,rho,hmf_loop);
+    test_solver.solve_HF(t,hmf,rho);
+    test_solver.solve_HF_loop(t,hmf_loop,rho);
   }
 
   double err = (ZColVectorMap(hmf.data(), (nt+1)*na2) - ZColVectorMap(hmf_loop.data(), (nt+1)*na2)).norm();
+  REQUIRE(err < 1e-10);
+}
+
+
+TEST_CASE("Decomp Sigma HF")
+{
+  using namespace NEdyson;
+  
+  int nt = 3;
+  int nao = 2;
+  int nalpha = 5;
+  int nao2 = nao * nao;
+
+  DTensor<3> Vija(nao,nao,nalpha);
+  ZTensor<2> rho(nao,nao);
+  ZTensor<3> hmf(nt+1, nao, nao);
+  ZTensor<3> hmf_loop(nt+1, nao, nao);
+
+  DColVectorMap(Vija.data(),nao2*nalpha) = Eigen::VectorXd::Random(nao2*nalpha);
+  ZColVectorMap(rho.data(), nao2) = Eigen::VectorXcd::Random(nao2);
+  ZColVectorMap(hmf.data(), (nt+1)*nao2) = Eigen::VectorXcd::Random((nt+1)*nao2);
+  hmf_loop = hmf;
+
+  molHFSolverDecomp test_solver(Vija);
+  
+  for(int t=0;t<=nt;t++){
+    test_solver.solve_HF(t,hmf,rho);
+    test_solver.solve_HF_loop(t,hmf_loop,rho);
+  }
+
+  double err = (ZColVectorMap(hmf.data(), (nt+1)*nao2) - ZColVectorMap(hmf_loop.data(), (nt+1)*nao2)).norm();
   REQUIRE(err < 1e-10);
 }
