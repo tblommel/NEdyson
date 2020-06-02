@@ -9,7 +9,6 @@ add_executable(runtests
   vie2-test.cpp
   integration-test.cpp
   hubb-test.cpp
-  mol2bSolver-test.cpp
   molHFSolver-test.cpp)
 
 target_compile_definitions(runtests PRIVATE
