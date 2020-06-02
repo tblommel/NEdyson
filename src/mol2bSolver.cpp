@@ -7,9 +7,9 @@
 namespace NEdyson{
 
 void molGF2SolverSpinDecomp::solve(int tstp, std::vector<std::reference_wrapper<GREEN>> &Sigma, std::vector<std::reference_wrapper<GREEN>> &G) const {
-  std::vector<size_t> ref_size = {size_t(2)};
-  assert(G.shape() == ref_size);
-  assert(Sigma.shape() == ref_size);
+  size_t ref_size = size_t(2);
+  assert(G.size() == ref_size);
+  assert(Sigma.size() == ref_size);
 
   assert(G[0].get().sig() == G[1].get().sig());
   assert(Sigma[0].get().sig() == Sigma[1].get().sig());
@@ -32,9 +32,9 @@ void molGF2SolverSpinDecomp::solve(int tstp, std::vector<std::reference_wrapper<
 }
 
 void molGF2SolverSpinDecomp::solve_loop(int tstp, std::vector<std::reference_wrapper<GREEN>> &Sigma, std::vector<std::reference_wrapper<GREEN>> &G) const {
-  std::vector<size_t> ref_size = {size_t(2)};
-  assert(G.shape() == ref_size);
-  assert(Sigma.shape() == ref_size);
+  size_t ref_size = size_t(2);
+  assert(G.size() == ref_size);
+  assert(Sigma.size() == ref_size);
 
   assert(G[0].get().sig() == G[1].get().sig());
   assert(Sigma[0].get().sig() == Sigma[1].get().sig());
