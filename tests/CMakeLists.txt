@@ -8,7 +8,9 @@ add_executable(runtests
   free-test.cpp
   vie2-test.cpp
   integration-test.cpp
-  hubb-test.cpp)
+  hubb-test.cpp
+  molHFSolver-test.cpp
+  mol2bSolver-test.cpp)
 
 target_compile_definitions(runtests PRIVATE
   TEST_DATA_DIR="${PROJECT_SOURCE_DIR}/tests/data")

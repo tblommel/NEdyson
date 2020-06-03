@@ -21,10 +21,19 @@ private:
   mutable ZTensor<2> P1ab;
   mutable ZTensor<2> P2ab;
   mutable ZTensor<4> Zijkl;
+  DTensor<3> Viaj_;
 
   void solve_bubble(int tstp, std::vector<std::reference_wrapper<GREEN>> &Sigma, std::vector<std::reference_wrapper<GREEN>> &G) const;
+  void solve_bubble_les(int tstp, std::vector<std::reference_wrapper<GREEN>> &Sigma, std::vector<std::reference_wrapper<GREEN>> &G) const;
+  void solve_bubble_ret(int tstp, std::vector<std::reference_wrapper<GREEN>> &Sigma, std::vector<std::reference_wrapper<GREEN>> &G) const;
+  void solve_bubble_tv(int tstp, std::vector<std::reference_wrapper<GREEN>> &Sigma, std::vector<std::reference_wrapper<GREEN>> &G) const;
 
   void solve_exch(int tstp, std::vector<std::reference_wrapper<GREEN>> &Sigma, std::vector<std::reference_wrapper<GREEN>> &G) const;
+  void solve_exch_les(int tstp, std::vector<std::reference_wrapper<GREEN>> &Sigma, std::vector<std::reference_wrapper<GREEN>> &G) const;
+  void solve_exch_ret(int tstp, std::vector<std::reference_wrapper<GREEN>> &Sigma, std::vector<std::reference_wrapper<GREEN>> &G) const;
+  void solve_exch_tv(int tstp, std::vector<std::reference_wrapper<GREEN>> &Sigma, std::vector<std::reference_wrapper<GREEN>> &G) const;
+
+  void TransposeV();
 
 public:
   molGF2SolverSpinDecomp(const DTensor<3> &Vija)
@@ -36,7 +45,8 @@ public:
         Y2sija(2,nao_, nao_, nalpha_),
         P1ab(nalpha_,nalpha_),
         P2ab(nalpha_,nalpha_),
-        Zijkl(nao_, nao_, nao_, nao_) {};
+        Viaj_(nao_, nalpha_, nao_),
+        Zijkl(nao_, nao_, nao_, nao_) { TransposeV(); };
 
   
   void solve(int tstp, std::vector<std::reference_wrapper<GREEN>> &Sigma, std::vector<std::reference_wrapper<GREEN>> &G) const;

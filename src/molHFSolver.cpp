@@ -162,7 +162,7 @@ void molHFSolverSpin::solve_HF(int tstp, ZTensor<4> &hmf, const ZTensor<3> &rho)
 
     // Hartree
     for(int sp=0; sp<ns_; sp++){
-      ZColVectorMap(hmf.data() + tstp*2*nao2 + s*nao2, nao2).noalias() += DMatrixConstMap(Uijkl_.data(),nao2,nao2) * ZColVectorConstMap(rho.data() + sp*nao2 ,nao2,nao2);
+      ZColVectorMap(hmf.data() + tstp*2*nao2 + s*nao2, nao2).noalias() += DMatrixConstMap(Uijkl_.data(),nao2,nao2) * ZColVectorConstMap(rho.data() + sp*nao2 ,nao2);
     }
   }
 }

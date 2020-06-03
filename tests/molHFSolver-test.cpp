@@ -29,6 +29,7 @@ TEST_CASE("Sigma HF")
     test_solver.solve_HF_loop(t,hmf_loop,rho);
   }
 
+
   double err = (ZColVectorMap(hmf.data(), (nt+1)*na2) - ZColVectorMap(hmf_loop.data(), (nt+1)*na2)).norm();
   REQUIRE(err < 1e-10);
 }
