@@ -317,6 +317,10 @@ void G0_from_h0(GREEN &G, double mu, const ZMatrix &H0, double beta, double h){
 }
 
 
+void G0_from_h0(GREEN &G, double mu, const DTensor<2> &H0, double beta, double h){
+  ZMatrix HMatrix = DMatrixConstMap(H0.data(), G.size1(), G.size1());
+  G0_from_h0(G, mu, HMatrix, beta, h);
+}
 
 // Matsubara solver =====================================================================================
 // Solves Dysons equation in frequency space
@@ -572,7 +576,7 @@ double dyson_start_ret(const INTEG &I, GREEN &G, const GREEN &Sig, const cplx *h
 
 
 
-double dyson_start_tv(const INTEG &I, GREEN &G, const GREEN &Sig, cplx *hmf, double mu, double beta, double dt){
+double dyson_start_tv(const INTEG &I, GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double beta, double dt){
   // Counters and sizes
   int k=I.k(), size1=G.size1(), es=G.element_size(),ntau=G.ntau(),m,l,n,i;
   cplx weight;
@@ -673,7 +677,7 @@ double dyson_start_tv(const INTEG &I, GREEN &G, const GREEN &Sig, cplx *hmf, dou
 // Step Functions ==========================================================================================
 
 // i dt' GR(t,t-t') - GR(t-t')hmf(t-t') - \int_0^t' GR(t,t-s) SR(t-s,t-t') = 0
-void dyson_step_ret(int tstp, const INTEG &I, GREEN &G, const GREEN &Sig, cplx *hmf, double mu, double dt){
+void dyson_step_ret(int tstp, const INTEG &I, GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double dt){
   // Counters and sizes
   int k=I.k(), size1=G.size1(), es=G.element_size(),m,l,n,i;
   
@@ -801,7 +805,7 @@ void dyson_step_ret(int tstp, const INTEG &I, GREEN &G, const GREEN &Sig, cplx *
 }
 
 // idt GRM(tstp,m) - hmf(tstp) GRM(t,m) - \int_0^t dT SR(t,T) GRM(T,m) = \int_0^{beta} dT SRM(t,T) GM(T-m)
-void dyson_step_tv(int tstp, const INTEG &I, GREEN &G, const GREEN &Sig, cplx *hmf, double mu, double beta, double dt){
+void dyson_step_tv(int tstp, const INTEG &I, GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double beta, double dt){
   // Counters and sizes
   int k=I.k(), size1=G.size1(), es=G.element_size(), ntau=G.ntau(), m, l, n, i;
   cplx weight;
@@ -814,6 +818,7 @@ void dyson_step_tv(int tstp, const INTEG &I, GREEN &G, const GREEN &Sig, cplx *h
   cplx *tmp = new cplx[es];
   cplx *stmp = new cplx[es];
   cplx *resptr;
+  const cplx *hptr;
   cplx *Gptr;
 
   element_iden(size1,iden);
@@ -838,10 +843,10 @@ void dyson_step_tv(int tstp, const INTEG &I, GREEN &G, const GREEN &Sig, cplx *h
   
   // Make M
   weight = cplxi/dt*I.bd_weights(0);
-  resptr = hmf+(tstp)*es;
+  hptr = hmf+(tstp)*es;
   weight2= -dt*I.omega(0);
   Gptr = Sig.retptr(tstp,tstp);
-  for(i=0;i<es;i++) M[i] = (weight+mu)*iden[i] - resptr[i] + weight2*Gptr[i];
+  for(i=0;i<es;i++) M[i] = (weight+mu)*iden[i] - hptr[i] + weight2*Gptr[i];
 
   // Solve MX=Q
   for(m=0;m<=ntau;m++){
@@ -856,7 +861,7 @@ void dyson_step_tv(int tstp, const INTEG &I, GREEN &G, const GREEN &Sig, cplx *h
   delete[] Q;
 }
 
-double dyson_step_les(int n, const INTEG &I, GREEN &G, const GREEN &Sig, cplx *hmf, double mu, double beta, double dt){
+double dyson_step_les(int n, const INTEG &I, GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double beta, double dt){
 
   // Sizes and iterators
   int k=I.k(), size1=G.size1(), es=G.element_size(), m,l,i;
@@ -980,7 +985,7 @@ double dyson_step_les(int n, const INTEG &I, GREEN &G, const GREEN &Sig, cplx *h
 }
 
 
-double dyson_start_les(const INTEG &I, GREEN &G, const GREEN &Sig, cplx *hmf, double mu, double beta, double dt){
+double dyson_start_les(const INTEG &I, GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double beta, double dt){
   double err=0;
   int k=I.k();
   for(int n=0;n<=k;n++) err += dyson_step_les(n,I,G,Sig,hmf,mu,beta,dt);
@@ -1004,6 +1009,37 @@ double dyson_start(const INTEG &I, GREEN &G, const GREEN &Sig, const function &h
 }
 
 
+double dyson_start(const INTEG &I, GREEN &G, const GREEN &Sig, const cplx* hmf, double mu, double beta, double dt){
+  assert(G.size1()==Sig.size1());
+  assert(G.nt()==Sig.nt());
+  assert(G.nt()>=I.k());
+  assert(G.sig()==Sig.sig());
+
+  double err=0;
+  err += dyson_start_ret(I, G, Sig, hmf, mu, dt);
+  err += dyson_start_tv(I, G, Sig, hmf, mu, beta, dt);
+  err += dyson_start_les(I, G, Sig, hmf, mu, beta, dt);
+  return err;
+}
+
+
+double dyson_start(const INTEG &I, GREEN &G, const GREEN &Sig, const ZTensor<3> &hmf, double mu, double beta, double dt){
+  assert(G.size1()==Sig.size1());
+  assert(G.size1()==hmf.shape()[2]);
+  assert(G.size1()==hmf.shape()[1]);
+  assert(G.nt()==Sig.nt());
+  assert(G.nt()==(hmf.shape()[0]-1));
+  assert(G.nt()>=I.k());
+  assert(G.sig()==Sig.sig());
+
+  double err=0;
+  err += dyson_start_ret(I, G, Sig, hmf.data(), mu, dt);
+  err += dyson_start_tv(I, G, Sig, hmf.data(), mu, beta, dt);
+  err += dyson_start_les(I, G, Sig, hmf.data(), mu, beta, dt);
+  return err;
+}
+
+
 
 void dyson_step(int n, const INTEG &I, GREEN &G, const GREEN &Sig, const function &hmf, double mu, double beta, double dt){
   assert(G.size1()==Sig.size1());
@@ -1020,7 +1056,524 @@ void dyson_step(int n, const INTEG &I, GREEN &G, const GREEN &Sig, const functio
   dyson_step_les(n, I, G, Sig, hmf.ptr(0), mu, beta, dt);
 }
 
+void dyson_step(int n, const INTEG &I, GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double beta, double dt){
+  assert(G.size1()==Sig.size1());
+  assert(G.nt()==Sig.nt());
+  assert(G.ntau()==Sig.ntau());
+  assert(G.nt()>=I.k());
+  assert(G.sig()==Sig.sig());
+  assert(n>I.k());
 
+  dyson_step_ret(n, I, G, Sig, hmf, mu, dt);
+  dyson_step_tv(n, I, G, Sig, hmf, mu, beta, dt);
+  dyson_step_les(n, I, G, Sig, hmf, mu, beta, dt);
+}
+
+void dyson_step(int n, const INTEG &I, GREEN &G, const GREEN &Sig, const ZTensor<3> &hmf, double mu, double beta, double dt){
+  assert(G.size1()==Sig.size1());
+  assert(G.size1()==hmf.shape()[2]);
+  assert(G.size1()==hmf.shape()[1]);
+  assert(G.nt()==Sig.nt());
+  assert(G.nt()==(hmf.shape()[0]-1));
+  assert(G.nt()>=I.k());
+  assert(G.sig()==Sig.sig());
+  assert(G.ntau()==Sig.ntau());
+  assert(n>I.k());
+
+  dyson_step_ret(n, I, G, Sig, hmf.data(), mu, dt);
+  dyson_step_tv(n, I, G, Sig, hmf.data(), mu, beta, dt);
+  dyson_step_les(n, I, G, Sig, hmf.data(), mu, beta, dt);
+}
+
+
+
+
+
+
+
+
+
+// Gives free green's function from constant hamiltonian
+// G^M(\tau) = s f_s(mu-h) exp((mu-h)\tau)
+// G^{TV}(n,\tau) = -is U_{n,0} f_s(h-mu) exp((h-mu)\tau)
+// G^R(n,j) = -iU_{n,j} = U_{n,0} (U_{j,0})^\dagger
+// G^L(j,n) = -siU_{j,0} f_s(h-mu) (U_{n,0})^\dagger
+void G0_from_h0(TTI_GREEN &G, double mu, const ZMatrix &H0, double beta, double h){
+  assert(G.size1()==H0.rows());
+
+  int nt=G.nt(),ntau=G.ntau(), size = G.size1();
+  int sign=G.sig();
+  double tau,t,dtau=beta/ntau;
+  ZMatrix idm(size,size);
+  ZMatrix Udt(size,size);
+  ZMatrix IHdt(size,size);
+  ZMatrix Hmu(size,size);
+  ZMatrix evec0(size,size),value(size,size);
+  DColVector eval0(size),eval0m(size);
+
+  idm = Eigen::MatrixXcd::Identity(size,size);
+  Hmu = -H0 + mu * idm;
+
+  Eigen::SelfAdjointEigenSolver<ZMatrix> eigensolver(Hmu);
+  evec0=eigensolver.eigenvectors();
+  eval0=eigensolver.eigenvalues();
+  eval0m=(-1.0)*eval0;
+
+  for(int m=0;m<=ntau;m++){
+    tau=m*dtau;
+    if(sign==-1){
+      value=(-1.0)*evec0*fermi_exp(beta,tau,eval0).asDiagonal()*evec0.adjoint();
+    }else if(sign==1){
+      value=(1.0)*evec0*bose_exp(beta,tau,eval0).asDiagonal()*evec0.adjoint();
+    }
+    G.set_mat(m,value);
+  }
+
+  if(nt >=0 ){
+    IHdt = std::complex<double>(0,1.0) * h * Hmu;
+    Udt = IHdt.exp();
+
+    NEdyson::function Ut(nt,size);
+    ZMatrix Un(size,size);
+    Ut.set_value(-1,idm);
+    Ut.set_value(0,idm);
+    for(int n=1;n<=nt;n++){
+      Ut.get_value(n-1,Un);
+      Un = Un * Udt;
+      Ut.set_value(n,Un);
+    }
+
+    ZMatrix expp(size,size);
+    for(int m=0;m<=ntau;m++){
+      tau=m*dtau;
+      for(int n=0;n<=nt;n++){
+        Ut.get_value(n,expp);
+        if(sign==-1){
+          value=std::complex<double>(0,1.0)*expp*evec0*fermi_exp(beta,tau,eval0m).asDiagonal()*evec0.adjoint();
+        }else if(sign==1){
+          value=std::complex<double>(0,-1.0)*expp*evec0*bose_exp(beta,tau,eval0m).asDiagonal()*evec0.adjoint();
+        } 
+        G.set_tv(n,m,value);
+      } 
+    } 
+    
+    if(sign==-1){
+      value=evec0*fermi(beta,eval0m).asDiagonal()*evec0.adjoint();
+    }else if(sign==1){
+      value=-1.0*evec0*bose(beta,eval0m).asDiagonal()*evec0.adjoint();
+    } 
+    ZMatrix exppt1(size,size);
+    ZMatrix exppt2(size,size);
+    for(int m=0;m<=nt;m++){
+      ZMatrix tmp(size,size);
+      Ut.get_value(m,exppt1);
+      tmp = std::complex<double>(0,-1.0)*exppt1;
+      G.set_ret(m,tmp);
+      tmp=std::complex<double>(0,1.0)*value*exppt1;
+      G.set_les(-m,tmp);
+    }
+  }
+}
+
+
+void G0_from_h0(TTI_GREEN &G, double mu, const DTensor<2> &H0, double beta, double h){
+  ZMatrix HMatrix = DMatrixConstMap(H0.data(), G.size1(), G.size1());
+  G0_from_h0(G, mu, HMatrix, beta, h);
+}
+
+// Extrapolates a Green's function object from [n-k-1,n-1] to n
+void Extrapolate(const INTEG &I, TTI_GREEN &G, int n){
+  assert(n>I.k());
+  assert(n<=G.nt());
+  int k=I.k(), size1=G.size1(), ntau=G.ntau(),l,j,es=size1*size1,jcut;
+  double *pref= new double[k+1];
+  for(l=0;l<=k;l++) pref[l]=0;
+  for(l=0;l<=k;l++){
+    for(j=0;j<=k;j++){
+      pref[l]+=I.poly_interp(j,l)*(1-2*(j%2));
+    }
+  }
+  cplx *sav;
+  //right mixing
+  for(l=0;l<=ntau;l++){
+    sav=G.tvptr(n,l);
+    element_set_zero(size1,sav);
+    for(j=0;j<=k;j++) element_incr(size1,sav,pref[j],G.tvptr(n-j-1,l));
+  }
+  //retarded
+  sav=G.retptr(n);
+  element_set_zero(size1,sav);
+  for(j=0;j<=k;j++){
+    element_incr(size1,sav,pref[j],G.retptr(n-j-1));
+  }
+  //less
+  element_set(size1,G.lesptr(-n),G.tvptr(n,0));
+  element_conj(size1,G.lesptr(-n));
+  element_smul(size1,G.lesptr(-n),-1);
+  delete[] pref;
+}
+
+double dyson_start_ret(const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig, const cplx *hmf, double mu, double dt){
+  assert(G.size1()==Sig.size1());
+  assert(G.nt()==Sig.nt());
+  assert(G.nt()>=I.k());
+  assert(G.sig()==Sig.sig());
+
+  // Counters and sizes
+  int k=I.k(), size1=G.size1(), es=G.element_size(),m,l,n,i;
+  
+  // Matricies
+  cplx *M = new cplx[k*k*es];
+  cplx *Q = new cplx[k*es];
+  cplx *X = new cplx[k*es];
+  cplx *tmp = new cplx[es];
+  cplx *stmp = new cplx[es];
+  cplx *iden = new cplx[es];
+  cplx weight;
+  cplx ncplxi = cplx(0,-1);
+  element_iden(size1,iden);
+
+  // Initial condition
+  element_iden(size1,G.retptr(0),ncplxi);
+
+  double err=0;
+  // Fill the first k timesteps
+  for(l=0;l<k*k*es;l++){
+    M[l]=0.;
+  }
+  for(l=0;l<k*es;l++){
+    Q[l]=0.;
+  }
+  for(n=1;n<=k;n++){
+    for(l=0;l<=k;l++){
+      if(l==0){ // We know these G's. Put into Q
+        element_conj(size1,tmp,G.retptr(0));
+        element_smul(size1,tmp,-1);
+        element_mult(size1,stmp,Sig.retptr(n),tmp);
+        for(i=0;i<es;i++){
+          Q[(n-1)*es+i]+=ncplxi/dt*I.poly_diff(n,l)*tmp[i]+dt*I.poly_integ(0,n,l)*stmp[i];
+        }
+      }
+      else{ // Don't have these. Put into M
+        // Derivative term
+        for(i=0;i<es;i++) M[es*((n-1)*(k))+(i/size1)*(k)*(size1)+(l-1)*size1+i%size1] = -ncplxi/dt*I.poly_diff(n,l)*iden[i];
+
+        // Delta energy term
+        if(n==l){
+          element_set(size1,tmp,hmf);
+          for(i=0;i<es;i++) M[es*((n-1)*(k))+(i/size1)*(k)*(size1)+(l-1)*size1+i%size1] += mu*iden[i]-tmp[i];
+        }
+
+        // Integral term
+        weight=dt*I.poly_integ(0,n,l);
+        if(n>=l){ // We have Sig
+          element_set(size1,stmp,Sig.retptr(n-l));
+        }
+        else{ // Don't have it
+          element_set(size1,stmp,Sig.retptr(l-n));
+          element_conj(size1,stmp);
+          weight *= -1;
+        }
+        for(i=0;i<es;i++){
+          M[es*((n-1)*(k))+(i/size1)*(k)*(size1)+(l-1)*size1+i%size1] -= weight*stmp[i];
+        }
+      }
+    }
+  }
+
+  //solve MX=Q for X
+  element_linsolve_left((k)*size1,(k)*size1,size1,M,X,Q);
+  //put X into G
+  for(l=0;l<k;l++){
+    err += element_diff(size1,G.retptr(l+1),X+l*es);
+    element_set(size1,G.retptr(l+1),X+l*es);
+  }
+
+  delete[] M;
+  delete[] X;
+  delete[] Q;
+  delete[] tmp;
+  delete[] stmp;
+  delete[] iden;
+  return err;
+}
+
+double dyson_start_tv(const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig, const cplx *hmf, double mu, double beta, double dt){
+  // Counters and sizes
+  int k=I.k(), size1=G.size1(), es=G.element_size(),ntau=G.ntau(),m,l,n,i;
+  cplx weight;
+  double err=0;
+
+  // Matricies
+  cplx *M = new cplx[k*k*es];
+  cplx *Q = new cplx[k*es];
+  cplx *X = new cplx[k*es];
+  cplx *tmp = new cplx[es];
+  cplx *stmp = new cplx[es];
+  cplx *iden = new cplx[es];
+
+  cplx cplxi = cplx(0,1);
+  element_iden(size1,iden);
+
+  // Boundary Conditions
+  for(m=0;m<=ntau;m++){
+    element_set(size1,tmp,G.tvptr(0,m));
+    for(i=0;i<es;i++){
+      G.tvptr(0,m)[i] = (double)G.sig()*cplxi*G.matptr(ntau-m)[i];
+    }
+    err += element_diff(size1,tmp,G.tvptr(0,m));
+  }
+
+  // At each m, get n=1...k
+  for(m=0;m<=ntau;m++){
+    memset(M,0,k*k*es*sizeof(cplx));
+    memset(Q,0,k*es*sizeof(cplx));
+
+    // Set up the kxk linear problem MX=Q
+    for(n=1;n<=k;n++){
+      for(l=0;l<=k;l++){
+
+        // Derivative term
+        weight = cplxi*I.poly_diff(n,l)/dt;
+        if(l==0){ // Put into Q
+          for(i=0;i<es;i++){
+            Q[(n-1)*es+i] -= weight*G.tvptr(0,m)[i];
+          }
+        }
+        else{ // Put into M
+          for(i=0;i<es;i++){
+            M[(n-1)*es*k+(i/size1)*k*size1+(l-1)*size1+i%size1] += weight*iden[i];
+          }
+        }
+
+        // Delta energy term
+        if(l==n){
+          element_set(size1,tmp,hmf);
+          for(i=0;i<es;i++) M[es*(n-1)*k+(i/size1)*k*size1+(l-1)*size1+i%size1] += mu*iden[i]-tmp[i];
+        }
+
+        // Integral term
+        weight = -dt*I.gregory_weights(n,l);
+        if(l==0){ // Put into Q
+          element_incr(size1,Q+(n-1)*es,-weight,Sig.retptr(n-l),G.tvptr(l,m));
+        }
+        else{ // Put into M
+          if(n>=l){ // Have Sig
+            element_set(size1,stmp,Sig.retptr(n-l));
+          }
+          else{ // Dont have Sig
+            element_set(size1,stmp,Sig.retptr(l-n));
+            element_conj(size1,stmp);
+            element_smul(size1,stmp,-1);
+          }
+          for(i=0;i<es;i++){
+            M[es*(n-1)*k+(i/size1)*k*size1+(l-1)*size1+i%size1] += weight*stmp[i];
+          }
+        }
+      }
+      // Add in the integrals
+      CTV2(I, Sig, G, n, m, beta, tmp);
+      CTV3(I, Sig, G, n, m, beta, stmp);
+      element_incr(size1,stmp,tmp);
+      element_incr(size1,Q+(n-1)*es,stmp);
+    }
+    // Solve MX=Q
+    element_linsolve_left(k*size1,k*size1,size1,M,X,Q);
+    for(l=0;l<k;l++){
+      err += element_diff(size1,G.tvptr(l+1,m),X+l*es);
+      element_set(size1,G.tvptr(l+1,m),X+l*es);
+    }
+  }
+
+  delete[] M;
+  delete[] Q;
+  delete[] X;
+  delete[] tmp;
+  delete[] stmp;
+  delete[] iden;
+  return err;
+}
+
+double dyson_start_les(const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig, const cplx *hmf, double mu, double beta, double dt){
+  int size1 = G.size1();
+  int k = I.k();
+  cplx *tmp = new cplx[size1*size1];
+  double err = 0;
+  for(int n=0;n<=k;n++){
+    element_set(size1, tmp, G.lesptr(-n));
+    element_set(size1,G.lesptr(-n),G.tvptr(n,0));
+    element_conj(size1,G.lesptr(-n));
+    element_smul(size1,G.lesptr(-n),-1);
+    err+=element_diff(size1, tmp, G.lesptr(-n));
+  }
+  return err;
+}
+
+double dyson_start(const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig, const cplx* hmf, double mu, double beta, double dt){
+  assert(G.size1()==Sig.size1());
+  assert(G.nt()==Sig.nt());
+  assert(G.nt()>=I.k());
+  assert(G.sig()==Sig.sig());
+
+  double err=0;
+  err += dyson_start_ret(I, G, Sig, hmf, mu, dt);
+  err += dyson_start_tv(I, G, Sig, hmf, mu, beta, dt);
+  err += dyson_start_les(I, G, Sig, hmf, mu, beta, dt);
+  return err;
+}
+
+double dyson_start(const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig, const ZTensor<2> &hmf, double mu, double beta, double dt){
+  assert(G.size1()==Sig.size1());
+  assert(G.size1()==hmf.shape()[1]);
+  assert(G.size1()==hmf.shape()[0]);
+  assert(G.nt()==Sig.nt());
+  assert(G.nt()>=I.k());
+  assert(G.sig()==Sig.sig());
+
+  double err=0;
+  err += dyson_start_ret(I, G, Sig, hmf.data(), mu, dt);
+  err += dyson_start_tv(I, G, Sig, hmf.data(), mu, beta, dt);
+  err += dyson_start_les(I, G, Sig, hmf.data(), mu, beta, dt);
+  return err;
+}
+
+void dyson_step_ret(int tstp, const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig, const cplx *hmf, double mu, double dt){
+  // Counters and sizes
+  int k=I.k(), size1=G.size1(), es=G.element_size(),m,l,n,i;
+  
+  // Matricies
+  cplx *M = new cplx[es];
+  cplx *iden = new cplx[es];
+  cplx *qqint = new cplx[es];
+  cplx weight;
+  cplx ncplxi = cplx(0,-1);
+  element_iden(size1,iden);
+
+  // Do the integral
+  // qqint = \sum_{l=0}^{n-1} w_{nl} GR(t,t-l) SR(t-l,t-n) for n=k+1...tstp
+  memset(qqint,0,sizeof(cplx)*es);
+  for(l=0;l<=tstp-1;l++){
+    element_incr(size1, qqint, I.gregory_weights(tstp,l), G.retptr(l), Sig.retptr(tstp-l));
+  }
+
+  cplx *bdweight = new cplx[k+2];
+  for(l=0;l<k+2;l++) bdweight[l] = I.bd_weights(l)*-ncplxi/dt;
+  double w0 = dt*I.omega(0);
+
+  // Set up qq
+  for(i=0;i<es;i++){
+    qqint[n*es+i]*=dt;
+    for(l=1;l<=k+1;l++){
+      qqint[n*es+i]-=bdweight[l]*G.retptr(tstp-l)[i];
+    }
+  }
+
+  // Set up mm
+  element_set(size1,M,hmf);
+  element_smul(size1,M,-1);
+  element_incr(size1,M,-w0,Sig.retptr(0));
+  for(i=0;i<es;i++) M[i] += (mu+bdweight[0])*iden[i];
+
+  // Solve XM=Q for X
+  element_linsolve_right(size1,size1,size1,G.retptr(tstp),M,qqint);
+    
+  delete[] bdweight;
+  delete[] qqint;
+  delete[] M;
+  delete[] iden;
+  return;
+}
+
+void dyson_step_tv(int tstp, const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig, const cplx *hmf, double mu, double beta, double dt){
+  // Counters and sizes
+  int k=I.k(), size1=G.size1(), es=G.element_size(), ntau=G.ntau(), m, l, n, i;
+  cplx weight;
+  cplx weight2;
+
+  // Matricies
+  cplx *iden = new cplx[es];
+  cplx *M = new cplx[es];
+  cplx *Q = new cplx[es];
+  cplx *tmp = new cplx[es];
+  cplx *stmp = new cplx[es];
+  cplx *resptr;
+  const cplx *hptr;
+  cplx *Gptr;
+
+  element_iden(size1,iden);
+  cplx cplxi = cplx(0.,1.);
+
+  cplx *gtv = G.tvptr(tstp ,0);
+  int top = (ntau+1)*es;
+  for(l=0;l<top;l++) gtv[l]=0;
+
+  Ctv_tstp(tstp, G, Sig, Sig, G, G, I, beta, dt);
+
+
+  // Put derivatives into GRM(tstp,m)
+  for(l=1;l<=k+1;l++){
+    weight = -cplxi/dt*I.bd_weights(l);
+    resptr=G.tvptr(tstp,0);
+    Gptr=G.tvptr(tstp-l,0);
+    for(m=0;m<(ntau+1)*es;m++){
+      resptr[m] += weight*Gptr[m];
+    }
+  }
+  
+  // Make M
+  weight = cplxi/dt*I.bd_weights(0);
+  hptr = hmf;
+  weight2= -dt*I.omega(0);
+  Gptr = Sig.retptr(0);
+  for(i=0;i<es;i++) M[i] = (weight+mu)*iden[i] - hptr[i] + weight2*Gptr[i];
+
+  // Solve MX=Q
+  for(m=0;m<=ntau;m++){
+    element_set(size1,Q,G.tvptr(tstp,m));
+    element_linsolve_left(size1,size1,size1,M,G.tvptr(tstp,m),Q);
+  }
+
+  delete[] stmp;
+  delete[] tmp;
+  delete[] iden;
+  delete[] M;
+  delete[] Q;
+}
+
+void dyson_step_les(int n, const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig, const cplx *hmf, double mu, double beta, double dt){
+  int size1 = G.size1();
+  element_set(size1,G.lesptr(-n),G.tvptr(n,0));
+  element_conj(size1,G.lesptr(-n));
+  element_smul(size1,G.lesptr(-n),-1);
+}
+
+void dyson_step(int n, const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig, const cplx *hmf, double mu, double beta, double dt){
+  assert(G.size1()==Sig.size1());
+  assert(G.nt()==Sig.nt());
+  assert(G.ntau()==Sig.ntau());
+  assert(G.nt()>=I.k());
+  assert(G.sig()==Sig.sig());
+  assert(n>I.k());
+
+  dyson_step_ret(n, I, G, Sig, hmf, mu, dt);
+  dyson_step_tv(n, I, G, Sig, hmf, mu, beta, dt);
+  dyson_step_les(n, I, G, Sig, hmf, mu, beta, dt);
+}
+
+void dyson_step(int n, const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig, const ZTensor<2> &hmf, double mu, double beta, double dt){
+  assert(G.size1()==Sig.size1());
+  assert(G.size1()==hmf.shape()[0]);
+  assert(G.size1()==hmf.shape()[1]);
+  assert(G.nt()==Sig.nt());
+  assert(G.nt()>=I.k());
+  assert(G.sig()==Sig.sig());
+  assert(G.ntau()==Sig.ntau());
+  assert(n>I.k());
+
+  dyson_step_ret(n, I, G, Sig, hmf.data(), mu, dt);
+  dyson_step_tv(n, I, G, Sig, hmf.data(), mu, beta, dt);
+  dyson_step_les(n, I, G, Sig, hmf.data(), mu, beta, dt);
+}
 
 
 }//namespace

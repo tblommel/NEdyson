@@ -38,7 +38,7 @@ TEST_CASE("Expanded Spectral function calculations"){
   AAct.read_from_file(File2,"Aext");
 
   std::ifstream in;
-  in.open(std::string(TEST_DATA_DIR) + "/Gfree_GRExp.dat");
+  in.open(std::string(TEST_DATA_DIR) + "/Gfree_GRExp.data");
   int nfit, ntp;
   in >> nfit >> ntp;
   cplx *extdata = new cplx[G.nt()*(G.nt()-nfit-ntp)*G.size1()*G.size1()];

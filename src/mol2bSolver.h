@@ -117,9 +117,7 @@ class molGF2SolverSpin : public molHFSolverSpin {
 private:
   mutable ZTensor<3> C1_aaa;
   mutable ZTensor<3> C2_aaa;
-  mutable ZTensor<3> C3_aaa;
   mutable ZTensor<3> A1_aaa;
-  mutable ZTensor<3> A2_aaa;
   mutable ZTensor<3> B1_aaa;
   mutable ZTensor<3> B2_aaa;
   DTensor<4> Uijkl_exch_;
@@ -135,11 +133,9 @@ public:
       : molHFSolverSpin(U_int),
         C1_aaa(nao_, nao_, nao_),
         C2_aaa(nao_, nao_, nao_),
-        C3_aaa(nao_, nao_, nao_),
         B1_aaa(nao_, nao_, nao_),
         B2_aaa(nao_, nao_, nao_),
         A1_aaa(nao_, nao_, nao_),
-        A2_aaa(nao_, nao_, nao_),
         Uijkl_exch_(nao_, nao_, nao_, nao_) { make_U_exch(); };
 
   
@@ -150,6 +146,36 @@ public:
 }; // class molGF2SolverSpinDecomp
 
 
+/////////////////////////////////////////////////////////////////////////////
+////                               FULL                                  ////
+/////////////////////////////////////////////////////////////////////////////
+class molGF2Solver : public molHFSolver {
+private:
+  mutable ZTensor<3> A1_aaa;
+  mutable ZTensor<3> B1_aaa;
+  mutable ZTensor<3> B2_aaa;
+  DTensor<4> Uijkl_exch_;
+
+  void solve_les(int tstp, GREEN &Sigma, GREEN &G) const;
+  void solve_ret(int tstp, GREEN &Sigma, GREEN &G) const;
+  void solve_tv(int tstp,  GREEN &Sigma, GREEN &G) const;
+
+  void make_U_exch();
+
+public:
+  molGF2Solver(const DTensor<4> &U_int)
+      : molHFSolver(U_int),
+        B1_aaa(nao_, nao_, nao_),
+        B2_aaa(nao_, nao_, nao_),
+        A1_aaa(nao_, nao_, nao_),
+        Uijkl_exch_(nao_, nao_, nao_, nao_) { make_U_exch(); };
+
+  
+  void solve(int tstp, GREEN &Sigma, GREEN &G) const;
+
+  void solve_loop(int tstp, GREEN &Sigma, GREEN &G) const;
+
+}; // class molGF2SolverSpinDecomp
 
 
 } // namespace NEdyson

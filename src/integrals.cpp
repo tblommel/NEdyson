@@ -657,5 +657,195 @@ void incr_convolution_les(int tstp, const std::vector<bool> &mask_les, GREEN &C,
 }
 
 
+
+
+
+
+
+
+// This one does integral for every tau, and puts result into C by incrementing it!!!
+// For every \tau=m...
+//   C[n,m] += \int_0^n dt A^R(n,t) B^{TV}(t,m)
+//          += \sum_{j=0}^{n-1} dt w_{n,j} A^R(n,j) B^{TV}(j,m)
+void CTV1(const INTEG &I, cplx *ctv, const TTI_GREEN &A, const TTI_GREEN &Acc, const TTI_GREEN &B, int n, double dt){
+  assert(n<=A.nt());
+  assert(A.nt() == B.nt());
+  assert(A.nt() == Acc.nt());
+  assert(A.size1() == Acc.size1());
+  assert(A.size1() == B.size1());
+  assert(A.ntau() == B.ntau());
+  assert(A.ntau() == Acc.ntau());
+  assert(A.sig()==Acc.sig());
+
+  int k=I.k(), ntau=A.ntau(), size1=A.size1(), es=A.element_size(), i, j, m;
+  double weight;
+  cplx *Atmp = new cplx[es];
+  cplx *resptr;
+  cplx *Gptr;
+  int ntop = (n>k)?n:k;
+
+  for(j=0;j<=ntop;j++){
+    weight = I.gregory_weights(n,j);
+    if(j>n){ // Dont have AR
+      element_conj(size1,Atmp,Acc.retptr(j-n));
+      element_smul(size1,Atmp,-1);
+    }
+    else{
+      element_set(size1,Atmp,A.retptr(n-j));
+    }
+    element_smul(size1,Atmp,dt);
+
+    resptr=ctv;
+    Gptr=B.tvptr(j,0);
+    if(weight != 1){
+      for(m=0;m<=ntau;m++){
+        element_incr(size1,resptr,weight,Atmp,Gptr);
+        Gptr+=es;
+        resptr+=es;
+      }
+    }
+    else{
+      for(m=0;m<=ntau;m++){
+        element_incr(size1,resptr,Atmp,Gptr);
+        Gptr+=es;
+        resptr+=es;
+      }
+    }
+  }
+
+  delete[] Atmp;
+}
+
+// Does the integral C^{TV}_2[A,B](n,m) = \int_0^m d\tau A^{TV(n,\tau) B^M(tau-m)
+//           m<k                        = \sum_{j,l=0}^k d\tau R_{m,j,l} A^{TV}(n,l) s B^M(ntau-j)
+//           m>=k                       = \sum_{l=0}^m  d\tau w_{m,l} A^{TV}(n,m-l) s B^M(ntau-l)
+// Puts the result into res, which should be size1*size1
+void CTV2(const INTEG &I, const TTI_GREEN &A, const TTI_GREEN &B, int n, int m, double beta, cplx *res){
+  assert(A.ntau()==B.ntau());
+  assert(A.ntau()>=I.k());
+  assert(A.ntau()>=m);
+  assert(m>=0);
+  assert(n>=0);
+  assert(A.nt()>=n);
+  assert(A.nt() == B.nt());
+  assert(A.size1() == B.size1());
+
+  int k=I.k(), ntau=A.ntau(), size1=A.size1(), es=A.element_size(), sig=B.sig(),j,l;
+  double dtau=beta/ntau;
+  cplx *BM;
+  cplx *ARM;
+  for(int j=0;j<es;j++) res[j]=0;
+
+  if(m==0){} //do nothing
+  else if(m<k){//use starting weights
+    BM=B.matptr(ntau);
+    ARM=A.tvptr(n,0);
+    for(j=0;j<=k;j++){
+      for(l=0;l<=k;l++){
+        element_incr(size1,res,I.rcorr(m,j,l),ARM+l*es,BM-j*es);
+      }
+    }
+  }
+  else if(m<k+k+1){//use gregory weights
+    BM=B.matptr(ntau);
+    ARM=A.tvptr(n,m);
+    for(l=0;l<=m;l++){//Omegas
+      element_incr(size1,res,I.gregory_weights(m,l),ARM-l*es,BM-l*es);
+    }
+  }
+  else{//use greg and ones
+    BM=B.matptr(ntau);
+    ARM=A.tvptr(n,m);
+    for(l=0;l<=k;l++){//omegas
+      element_incr(size1,res,I.omega(l),ARM-l*es,BM-l*es);
+    }
+    for(l=k+1;l<m-k;l++){//ones
+      element_incr(size1,res,ARM-l*es,BM-l*es);
+    }
+    for(l=m-k;l<=m;l++){//omegas
+      element_incr(size1,res,I.omega(m-l),ARM-l*es,BM-l*es);
+    }
+  }
+  for(l=0;l<es;l++) res[l]*=(sig*dtau);
+}
+
+// Does the integral C^{TV}_3[A,B](n,m) = \int_m^\beta d\tau A^{TV(n,\tau) B^M(tau-m)
+//           m>ntau-k                   = \sum_{j,l=0}^k d\tau R_{ntau-m,j,l} A^{TV}(n,ntau-l) s B^M(j)
+//           m<=k                       = \sum_{l=0}^{ntau-m}  d\tau w_{ntau-m,l} A^{TV}(n,m+l) s B^M(l)
+// Puts the result into res, which should be size1*size1
+void CTV3(const INTEG &I, const TTI_GREEN &A, const TTI_GREEN &B, int n, int m, double beta, cplx *res){
+  assert(A.ntau()==B.ntau());
+  assert(A.ntau()>=I.k());
+  assert(A.ntau()>=m);
+  assert(m>=0);
+  assert(n>=0);
+  assert(A.nt()>=n);
+  assert(A.nt() == B.nt());
+  assert(A.size1() == B.size1());
+  
+  int k=I.k(), ntau=A.ntau(), size1=A.size1(), es=A.element_size(), sig=A.sig(),j,l;
+  double dtau=beta/ntau;
+  cplx *BM;
+  cplx *ARM;
+  for(j=0;j<es;j++) res[j]=0;
+
+  if(m==ntau){}//do nothing
+  else if(m>ntau-k){//use starting weights
+    BM=B.matptr(0);
+    ARM=A.tvptr(n,ntau);
+    for(j=0;j<=k;j++){
+      for(l=0;l<=k;l++){
+        element_incr(size1,res,I.rcorr(ntau-m,j,l),ARM-l*es,BM+j*es);
+      }
+    }
+  }
+  else if(ntau-m>=k+k+1){//use greg and ones
+    BM=B.matptr(0);
+    ARM=A.tvptr(n,m);
+    for(l=0;l<=k;l++){
+      element_incr(size1,res,I.omega(l),ARM+l*es,BM+l*es);
+    }
+    for(l=k+1;l<ntau-m-k;l++){
+      element_incr(size1,res,ARM+l*es,BM+l*es);
+    }
+    for(l=ntau-m-k;l<=ntau-m;l++){
+      element_incr(size1,res,I.omega(ntau-m-l),ARM+l*es,BM+l*es);
+    }
+  }
+  else{//use greg weights
+    BM=B.matptr(0);
+    ARM=A.tvptr(n,m);
+    for(l=0;l<=ntau-m;l++){
+      element_incr(size1,res,I.gregory_weights(ntau-m,l),ARM+l*es,BM+l*es);
+    }
+  }
+  for(int l=0;l<es;l++) res[l]*=dtau;
+}
+
+// This function calls CTV1,2,3 to do the convolutions necessary for the timestepping of the TV component
+// Results get put into C.tv(tstp,m) m=0...ntau.  Not by increment
+void Ctv_tstp(int tstp, TTI_GREEN &C, const TTI_GREEN &A, const TTI_GREEN &Acc, const TTI_GREEN &B, const TTI_GREEN &Bcc, const INTEG &I, double beta, double dt) {
+
+  int ntau = C.ntau(), size1 = C.size1(), es = size1*size1;
+  cplx *ctv = new cplx[(ntau+1)*es];
+  cplx *tmp = new cplx[es];
+  
+  for(int m=0;m<=ntau;m++){
+    CTV2(I,A,B,tstp,m,beta,ctv+m*es);
+    CTV3(I,A,B,tstp,m,beta,tmp);
+    element_incr(size1, ctv+m*es, tmp);
+  }
+
+  CTV1(I,ctv,A,Acc,B,tstp,dt);
+
+  for(int m=0;m<=ntau;m++){
+    element_set(size1, C.tvptr(tstp,m), ctv+m*es);
+  }
+
+  delete[] ctv;
+  delete[] tmp;
+}
+
+
 }//namespace
 #endif

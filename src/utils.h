@@ -11,8 +11,10 @@
 #define INTEG Integration::Integrator
 #define CFUNC NEdyson::function
 #define GREEN NEdyson::green_func
+#define TTI_GREEN NEdyson::tti_green_func
 #define GREEN_TSTP NEdyson::green_func_tstp
 #define SPECT NEdyson::spectral
+#define TTI_SPECT NEdyson::tti_spectral
 
 namespace h5 = HighFive;
 namespace h5e= H5Easy;

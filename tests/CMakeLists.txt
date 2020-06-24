@@ -12,6 +12,7 @@ add_executable(runtests
   molHFSolver-test.cpp
   mol2bSolver-test.cpp)
 
+link_directories("~/Libraries/gfmol/build/src/")
 target_compile_definitions(runtests PRIVATE
   TEST_DATA_DIR="${PROJECT_SOURCE_DIR}/tests/data")
 target_link_libraries(runtests PRIVATE

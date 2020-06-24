@@ -76,16 +76,6 @@ int main(int argc, char *argv[]){
   
   NEdyson::G0_from_h0(G,MuChem,h0,Beta,dt);
 
-  std::string str;
-  str = argv[1];
-  str+="/Gfree_const.h5";
-  h5e::File h5Gfree(str, h5e::File::Overwrite | h5e::File::ReadWrite | h5e::File::Create);
-  G.print_to_file(h5Gfree,"");
-  
-  str = argv[1];
-  str+="/G";  
-  G.print_to_file_mat(str,dt,dtau,16);
-
   G.get_dm(-1,DensM);
   std::cout.precision(17);
   double npart = DensM.trace().real();
@@ -197,13 +187,4 @@ int main(int argc, char *argv[]){
   elapsed_seconds = end-start;
   std::cout << "Time [Propagation] = " << elapsed_seconds.count() << "s\n\n";
 
-  str = argv[1];
-  str+="/G";
-  
-  G.print_to_file(str,dt,dtau,16);
-
-  A.AfromG(G,nw,wmax,dt);
-  str = argv[1];
-  str+="/A";
-  A.print_to_file(str);
 }

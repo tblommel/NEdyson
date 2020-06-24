@@ -179,3 +179,49 @@ TEST_CASE("Spin GF2")
   REQUIRE((STVDtest-STVDloop).norm() < 1e-10);
 
 }
+
+
+TEST_CASE("Full GF2")
+{
+  using namespace NEdyson;
+
+  int nao = 2;
+  int nalpha = 3;
+  int nt = 4;
+  int ntau = 5;
+  int nao2 = nao*nao;
+  
+  DTensor<4> Uijkl(nao,nao,nao,nao);
+
+  GREEN G(nt, ntau, nao, -1);
+  GREEN S(nt, ntau, nao, -1);
+  GREEN SL(nt, ntau, nao, -1);
+
+  DColVectorMap(Uijkl.data(),nao2*nao2) = Eigen::VectorXd::Random(nao2*nao2);
+
+  molGF2Solver test_solver(Uijkl);
+
+  ZColVectorMap(G.retptr(0,0),(nt+1)*(nt+2)/2*nao2) = Eigen::VectorXcd::Random((nt+1)*(nt+2)/2*nao2);
+  ZColVectorMap(G.lesptr(0,0),(nt+1)*(nt+2)/2*nao2) = Eigen::VectorXcd::Random((nt+1)*(nt+2)/2*nao2);
+  ZColVectorMap(G.tvptr(0,0),(nt+1)*(ntau+1)*nao2) = Eigen::VectorXcd::Random((nt+1)*(ntau+1)*nao2);
+
+  ZColVectorMap SLtest(S.lesptr(0,0), (nt+1)*(nt+2)/2*nao2);
+  ZColVectorMap SLloop(S.lesptr(0,0), (nt+1)*(nt+2)/2*nao2);
+
+  ZColVectorMap SRtest(S.retptr(0,0), (nt+1)*(nt+2)/2*nao2);
+  ZColVectorMap SRloop(SL.retptr(0,0), (nt+1)*(nt+2)/2*nao2);
+
+  ZColVectorMap STVtest(S.tvptr(0,0), (nt+1)*(ntau+1)*nao2);
+  ZColVectorMap STVloop(SL.tvptr(0,0), (nt+1)*(ntau+1)*nao2);
+
+  for(int tstp=0; tstp<=nt; tstp++){
+    test_solver.solve(tstp, S, G);
+    test_solver.solve_loop(tstp, SL, G);
+  }
+
+
+  REQUIRE((SLtest-SLloop).norm() < 1e-10);
+  REQUIRE((SRtest-SRloop).norm() < 1e-10);
+  REQUIRE((STVtest-STVloop).norm() < 1e-10);
+
+}

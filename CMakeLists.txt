@@ -7,6 +7,8 @@ set(CMAKE_CXX_STANDARD 11)
 
 
 find_package(ALPSCore REQUIRED COMPONENTS gf)
+find_package(Boost REQUIRED)
+message(STATUS ${Boost_INCLUDE_DIRS})
 find_package(Eigen3 REQUIRED)
 message(STATUS ${EIGEN3_INCLUDE_DIR})
 find_package(HDF5 REQUIRED COMPONENTS C)
@@ -20,6 +22,8 @@ if(omp)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
 
+add_subdirectory(${PROJECT_SOURCE_DIR}/deps/args)
+add_subdirectory(${PROJECT_SOURCE_DIR}/deps/LeksysINI)
 
 #fetch HighFive from GitHub
 include(CPM)
@@ -34,10 +38,14 @@ CPMAddPackage(
     "HIGHFIVE_EXAMPLES OFF"
 )
 
+include_directories("~/Libraries/include/")
+include_directories("~/Libraries/gfmol/deps/args/include/")
+include_directories("~/Libraries/gfmol/deps/LeksysINI/include/")
+link_directories("~/Libraries/lib/")
 
 add_subdirectory(src)
 add_subdirectory(programs)
-add_subdirectory(CalcA)
+#add_subdirectory(CalcA)
 
 
 enable_testing()

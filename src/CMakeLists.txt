@@ -16,7 +16,11 @@ add_library(libNEdyson
   utils.cpp utils.h
   NEdyson.cpp  NEdyson.h
   param.cpp param.h
+  molNEsim.cpp molNEsim.h molNEsim_impl.h molNEsim_decomp_impl.h molNEsim_spin_impl.h molNEsim_decomp_spin_impl.h
+  params.cpp params.h
 )
+
+
 
 target_include_directories(libNEdyson INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_definitions(libNEdyson PUBLIC 
@@ -25,4 +29,5 @@ target_link_libraries(libNEdyson PUBLIC
   alps::alps-gf
   Eigen3::Eigen
   HighFive
+  libgfmol
 )

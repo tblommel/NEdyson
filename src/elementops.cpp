@@ -34,14 +34,7 @@ void element_iden(int size1, cplx *z, cplx a){
 
 // puts Hermitian Conj of Z1 into Z
 void element_conj(int size1, cplx *z, const cplx *z1){
-	int l,m;
-	cplx tmp;
-	for(int l=0;l<size1;l++){
-		for(int m=0;m<size1;m++){
-			tmp=z1[m*size1+l];
-			z[l*size1+m]=cplx(tmp.real(),-tmp.imag());
-		}
-	}
+  ZMatrixMap(z, size1, size1) = ZMatrixConstMap(z1, size1, size1).adjoint();
 }
 
 // Conjugates Z
