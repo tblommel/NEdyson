@@ -388,6 +388,70 @@ void tti_molHFSolverSpin::solve_HF(ZTensor<3> &hmf, const ZTensor<3> &rho) const
 }
 
 
+void tti_molHFSolverSpinDecomp::solve_HF_loop(ZTensor<3> &hmf, const ZTensor<3> &rho) const {
+  assert(hmf.shape()[0] == 2);
+  assert(hmf.shape()[1] == nao_);
+  assert(hmf.shape()[2] == nao_);
+  assert(rho.shape()[0] == 2);
+  assert(rho.shape()[1] == nao_);
+  assert(rho.shape()[2] == nao_);
+  
+  for(int s=0; s<ns_; ++s){
+    for(int i=0; i<nao_; ++i){
+      for(int j=0; j<nao_; ++j){
+        for(int a=0; a<nalpha_; ++a){
+          for(int sp=0; sp<ns_; ++sp){
+            for(int k=0; k<nao_; ++k){
+              for(int l=0; l<nao_; ++l){
+                hmf(s,i,j) += Vija_(i,j,a) * Vija_(k,l,a) * rho(sp, k, l);
+                if(s==sp)
+                  hmf(s,i,j) -= Vija_(i,l,a) * Vija_(k,j,a) * rho(s,k,l);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+void tti_molHFSolverSpinDecomp::solve_HF(ZTensor<3> &hmf, const ZTensor<3> &rho) const {
+  assert(hmf.shape()[0] == 2);
+  assert(hmf.shape()[1] == nao_);
+  assert(hmf.shape()[2] == nao_);
+  assert(rho.shape()[0] == 2);
+  assert(rho.shape()[1] == nao_);
+  assert(rho.shape()[2] == nao_);
+
+  int nao2 = nao_*nao_;
+  int nt = hmf.shape()[1];
+
+  rho_T = ZMatrixConstMap(rho.data(), nao_, nao_) + ZMatrixConstMap(rho.data() + nao2, nao_, nao_);
+
+  // Hartree
+  auto VmapIa = DMatrixConstMap(Vija_.data(),nao2, nalpha_);
+  auto RhomapI= ZRowVectorConstMap(rho_T.data(), nao2);
+  Xa_ = RhomapI * VmapIa;
+  ZRowVectorMap(hmf.data(), nao2).noalias() += Xa_ * VmapIa.transpose();
+  ZRowVectorMap(hmf.data() + nao2, nao2).noalias() += Xa_ * VmapIa.transpose();
+
+  // Fock
+  auto tmp_12_3 = ZMatrixMap(tmp_.data(), nao2, nao_);
+  auto tmp_1_23 = ZMatrixMap(tmp_.data(), nao_, nao2);
+  auto V_kj_a_T = DMatrixConstMap(Vija_.data(), nao2, nalpha_).transpose();
+  ZRowVectorMap rho_T_flat(rho_T.data(), nao2);
+  
+  for(int i=0; i<nao_; i++){
+    auto V_i_l_a = DMatrixConstMap(Vija_.data() + i*nalpha_*nao_, nao_, nalpha_);
+    tmp_1_23 = V_i_l_a * V_kj_a_T;
+    for(int s=0; s<ns_; s++){
+      rho_T = ZMatrixConstMap(rho.data() + s*nao2, nao_,nao_).transpose();
+      ZRowVectorMap(hmf.data() + s*nao2 + i*nao_, nao_).noalias() -= rho_T_flat * tmp_12_3;
+    }
+  }
+}
+
 
 
 

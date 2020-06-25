@@ -323,5 +323,54 @@ extern template class DecompSpinSimulation<gfmol::IntermediateRepr>;
 
 }
 
+////////////////////////////////////////////////////////////////////////////////
+///////////////////  TTI        ////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+template <typename Repr>
+class tti_Simulation : public SimulationBase {
+  std::unique_ptr<gfmol::Simulation<Repr>> p_MatSim_;
+  double beta_;
+  double dtau_;
+  std::unique_ptr<tti_molGF2Solver> p_NEgf2_;
+
+  ZTensor<2> hmf;
+  const DTensor<2> &h0;
+  ZTensor<2> rho;
+  TTI_GREEN Sigma;
+  TTI_GREEN G; 
+  TTI_SPECT A;
+
+public:
+  // Construct sim
+  tti_Simulation(const gfmol::HartreeFock &hf,
+             const gfmol::RepresentationBase<Repr> &frepr,
+             const gfmol::RepresentationBase<Repr> &brepr,
+             int nt, int ntau, int k, double dt, int nw, double wmax,
+             int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
+             gfmol::Mode mode = gfmol::Mode::GF2,
+             double damping = 0);
+
+  void free_gf() override;
+
+  void do_tstp(int tstp) override;
+
+  void do_boot() override;
+
+  void do_mat() override;
+
+  void do_spectral() override;
+
+  inline void L_to_Tau() override;
+
+  void save(h5::File &file, const std::string &path) override;
+
+  void load(const h5::File &file, const std::string &path) override;
+
+}; // class Simulation
+
 
 #endif // header guard

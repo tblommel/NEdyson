@@ -210,16 +210,6 @@ public:
   const DTensor<4> &Uijkl() { return Uijkl_; }
 };
 
-
-
-
-
-
-
-
-
-} // namespace
-
 class tti_molHFSolverSpinDecomp{
 protected:
   const int nao_;
@@ -251,4 +241,14 @@ public:
 
   void solve_HF_loop(ZTensor<3> &hmf, const ZTensor<3> &rho) const;
 };
+
+
+
+
+
+
+
+
+} // namespace
+
 #endif // HF_SIGMA_DEFN

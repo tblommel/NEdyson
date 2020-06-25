@@ -213,3 +213,32 @@ TEST_CASE("TTI Sigma HF Spin")
   double err = (ZColVectorMap(hmf.data(), 2*na2) - ZColVectorMap(hmf_loop.data(), 2*na2)).norm();
   REQUIRE(err < 1e-10);
 }
+
+
+TEST_CASE("TTI Decomp Sigma HF Spin")
+{
+  using namespace NEdyson;
+  
+  int nao = 2;
+  int nalpha = 4;
+  int nao2 = nao * nao;
+  int nao4 = nao2 * nao2;
+
+  DTensor<3> Vija(nao,nao,nalpha);
+  ZTensor<3> rho(2,nao,nao);
+  ZTensor<3> hmf(2, nao, nao);
+  ZTensor<3> hmf_loop(2, nao, nao);
+
+  DColVectorMap(Vija.data(),nao2*nalpha) = Eigen::VectorXd::Random(nao2*nalpha);
+  ZColVectorMap(rho.data(), 2*nao2) = Eigen::VectorXcd::Random(2*nao2);
+  ZColVectorMap(hmf.data(), 2*nao2) = Eigen::VectorXcd::Random(2*nao2);
+  hmf_loop = hmf;
+
+  tti_molHFSolverSpinDecomp test_solver(Vija);
+  
+  test_solver.solve_HF(hmf,rho);
+  test_solver.solve_HF_loop(hmf_loop,rho);
+
+  double err = (ZColVectorMap(hmf.data(), 2*nao2) - ZColVectorMap(hmf_loop.data(), 2*nao2)).norm();
+  REQUIRE(err < 1e-10);
+}

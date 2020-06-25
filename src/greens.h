@@ -441,6 +441,7 @@ class tti_green_func{
         set_element
       }
     #undef set_element
+    void set_tstp_zero(int tstp);
 
 		/*Input/Output*/
 		void print_to_file(std::string file, double dt, double dtau, int precision=16) const ;

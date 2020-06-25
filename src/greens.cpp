@@ -1293,5 +1293,17 @@ void tti_green_func::read_from_file(h5e::File &File, std::string path) {
   element_size_=size1_*size1_;
 }
 
+void tti_green_func::set_tstp_zero(int tstp){
+  assert(tstp>=-1 && tstp <=nt_);
+  if(tstp==-1){
+    memset(matptr(0), 0, sizeof(cplx)*(ntau_+1)*element_size_);
+  }
+  else{
+    memset(retptr(tstp), 0, sizeof(cplx)*element_size_);
+    memset(tvptr(tstp,0), 0, sizeof(cplx)*(ntau_+1)*element_size_);
+    memset(lesptr(-tstp), 0, sizeof(cplx)*element_size_);
+  }
+}
+
 }//Namespace
 #endif
