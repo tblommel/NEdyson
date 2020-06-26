@@ -332,7 +332,7 @@ class tti_green_func{
 		
 		template <class Matrix>
 		void get_adv(int i, Matrix &M) const {
-		  assert(i<=nt_ && i>-=nt_);
+		  assert(i<=nt_ && i>=-nt_);
 		  get_ret(-i,M);
 		  M.adjointInPlace();
 		}
