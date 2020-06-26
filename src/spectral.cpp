@@ -402,7 +402,7 @@ void tti_spectral::read_from_file(const char *file){
 
 
 // See spectral notes
-void tti_spectral::AfromG(const green_func &G, int nw, double wmax, double dt){
+void tti_spectral::AfromG(const tti_green_func &G, int nw, double wmax, double dt){
 	nt_ = G.nt();
 	nw_ = nw;
 	size1_ = G.size1();
@@ -415,31 +415,24 @@ void tti_spectral::AfromG(const green_func &G, int nw, double wmax, double dt){
 	memset(A_,0,sizeof(double)*nw_*es_);
 
 
-	int ita, iw, itr;
+	int ita, iw, it;
 	cplx *tmp;
 	cplx weight;
 	
 	tmp = new cplx[es_];
 	cplx arg, cplxi = cplx(0.,1.);
-	for(ita=0;ita<=nt_;ita++){
-		int max1 = ita;
-		int max2 = nt_-ita;	
-		int max = max1>=max2?max2:max1;
-		for(itr=ita%2;itr<=max;itr+=2){
-			element_set(size1_,tmp,G.retptr((ita+itr)/2,(ita-itr)/2));
-			for(iw=0;iw<nw;iw++){
-				arg = (iw-(nw-1)/2)*dw_*itr*dt_*cplxi;
-				weight = std::exp(arg);
-				element_imag_incr(size1_,ptr(ita,iw),weight,tmp);
-			}
-		}
-	}
+  for(it = 0; it <= nt_; it++) {
+    element_set(size1_, tmp, G.retptr(it));
+    for(iw = 0; iw < nw; iw++) {
+      arg = (iw-(nw-1)/2)*dw_*it*dt_*cplxi;
+      weight = std::exp(arg);
+      element_imag_incr(size1_, ptr(iw), weight, tmp);
+    }
+  }
 
-	double a = -2*dt_/PI;
-	for(ita=0;ita<=nt_;ita++){
-		for(iw=0;iw<nw;iw++){
-			element_smul(size1_,ptr(ita,iw),a);
-		}
+	double a = -dt_/PI;
+	for(iw = 0; iw < nw; iw++){
+		element_smul(size1_,ptr(iw),a);
 	}
 
 	delete[] tmp;
@@ -448,7 +441,7 @@ void tti_spectral::AfromG(const green_func &G, int nw, double wmax, double dt){
 
 
 // see spectral notes
-void spectral::AfromG(const green_func &G, int nw, double wmax, double dt, const cplx *extdata, int nfit, int ntp){
+void tti_spectral::AfromG(const green_func &G, int nw, double wmax, double dt, const cplx *extdata, int nfit, int ntp){
   std::cout<<"Not yet implemented"<<std::endl;
 }
 

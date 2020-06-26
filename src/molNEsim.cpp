@@ -67,11 +67,22 @@ void SimulationBase::run(){
 
 template class Simulation<gfmol::ChebyshevRepr>;
 template class Simulation<gfmol::IntermediateRepr>;
+template class tti_Simulation<gfmol::ChebyshevRepr>;
+template class tti_Simulation<gfmol::IntermediateRepr>;
+
 template class DecompSimulation<gfmol::ChebyshevRepr>;
 template class DecompSimulation<gfmol::IntermediateRepr>;
+template class tti_DecompSimulation<gfmol::ChebyshevRepr>;
+template class tti_DecompSimulation<gfmol::IntermediateRepr>;
+
 template class SpinSimulation<gfmol::ChebyshevRepr>;
 template class SpinSimulation<gfmol::IntermediateRepr>;
+template class tti_SpinSimulation<gfmol::ChebyshevRepr>;
+template class tti_SpinSimulation<gfmol::IntermediateRepr>;
+
 template class DecompSpinSimulation<gfmol::ChebyshevRepr>;
 template class DecompSpinSimulation<gfmol::IntermediateRepr>;
+template class tti_DecompSpinSimulation<gfmol::ChebyshevRepr>;
+template class tti_DecompSpinSimulation<gfmol::IntermediateRepr>;
 
 } // namespace NEdyson

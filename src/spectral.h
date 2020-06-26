@@ -93,7 +93,7 @@ class tti_spectral{
     void print_to_file(h5e::File File, std::string path) const;
 		
 		// Actually Calculate
-		void AfromG(const green_func &G, int nw, double wmax, double dt);
+		void AfromG(const tti_green_func &G, int nw, double wmax, double dt);
 		void AfromG(const green_func &G, int nw, double wmax, double dt, const cplx *extdata, int nfit, int ntp);
 };
 

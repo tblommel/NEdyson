@@ -13,6 +13,7 @@ namespace NEdyson {
 
 struct Params {
   std::string mode;
+  bool tti;
   bool unrestricted;
   bool decomposed;
   std::string repr;
@@ -79,7 +80,7 @@ struct Params {
     if (CorrSteps <= 0)
       throw std::runtime_error("parameter CorrSteps: invalid value " + std::to_string(CorrSteps));
 
-    if (nw <= 0)
+    if (nw <= 0 || nw%2 ==0)
       throw std::runtime_error("parameter nw: invalid value " + std::to_string(nw));
 
     if (wmax <= 0) 
@@ -91,6 +92,7 @@ inline std::ostream &operator<<(std::ostream &os, const Params &p)
 {
   os << std::boolalpha;
   os << "Parameters:" << std::endl;
+  os << "    tti:             " << p.tti <<std::endl;
   os << "    mode:            " << p.mode << std::endl;
   os << "    unrestricted:    " << p.unrestricted << std::endl;
   os << "    decomposed:      " << p.decomposed << std::endl;
@@ -137,6 +139,7 @@ inline Params parse_args(const int argc, char *const *const argv)
 
   // Argument list
   args::ValueFlag<std::string> mode(parser, "mode", "GF2 or GW", {"mode"}, "GF2");
+  args::Flag tti(parser, "tti", "use time translationally invariant functions if set", {"tti"});
   args::Flag unrestricted(parser, "unrestricted", "use unrestricted spin if set", {"unrestricted"});
   args::Flag decomposed(parser, "decomposed", "use unrestricted spin if set", {"decomposed"});
   args::ValueFlag<std::string> repr(parser, "repr", "type of representation: cheb or ir", {"repr"}, "cheb");
@@ -177,6 +180,7 @@ inline Params parse_args(const int argc, char *const *const argv)
   param_file.Load(inifile.Get(), true);
 
   Params p{extract_value(param_file, mode),
+           extract_value(param_file, tti),
            extract_value(param_file, unrestricted),
            extract_value(param_file, decomposed),
            extract_value(param_file, repr),
