@@ -38,7 +38,7 @@ CPMAddPackage(
     "HIGHFIVE_EXAMPLES OFF"
 )
 
-include_directories("~/Libraries/include/")
+include_directories("~/Libraries/Install/include/")
 include_directories("~/Libraries/gfmol/deps/args/include/")
 include_directories("~/Libraries/gfmol/deps/LeksysINI/include/")
 link_directories("~/Libraries/lib/")
