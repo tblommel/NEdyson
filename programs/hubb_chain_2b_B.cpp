@@ -14,7 +14,6 @@ using namespace NEdyson;
 
 int main(int argc, char *argv[]){
   if(argc!=2) throw std::invalid_argument("please provide input file");
-  
   // Parameters ========================================================================
   int Nsites, Ntau, MatsMaxIter, oversamp, Nt, RampSite, k, SolverOrder, BootMaxIter, StepIter,nw;
   double HoppingT, HubbardU, MuChem, Beta, dt, dtau, W0, MatsMaxErr, BootMaxErr, wmax, B;
@@ -59,7 +58,7 @@ int main(int argc, char *argv[]){
 
   CFUNC hmfU = CFUNC(Nt, Nsites);
   CFUNC hmfD = CFUNC(Nt, Nsites);
-  cdmatrix h0U(Nsites,Nsites), DensMU(Nsites,Nsites), h0D(Nsites,Nsites), DensMD(Nsites,Nsites);
+  ZMatrix h0U(Nsites,Nsites), DensMU(Nsites,Nsites), h0D(Nsites,Nsites), DensMD(Nsites,Nsites);
   CFUNC Ut = CFUNC(Nt, Nsites);
   
   SPECT A = SPECT();
@@ -77,7 +76,7 @@ int main(int argc, char *argv[]){
     h0U(i,i) = ed(i)-B;
     h0D(i,i) = ed(i)+B;
   }
-  Ut.set_constant(HubbardU*cdmatrix::Identity(Nsites,Nsites));
+  Ut.set_constant(HubbardU*ZMatrix::Identity(Nsites,Nsites));
  
   NEdyson::G0_from_h0(GU,MuChem,h0U,Beta,dt);
   NEdyson::G0_from_h0(GD,MuChem,h0D,Beta,dt);

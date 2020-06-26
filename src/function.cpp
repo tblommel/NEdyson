@@ -76,10 +76,10 @@ void function::set_Zero(void){
 
 
 
-void function::set_value(int tstp, cdmatrix M){
+void function::set_value(int tstp, ZMatrix M){
 	assert(M.rows()==M.cols() && M.rows()==size1_ && tstp<=nt_ && tstp >= -1);
 	cplx *ft=ptr(tstp);
-	Eigen::Map<Eigen::Matrix<cplx,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> >(ft,size1_,size1_)=M;
+	ZMatrixMap(ft,size1_,size1_)=M;
 }
 
 
@@ -97,13 +97,14 @@ void function::set_value(int tstp, cplx *x){
 
 
 
-void function::set_constant(cdmatrix M){
+void function::set_constant(ZMatrix M){
 	assert(M.rows()==M.cols() && M.rows()==size1_);
 	for(int i=-1;i<=nt_;i++) set_value(i,M);
 }
 
 
 void function::set_constant(cplx x){
+  assert(size1_==1);
 	for(int i=-1;i<=nt_;i++) set_value(i,x);
 }
 
@@ -113,10 +114,10 @@ void function::set_constant(cplx *x){
 }
 
 
-void function::get_value(int tstp, cdmatrix &M) const {
+void function::get_value(int tstp, ZMatrix &M) const {
 	assert(M.rows()==M.cols() && M.rows()==size1_ && tstp<=nt_ && tstp >= -1);
 	cplx *ft=ptr(tstp);
-	M=Eigen::Map<Eigen::Matrix<cplx,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> >(ft,size1_,size1_);
+	M=ZMatrixMap(ft,size1_,size1_);
 }
 
 
@@ -144,7 +145,28 @@ void function::printf(void) const {
 }
 
 
+void function::read_from_file(h5e::File File, std::string path) {
+  h5::DataSet dataset = File.getDataSet(path+"/ft");
+  size_t len = dataset.getElementCount();
+  delete [] data_;
+  data_ = new cplx[len];
+  dataset.read(data_);
+  File.flush();
+  size1_ = h5e::load<int>(File, path+"/nao");
+  nt_ = h5e::load<int>(File, path+"/nt");
+}
 
+
+void function::print_to_file(h5e::File File, std::string path) const {
+  std::vector<size_t> dims(1);
+  dims[0]=((nt_+2))*element_size_;
+  h5e::detail::createGroupsToDataSet(File, path+"/ft");
+  h5::DataSet dataset = File.createDataSet<cplx>(path+"/ft",h5::DataSpace(dims));
+  dataset.write(data_);
+  File.flush();
+  h5e::dump(File,path+"/nt",nt_);
+  h5e::dump(File,path+"/nao",size1_);
+}
 
 } //namespace func
 #endif// FUNCTION_IMPL

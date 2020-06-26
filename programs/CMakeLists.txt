@@ -12,15 +12,16 @@ set( EXE_hubb_chain_2b_omp.x_SOURCES hubb_chain_2b_omp.cpp )
 set( EXE_hubb_chain_2b_B.x_SOURCES hubb_chain_2b_B.cpp )
 set( EXE_hubb_chain_tpp.x_SOURCES hubb_chain_tpp.cpp )
 
-# Paths and Subdirs
-include_directories(${CMAKE_INCLUDE_PATH})
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+#foreach( exe ${project_EXECUTABLES} )
+#    # declare the target...
+#    add_executable( ${exe} ${EXE_${exe}_SOURCES} )
+#    target_link_libraries(${exe} libNEdyson
+#                                 libgfmol)
+#endforeach()
 
-# Libraries
-link_directories(${CMAKE_LIBRARY_PATH})
-
-foreach( exe ${project_EXECUTABLES} )
-    # declare the target...
-    add_executable( ${exe} ${EXE_${exe}_SOURCES} )
-    target_link_libraries(${exe} libNEdyson)
-endforeach()
+add_executable(molNEdyson main.cpp)
+target_include_directories(molNEdyson INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(molNEdyson PUBLIC libNEdyson
+                                        libgfmol
+                                        args
+                                        iniparser)

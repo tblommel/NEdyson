@@ -110,6 +110,7 @@ void green_func_tstp::left_multiply(cplx *f0, cplx *ft, cplx weight){
 }
 
 void green_func_tstp::left_multiply(const CFUNC &ft, cplx weight){
+  assert(ft.nt()>=tstp_ && ft.size1()==size1_);
 	this->left_multiply(ft.ptr(-1),ft.ptr(0),weight);
 }
 
@@ -160,6 +161,7 @@ void green_func_tstp::right_multiply(cplx *f0, cplx *ft, cplx weight){
 
 
 void green_func_tstp::right_multiply(const CFUNC &ft, cplx weight){
+  assert(ft.nt()>=tstp_ && ft.size1()==size1_);
 	this->right_multiply(ft.ptr(-1),ft.ptr(0),weight);
 }
 

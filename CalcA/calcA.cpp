@@ -10,6 +10,16 @@
 
 using namespace NEdyson;
 
+bool group_exists(h5e::File &File, std::string path){
+  try{
+    File.getDataSet(path);
+    return true;
+  }
+  catch(const h5::DataSetException &e){
+    return false;
+  }
+}
+
 bool is_file_exist(std::string fileName){
 	std::ifstream infile(fileName);
 	return infile.good();
@@ -73,7 +83,6 @@ int main(int argc, char *argv[]){
 
 
 	// Print A to file
-	actfile = "";
-	actfile += argv[2];
-	A.print_to_file(actfile);
-}	
+	h5e::File File("/home/thomas/Libraries/NEdyson/tests/data/spectral.h5",h5e::File::ReadWrite);
+	A.print_to_file(File,"Aext");
+}		

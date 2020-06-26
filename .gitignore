@@ -2,6 +2,8 @@ build/
 .vscode/
 cmake.sh
 *.lyx~
+build.sh
+*.dat
 
 # Created by .ignore support plugin (hsz.mobi)
 ### CMake template

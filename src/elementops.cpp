@@ -34,14 +34,7 @@ void element_iden(int size1, cplx *z, cplx a){
 
 // puts Hermitian Conj of Z1 into Z
 void element_conj(int size1, cplx *z, const cplx *z1){
-	int l,m;
-	cplx tmp;
-	for(int l=0;l<size1;l++){
-		for(int m=0;m<size1;m++){
-			tmp=z1[m*size1+l];
-			z[l*size1+m]=cplx(tmp.real(),-tmp.imag());
-		}
-	}
+  ZMatrixMap(z, size1, size1) = ZMatrixConstMap(z1, size1, size1).adjoint();
 }
 
 // Conjugates Z
@@ -105,27 +98,27 @@ void element_incr(int size1, cplx *z, cplx *z0, cplx *z1){
 	switch(size1){
 		case 2:
 			if(z!=z0 && z!=z1)
-			cdmmap2(z,2,2).noalias()+=cdmmap2(z0,2,2)*cdmmap2(z1,2,2);
+			ZMatrixMap2(z,2,2).noalias()+=ZMatrixMap2(z0,2,2)*ZMatrixMap2(z1,2,2);
 			else
-			cdmmap2(z,2,2)+=cdmmap2(z0,2,2)*cdmmap2(z1,2,2);
+			ZMatrixMap2(z,2,2)+=ZMatrixMap2(z0,2,2)*ZMatrixMap2(z1,2,2);
 			break;
 		case 3:
 			if(z!=z0&&z!=z1)
-			cdmmap3(z,3,3).noalias()+=cdmmap3(z0,3,3)*cdmmap3(z1,3,3);
+			ZMatrixMap3(z,3,3).noalias()+=ZMatrixMap3(z0,3,3)*ZMatrixMap3(z1,3,3);
 			else
-			cdmmap3(z,3,3)+=cdmmap3(z0,3,3)*cdmmap3(z1,3,3);
+			ZMatrixMap3(z,3,3)+=ZMatrixMap3(z0,3,3)*ZMatrixMap3(z1,3,3);
 			break;
 		case 4:
 			if(z!=z0&&z!=z1)
-			cdmmap4(z,4,4).noalias()+=cdmmap4(z0,4,4)*cdmmap4(z1,4,4);
+			ZMatrixMap4(z,4,4).noalias()+=ZMatrixMap4(z0,4,4)*ZMatrixMap4(z1,4,4);
 			else
-			cdmmap4(z,4,4)+=cdmmap4(z0,4,4)*cdmmap4(z1,4,4);
+			ZMatrixMap4(z,4,4)+=ZMatrixMap4(z0,4,4)*ZMatrixMap4(z1,4,4);
 			break;
 		default:
 			if(z!=z0&&z!=z1)
-			cdmmap(z,size1,size1).noalias()+=cdmmap(z0,size1,size1)*cdmmap(z1,size1,size1);
+			ZMatrixMap(z,size1,size1).noalias()+=ZMatrixMap(z0,size1,size1)*ZMatrixMap(z1,size1,size1);
 			else
-			cdmmap(z,size1,size1)+=cdmmap(z0,size1,size1)*cdmmap(z1,size1,size1);
+			ZMatrixMap(z,size1,size1)+=ZMatrixMap(z0,size1,size1)*ZMatrixMap(z1,size1,size1);
 			break;
 	}
 }
@@ -135,27 +128,27 @@ void element_incr(int size1, cplx *z, cplx z0, cplx *z1, cplx *z2){
 	switch(size1){
 		case 2:
 			if(z!=z1&&z!=z2)
-			cdmmap2(z,2,2).noalias()+=z0*cdmmap2(z1,2,2)*cdmmap2(z2,2,2);
+			ZMatrixMap2(z,2,2).noalias()+=z0*ZMatrixMap2(z1,2,2)*ZMatrixMap2(z2,2,2);
 			else
-			cdmmap2(z,2,2)+=z0*cdmmap2(z1,2,2)*cdmmap2(z2,2,2);
+			ZMatrixMap2(z,2,2)+=z0*ZMatrixMap2(z1,2,2)*ZMatrixMap2(z2,2,2);
 			break;
 		case 3:
 			if(z!=z1&&z!=z2)
-			cdmmap3(z,3,3).noalias()+=z0*cdmmap3(z1,3,3)*cdmmap3(z2,3,3);
+			ZMatrixMap3(z,3,3).noalias()+=z0*ZMatrixMap3(z1,3,3)*ZMatrixMap3(z2,3,3);
 			else
-			cdmmap3(z,3,3)+=z0*cdmmap3(z1,3,3)*cdmmap3(z2,3,3);
+			ZMatrixMap3(z,3,3)+=z0*ZMatrixMap3(z1,3,3)*ZMatrixMap3(z2,3,3);
 			break;
 		case 4:
 			if(z!=z1&&z!=z2)
-			cdmmap4(z,4,4).noalias()+=z0*cdmmap4(z1,4,4)*cdmmap4(z2,4,4);
+			ZMatrixMap4(z,4,4).noalias()+=z0*ZMatrixMap4(z1,4,4)*ZMatrixMap4(z2,4,4);
 			else
-			cdmmap4(z,4,4)+=z0*cdmmap4(z1,4,4)*cdmmap4(z2,4,4);
+			ZMatrixMap4(z,4,4)+=z0*ZMatrixMap4(z1,4,4)*ZMatrixMap4(z2,4,4);
 			break;
 		default:
 			if(z!=z1&&z!=z2)
-			cdmmap(z,size1,size1).noalias()+=z0*cdmmap(z1,size1,size1)*cdmmap(z2,size1,size1);
+			ZMatrixMap(z,size1,size1).noalias()+=z0*ZMatrixMap(z1,size1,size1)*ZMatrixMap(z2,size1,size1);
 			else
-			cdmmap(z,size1,size1)+=z0*cdmmap(z1,size1,size1)*cdmmap(z2,size1,size1);
+			ZMatrixMap(z,size1,size1)+=z0*ZMatrixMap(z1,size1,size1)*ZMatrixMap(z2,size1,size1);
 			break;
 	}
 }
@@ -169,16 +162,28 @@ void element_mult_small(cplx *z, cplx *z1, cplx *z2){
 void element_mult_large(int size1, cplx *z, cplx *z1, cplx *z2){
 	switch(size1){
 		case 2:
-			cdmmap2(z,2,2)=cdmmap2(z1,2,2)*cdmmap2(z2,2,2);
+			if(z!=z1&&z!=z2)
+			ZMatrixMap2(z,2,2).noalias()=ZMatrixMap2(z1,2,2)*ZMatrixMap2(z2,2,2);
+			else
+			ZMatrixMap2(z,2,2)=ZMatrixMap2(z1,2,2)*ZMatrixMap2(z2,2,2);
 			break;
 		case 3:
-			cdmmap3(z,3,3)=cdmmap3(z1,3,3)*cdmmap3(z2,3,3);
+			if(z!=z1&&z!=z2)
+			ZMatrixMap3(z,3,3).noalias()=ZMatrixMap3(z1,3,3)*ZMatrixMap3(z2,3,3);
+			else
+			ZMatrixMap3(z,3,3)=ZMatrixMap3(z1,3,3)*ZMatrixMap3(z2,3,3);
 			break;
 		case 4:
-			cdmmap4(z,4,4)=cdmmap4(z1,4,4)*cdmmap4(z2,4,4);
+			if(z!=z1&&z!=z2)
+			ZMatrixMap4(z,4,4).noalias()=ZMatrixMap4(z1,4,4)*ZMatrixMap4(z2,4,4);
+			else
+			ZMatrixMap4(z,4,4)=ZMatrixMap4(z1,4,4)*ZMatrixMap4(z2,4,4);
 			break;
 		default:
-			cdmmap(z,size1,size1)=cdmmap(z1,size1,size1)*cdmmap(z2,size1,size1);
+			if(z!=z1&&z!=z2)
+			ZMatrixMap(z,size1,size1).noalias()=ZMatrixMap(z1,size1,size1)*ZMatrixMap(z2,size1,size1);
+			else
+			ZMatrixMap(z,size1,size1)=ZMatrixMap(z1,size1,size1)*ZMatrixMap(z2,size1,size1);
 			break;
 	}
 }
@@ -191,18 +196,18 @@ void element_mult(int size1, cplx *z,cplx *z1, cplx *z2){
 
 // B*C=A. A is axc.  B is axb. C is bxc
 void element_mult(int a, int b, int c, cplx *A, cplx *B, cplx *C){
-	cdmmap(A,a,c)=cdmmap(B,a,b)*cdmmap(C,b,c);
+	ZMatrixMap(A,a,c)=ZMatrixMap(B,a,b)*ZMatrixMap(C,b,c);
 }
 
 
 // Z = Z1^{-1}
 void element_inverse_large(int size1, cplx *z, cplx *z1){
 	int i,es=size1*size1;
-	cdmatrix A(cdmmap(z1,size1,size1));
-	cdmatrix X(size1,size1);
-	Eigen::FullPivLU<cdmatrix> lu(A);
+	ZMatrix A(ZMatrixMap(z1,size1,size1));
+	ZMatrix X(size1,size1);
+	Eigen::FullPivLU<ZMatrix> lu(A);
 	X=lu.inverse();
-	cdmmap(z,size1,size1)=X;
+	ZMatrixMap(z,size1,size1)=X;
 }
 
 // z = 1/z1
@@ -218,8 +223,8 @@ void element_inverse(int size1, cplx *z, cplx *z1){
 
 // solve MX=Q for X. M is axb. X is bxc. Q is axc.
 void element_linsolve_left_large(int a, int b, int c, cplx *M, cplx *X, cplx *Q){
-	Eigen::FullPivLU<cdmatrix> lu(cdmmap(M,a,b));
-	cdmmap(X,b,c)=lu.solve(cdmmap(Q,a,c));
+	Eigen::FullPivLU<ZMatrix> lu(ZMatrixMap(M,a,b));
+	ZMatrixMap(X,b,c)=lu.solve(ZMatrixMap(Q,a,c));
 }
 
 // solve mx=q for x
@@ -235,16 +240,16 @@ void element_linsolve_left(int a, int b, int c, cplx *M, cplx *X, cplx *Q){
 
 //Solve XM=Q for X. M is bxc. X is axb. Q is axc.
 void element_linsolve_right_large(int a, int b, int c, cplx *X, cplx *M, cplx*Q){
-	cdmatrix MT(c,b);
-	MT=cdmmap(M,b,c).transpose();
-	cdmatrix QT(c,a);
-	QT=cdmmap(Q,a,c).transpose();
-	cdmatrix XT(b,a);
-	Eigen::FullPivLU<cdmatrix> lu(MT);
+	ZMatrix MT(c,b);
+	MT=ZMatrixMap(M,b,c).transpose();
+	ZMatrix QT(c,a);
+	QT=ZMatrixMap(Q,a,c).transpose();
+	ZMatrix XT(b,a);
+	Eigen::FullPivLU<ZMatrix> lu(MT);
 	XT=lu.solve(QT);
-	cdmatrix XTT(a,b);	
+	ZMatrix XTT(a,b);	
 	XTT=XT.transpose();
-	cdmmap(X,a,b)=XTT;
+	ZMatrixMap(X,a,b)=XTT;
 }
 
 

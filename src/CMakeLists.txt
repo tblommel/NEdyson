@@ -1,4 +1,6 @@
 add_library(libNEdyson
+  molHFSolver.cpp molHFSolver.h
+  mol2bSolver.cpp mol2bSolver.h
   dyson.cpp dyson.h
   dyson_omp.cpp dyson_omp.h
   elementops.cpp elementops.h
@@ -12,10 +14,20 @@ add_library(libNEdyson
   spectral.cpp spectral.h
   vie2.cpp vie2.h
   utils.cpp utils.h
-  NEdyson.h
-  param.h
+  NEdyson.cpp  NEdyson.h
+  param.cpp param.h
+  molNEsim.cpp molNEsim.h molNEsim_impl.h molNEsim_decomp_impl.h molNEsim_spin_impl.h molNEsim_decomp_spin_impl.h
+  params.cpp params.h
 )
+
+
 
 target_include_directories(libNEdyson INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_definitions(libNEdyson PUBLIC 
   DATA_DIR="${PROJECT_SOURCE_DIR}/../NEdyson/data/")
+target_link_libraries(libNEdyson PUBLIC
+  alps::alps-gf
+  Eigen3::Eigen
+  HighFive
+  libgfmol
+)
