@@ -39,8 +39,8 @@ CPMAddPackage(
 )
 
 include_directories("~/Libraries/Install/include/")
-include_directories("~/Libraries/gfmol/deps/args/include/")
-include_directories("~/Libraries/gfmol/deps/LeksysINI/include/")
+include_directories("~/Libraries/NEdyson/deps/args/include/")
+include_directories("~/Libraries/NEdyson/deps/LeksysINI/include/")
 link_directories("~/Libraries/lib/")
 
 add_subdirectory(src)
