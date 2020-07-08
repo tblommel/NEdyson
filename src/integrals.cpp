@@ -5,6 +5,93 @@
 
 namespace NEdyson{
 
+// returns (Sigma*G)^<(t,t)
+double energy_conv(int tstp, const INTEG &I, const GREEN &Sig, const GREEN &G, double beta, double dt) {
+  assert(tstp <= Sig.nt());
+  assert(G.nt() == Sig.nt());  
+  assert(I.k() <= G.nt());
+  assert(I.k() <= G.ntau());
+  assert(G.sig() == Sig.sig());
+  assert(G.ntau() == Sig.ntau());
+  assert(G.size1() == Sig.size1());
+
+  int k = I.k(), ntau = G.ntau(), size1 = G.size1(), es = G.element_size(), top = tstp >= k ? tstp : k, sig = G.sig();
+  double dtau = beta/ntau;
+  cplx res1 = 0;
+  cplx res2 = 0;
+  
+  // Sig^R * G^<
+  for(int i=0; i<=tstp; i++) {
+    res1 += I.gregory_weights(tstp, i) * ZMatrixConstMap(Sig.retptr(tstp,i), size1, size1).cwiseProduct(ZMatrixConstMap(G.lesptr(i,tstp), size1, size1).transpose()).sum();
+  }
+  for(int i=tstp+1; i<=top; i++) {
+    res1 += std::conj(I.gregory_weights(tstp, i) * ZMatrixConstMap(Sig.retptr(i,tstp), size1, size1).cwiseProduct(ZMatrixConstMap(G.lesptr(tstp,i), size1, size1).transpose()).sum());
+  }
+
+  // Sig^< * G^A
+  for(int i=0; i<=tstp; i++) {
+    res1 -= std::conj(I.gregory_weights(tstp, i) * ZMatrixConstMap(Sig.lesptr(i,tstp), size1, size1).cwiseProduct(ZMatrixConstMap(G.retptr(tstp, i), size1, size1).transpose()).sum());
+  }
+  for(int i=tstp+1; i<=top; i++) {
+    res1 -= I.gregory_weights(tstp, i) * ZMatrixConstMap(Sig.lesptr(tstp, i), size1, size1).cwiseProduct(ZMatrixConstMap(G.retptr(i, tstp), size1, size1).transpose()).sum();
+  }
+
+  res1 *= dt;
+
+  // Sig^rm * G^lm
+  for(int i=0; i <= ntau; i++) {
+    res2 += I.gregory_weights(ntau, i) * ZMatrixConstMap(Sig.tvptr(tstp, i), size1, size1).cwiseProduct(ZMatrixConstMap(G.tvptr(tstp, ntau-i), size1, size1).conjugate()).sum();
+  }
+
+  res2 *= cplx(0., sig*dtau);
+
+  return (cplx(0.,-0.5)*(res1+res2)).real();
+}
+
+
+// returns (Sigma*G)^<(t,t)
+double energy_conv(int tstp, const INTEG &I, const TTI_GREEN &Sig, const TTI_GREEN &G, double beta, double dt) {
+  assert(tstp <= Sig.nt());
+  assert(G.nt() == Sig.nt());  
+  assert(I.k() <= G.nt());
+  assert(I.k() <= G.ntau());
+  assert(G.sig() == Sig.sig());
+  assert(G.ntau() == Sig.ntau());
+  assert(G.size1() == Sig.size1());
+
+  int k = I.k(), ntau = G.ntau(), size1 = G.size1(), es = G.element_size(), top = tstp >= k ? tstp : k, sig = G.sig();
+  double dtau = beta/ntau;
+  cplx res1 = 0;
+  cplx res2 = 0;
+  
+  // Sig^R * G^<
+  for(int i=0; i<=tstp; i++) {
+    res1 += I.gregory_weights(tstp, i) * ZMatrixConstMap(Sig.retptr(tstp-i), size1, size1).cwiseProduct(ZMatrixConstMap(G.lesptr(i-tstp), size1, size1).transpose()).sum();
+  }
+  for(int i=tstp+1; i<=top; i++) {
+    res1 += std::conj(I.gregory_weights(tstp, i) * ZMatrixConstMap(Sig.retptr(i-tstp), size1, size1).cwiseProduct(ZMatrixConstMap(G.lesptr(tstp-i), size1, size1).transpose()).sum());
+  }
+
+  // Sig^< * G^A
+  for(int i=0; i<=tstp; i++) {
+    res1 -= std::conj(I.gregory_weights(tstp, i) * ZMatrixConstMap(Sig.lesptr(i-tstp), size1, size1).cwiseProduct(ZMatrixConstMap(G.retptr(tstp-i), size1, size1).transpose()).sum());
+  }
+  for(int i=tstp+1; i<=top; i++) {
+    res1 -= I.gregory_weights(tstp, i) * ZMatrixConstMap(Sig.lesptr(tstp-i), size1, size1).cwiseProduct(ZMatrixConstMap(G.retptr(i-tstp), size1, size1).transpose()).sum();
+  }
+
+  res1 *= dt;
+
+  // Sig^rm * G^lm
+  for(int i=0; i <= ntau; i++) {
+    res2 += I.gregory_weights(ntau, i) * ZMatrixConstMap(Sig.tvptr(tstp, i), size1, size1).cwiseProduct(ZMatrixConstMap(G.tvptr(tstp, ntau-i), size1, size1).conjugate()).sum();
+  }
+
+  res2 *= cplx(0., sig*dtau);
+
+  return (cplx(0.,-0.5)*(res1+res2)).real();
+}
+
 
 // This one does integral for every tau, and puts result into C by incrementing it!!!
 // For every \tau=m...

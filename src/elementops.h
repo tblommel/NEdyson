@@ -11,6 +11,7 @@ namespace NEdyson{
 void element_set_zero(int size1,cplx *z);
 void element_set(int size1, cplx *z, cplx *z1);
 void element_set(int size1, cplx *z, const cplx *z1);
+void element_set(int size1, cplx *z, const double *z1);
 void element_iden(int size1, cplx *z);
 void element_iden(int size1, cplx *z, cplx a);
 void element_conj(int size1, cplx *z, const cplx *z1);

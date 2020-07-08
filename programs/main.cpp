@@ -7,7 +7,7 @@
 int main(const int argc, char *const *const argv)
 {
   using namespace NEdyson;
-
+  assert(false);
   NEdyson::Params p = NEdyson::parse_args(argc, argv);
 
   std::cout<<p<<std::endl;

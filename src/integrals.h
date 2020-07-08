@@ -9,6 +9,10 @@
 
 namespace NEdyson{
 
+double energy_conv(int tstp, const INTEG &I, const GREEN &Sig, const GREEN &G, double beta, double dt);
+double energy_conv(int tstp, const INTEG &I, const TTI_GREEN &Sig, const TTI_GREEN &G, double beta, double dt);
+
+
 void CTV1(const INTEG &I, cplx *ctv, const GREEN &A, const GREEN &Acc, const GREEN &B, int n, double dt);
 
 void CTV2(const INTEG &I, const GREEN &A, const GREEN &B, int n, int m, double beta, cplx *res);

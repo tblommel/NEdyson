@@ -24,12 +24,46 @@ DecompSpinSimulation<Repr>::DecompSpinSimulation(const gfmol::HartreeFock &hf,
                                  h0(hf.hcore()), 
                                  rho(2,nao_,nao_)
 {
+  int nl = frepr.nl();
+  const size_t size_MB = 1024*1024;
+  size_t mem = 0;
+  // Members of gfmol::sim
+  mem += 2*5*nao_*nao_*sizeof(double); 
+  mem += 2*5*nao_*nao_*nl*sizeof(double);
+  mem += 2*3*nao_*nao_*nl*sizeof(cplx);
+  // gfmol::SESolver
+  mem += 2*4*nao_*nao_*nao_*sizeof(double); // V
+  mem += 2*(2*4+1)*nao_*nao_*nao_*sizeof(double); // X,Y,tmp
+  mem += (4*4+1)*nao_*nao_*sizeof(double);      // P, rho
+  mem += nao_*nao_*nao_*nao_*sizeof(double);// Z
+  // gfmol::repn
+  mem += 2*2*nl*sizeof(double);
+  mem += 2*2*nl*sizeof(int);
+  mem += 2*3*nl*nl*sizeof(double);
+  mem += 2*2*nl*nl*sizeof(cplx);
+  // Members of NEdyson::sim
+  mem += 2*(nt+1)*(nao_*nao_+2)*sizeof(double);     // hmf, energy
+  mem += 2*nao_*nao_*sizeof(double);                // rho
+  mem += 4*(nt+1)*(nt+2)/2*nao_*nao_*sizeof(cplx);// G,S, R,<
+  mem += 4*(ntau+1)*(nt+1)*nao_*nao_*sizeof(cplx);// G,S, tv
+  mem += 4*(ntau+1)*nao_*nao_*sizeof(cplx);       // G,S, M
+  mem += nw*(nt+1)*nao_*nao_*sizeof(cplx);        // A
+  // molNEgf2
+  mem += nao_*nao_*nao_*sizeof(cplx);   // tmp
+  mem += 10*nao_*nao_*4*nao_*sizeof(cplx); // X, Y
+  mem += 2*4*4*nao_*nao_*sizeof(cplx); // P
+  mem += nao_*nao_*nao_*nao_*sizeof(cplx); // Z
+  // dyson
+  mem += k*nao_*nao_*(k+2)*sizeof(cplx);
+  mem += (2*nt+ntau)*nao_*nao_*sizeof(cplx); // temporary integral storage
+  
+  std::cout<< " Approximate memory needed for simulation : " << std::ceil(mem / (double)size_MB) << " MB"<<std::endl;
   switch (mode) {
     case gfmol::Mode::GF2:
       p_MatSim_ = std::unique_ptr<gfmol::DecompSpinSimulation<Repr> >(new gfmol::DecompSpinSimulation<Repr>(hf, frepr, brepr, mode, 0.));
       beta_ = p_MatSim_->frepr().beta();
       dtau_ = beta_/ntau;
-      p_NEgf2_ = std::unique_ptr<molGF2SolverSpinDecomp>(new molGF2SolverSpinDecomp(p_MatSim_->Vija()));
+      p_NEgf2_ = std::unique_ptr<molGF2SolverSpinDecomp>(new molGF2SolverSpinDecomp(p_MatSim_->Vija(), p_MatSim_->Viaj()));
   }
 
   Sup = GREEN(nt, ntau, nao_, -1);
@@ -46,8 +80,8 @@ DecompSpinSimulation<Repr>::DecompSpinSimulation(const gfmol::HartreeFock &hf,
 
 template <typename Repr>
 void DecompSpinSimulation<Repr>::free_gf() {
-  G0_from_h0(Gup, p_MatSim_->mu()[0], h0, p_MatSim_->frepr().beta(), dt_);
-  G0_from_h0(Gdown, p_MatSim_->mu()[1], h0, p_MatSim_->frepr().beta(), dt_);
+  G0_from_h0(Gup, p_MatSim_->mu()[0], p_MatSim_->fock().data(), p_MatSim_->frepr().beta(), dt_);
+  G0_from_h0(Gdown, p_MatSim_->mu()[1], p_MatSim_->fock().data() + nao_*nao_, p_MatSim_->frepr().beta(), dt_);
 }
 
 
@@ -136,12 +170,36 @@ void DecompSpinSimulation<Repr>::save(h5::File &file, const std::string &path) {
       }
     }
   }
-  ofile.close();*/
+*/
+  ofile.close();
   A.print_to_file("/home/thomas/Libraries/NEdyson/Aup");
   A.AfromG(Gdown,nw_,wmax_,dt_);
   A.print_to_file("/home/thomas/Libraries/NEdyson/Adown");
+  ofile.open("/home/thomas/Libraries/NEdyson/energy.dat", std::ofstream::out);
+  ofile << nt_ << std::endl;
+  ofile << p_MatSim_->etot()-p_MatSim_->enuc() << std::endl;
+  for(int t=0; t<=nt_; t++) ofile << ePot_(t)+eKin_(t) << std::endl;
+  ofile.close();
 }
 
+template <typename Repr>
+void DecompSpinSimulation<Repr>::do_energy() {
+  int nao2 = nao_*nao_;
+  for(int t=0; t<=nt_; t++) {
+    eKin_(t) = 0;
+    ePot_(t) = 0;
+    for(int s=0; s<2; s++) {
+      G[s].get().get_dm(t,rho.data());
+
+      auto rhomat = ZMatrixMap(rho.data(), nao_, nao_);
+      auto hmfmat = ZMatrixMap(hmf.data() + s*(nt_+1)*nao2 + t*nao2, nao_, nao_);
+      auto h0mat = DMatrixConstMap(h0.data(),nao_,nao_);
+
+      eKin_(t) += 0.5*rhomat.cwiseProduct((hmfmat+h0mat).transpose()).sum().real();
+      ePot_(t) += energy_conv(t, I, Sigma[s], G[s], beta_, dt_);
+    }
+  }
+}
 
 template <typename Repr>
 void DecompSpinSimulation<Repr>::load(const h5::File &file, const std::string &path) {
@@ -197,16 +255,48 @@ tti_DecompSpinSimulation<Repr>::tti_DecompSpinSimulation(const gfmol::HartreeFoc
                              double damping,
                              double decomp_prec) : 
                                  SimulationBase(hf, nt, ntau, k, dt, nw, wmax, MatMax, MatTol, BootMax, BootTol, CorrSteps),
-                                 hmf(2, nao_, nao_), 
-                                 h0(hf.hcore()), 
-                                 rho(2,nao_,nao_)
+                                 h0(hf.hcore())
 {
+  int nl = frepr.nl();
+  const size_t size_MB = 1024*1024;
+  size_t mem = 0;
+  // Members of gfmol::sim
+  mem += 2*5*nao_*nao_*sizeof(double); 
+  mem += 2*5*nao_*nao_*nl*sizeof(double);
+  mem += 2*3*nao_*nao_*nl*sizeof(cplx);
+  // gfmol::SESolver
+  mem += 2*4*nao_*nao_*nao_*sizeof(double); // V
+  mem += 2*(2*4+1)*nao_*nao_*nao_*sizeof(double); // X,Y,tmp
+  mem += (4*4+1)*nao_*nao_*sizeof(double);      // P, rho
+  mem += nao_*nao_*nao_*nao_*sizeof(double);// Z
+  // gfmol::repn
+  mem += 2*2*nl*sizeof(double);
+  mem += 2*2*nl*sizeof(int);
+  mem += 2*3*nl*nl*sizeof(double);
+  mem += 2*2*nl*nl*sizeof(cplx);
+  // Members of NEdyson::sim
+  mem += 2*(nt+1)*(nao_*nao_+2)*sizeof(double);     // hmf, energy
+  mem += 2*nao_*nao_*sizeof(double);                // rho
+  mem += 4*(nt+1)*nao_*nao_*sizeof(cplx);// G,S, R,<
+  mem += 4*(ntau+1)*(nt+1)*nao_*nao_*sizeof(cplx);// G,S, tv
+  mem += 4*(ntau+1)*nao_*nao_*sizeof(cplx);       // G,S, M
+  mem += nw*(nt+1)*nao_*nao_*sizeof(cplx);        // A
+  // molNEgf2
+  mem += nao_*nao_*nao_*sizeof(cplx);   // tmp
+  mem += 10*nao_*nao_*4*nao_*sizeof(cplx); // X, Y
+  mem += 2*4*4*nao_*nao_*sizeof(cplx); // P
+  mem += nao_*nao_*nao_*nao_*sizeof(cplx); // Z
+  // dyson
+  mem += k*nao_*nao_*(k+2)*sizeof(cplx);
+  mem += (2*nt+ntau)*nao_*nao_*sizeof(cplx); // temporary integral storage
+  
+  std::cout<< " Approximate memory needed for simulation : " << std::ceil(mem / (double)size_MB) << " MB"<<std::endl;
   switch (mode) {
     case gfmol::Mode::GF2:
       p_MatSim_ = std::unique_ptr<gfmol::DecompSpinSimulation<Repr> >(new gfmol::DecompSpinSimulation<Repr>(hf, frepr, brepr, mode, 0.));
       beta_ = p_MatSim_->frepr().beta();
       dtau_ = beta_/ntau;
-      p_NEgf2_ = std::unique_ptr<tti_molGF2SolverSpinDecomp>(new tti_molGF2SolverSpinDecomp(p_MatSim_->Vija()));
+      p_NEgf2_ = std::unique_ptr<tti_molGF2SolverSpinDecomp>(new tti_molGF2SolverSpinDecomp(p_MatSim_->Vija(), p_MatSim_->Viaj()));
   }
 
   Sup = TTI_GREEN(nt, ntau, nao_, -1);
@@ -223,8 +313,8 @@ tti_DecompSpinSimulation<Repr>::tti_DecompSpinSimulation(const gfmol::HartreeFoc
 
 template <typename Repr>
 void tti_DecompSpinSimulation<Repr>::free_gf() {
-  G0_from_h0(Gup, p_MatSim_->mu()[0], h0, p_MatSim_->frepr().beta(), dt_);
-  G0_from_h0(Gdown, p_MatSim_->mu()[1], h0, p_MatSim_->frepr().beta(), dt_);
+  G0_from_h0(Gup, p_MatSim_->mu()[0], p_MatSim_->fock().data(), p_MatSim_->frepr().beta(), dt_);
+  G0_from_h0(Gdown, p_MatSim_->mu()[1], p_MatSim_->fock().data() + nao_*nao_, p_MatSim_->frepr().beta(), dt_);
 }
 
 
@@ -241,21 +331,13 @@ void tti_DecompSpinSimulation<Repr>::do_boot() {
     double err = 0;
 
     // Update mean field & self energy
-    Gup.get_dm(0, rho.data());
-    Gdown.get_dm(0, rho.data() + nao2);
-
-    ZMatrixMap(hmf.data(), nao_, nao_) = DMatrixConstMap(h0.data(),nao_,nao_);
-    ZMatrixMap(hmf.data() + nao2, nao_, nao_) = DMatrixConstMap(h0.data(),nao_,nao_);
-
-    p_NEgf2_->solve_HF(hmf, rho);
-
     for(int tstp = 0; tstp <= k_; tstp++){
       p_NEgf2_->solve(tstp, Sigma, G);
     }
 
     // Solve G Equation of Motion
-    err = dyson_start(I, Gup, Sup, hmf.data(), p_MatSim_->mu()[0], beta_, dt_);
-    err = dyson_start(I, Gdown, Sdown, hmf.data() + nao2, p_MatSim_->mu()[1], beta_, dt_);
+    err = dyson_start(I, Gup, Sup, p_MatSim_->fock().data(), p_MatSim_->mu()[0], beta_, dt_);
+    err = dyson_start(I, Gdown, Sdown, p_MatSim_->fock().data() + nao2, p_MatSim_->mu()[1], beta_, dt_);
 
     std::cout<<"Bootstrapping iteration : "<<iter<<" | Error = "<<err<<std::endl;
     if(err<BootTol_){
@@ -277,8 +359,8 @@ void tti_DecompSpinSimulation<Repr>::do_tstp(int tstp) {
   for(int iter = 0; iter < CorrSteps_; iter++) {
     p_NEgf2_->solve(tstp, Sigma, G);
 
-    dyson_step(tstp, I, Gup, Sup, hmf.data(), p_MatSim_->mu()[0], beta_, dt_);
-    dyson_step(tstp, I, Gdown, Sdown, hmf.data() + nao2, p_MatSim_->mu()[1], beta_, dt_);
+    dyson_step(tstp, I, Gup, Sup, p_MatSim_->fock().data(), p_MatSim_->mu()[0], beta_, dt_);
+    dyson_step(tstp, I, Gdown, Sdown, p_MatSim_->fock().data() + nao2, p_MatSim_->mu()[1], beta_, dt_);
   }
 }
 
@@ -287,6 +369,8 @@ template <typename Repr>
 void tti_DecompSpinSimulation<Repr>::save(h5::File &file, const std::string &path) {
   Gup.print_to_file("/home/thomas/Libraries/NEdyson/up", dt_, dtau_);
   Gdown.print_to_file("/home/thomas/Libraries/NEdyson/down", dt_, dtau_);
+  Sup.print_to_file("/home/thomas/Libraries/NEdyson/Sup", dt_, dtau_);
+  Sdown.print_to_file("/home/thomas/Libraries/NEdyson/Sdown", dt_, dtau_);
   std::ofstream ofile;
 /*  ofile.open("/home/thomas/Libraries/NEdyson/h2H.dat",std::ofstream::out);
   ofile<<nao_<<std::endl;
@@ -306,12 +390,40 @@ void tti_DecompSpinSimulation<Repr>::save(h5::File &file, const std::string &pat
       }
     }
   }
-  ofile.close();*/
+*/
+  ofile.close();
   A.print_to_file("/home/thomas/Libraries/NEdyson/Aup");
   A.AfromG(Gdown,nw_,wmax_,dt_);
   A.print_to_file("/home/thomas/Libraries/NEdyson/Adown");
+  ofile.open("/home/thomas/Libraries/NEdyson/energy.dat", std::ofstream::out);
+  ofile << nt_ << std::endl;
+//  ofile << p_MatSim_->etot()-p_MatSim_->enuc() << std::endl;
+//  for(int t=0; t<=nt_; t++) ofile << ePot_(t)+eKin_(t) << std::endl;
+  ofile << p_MatSim_->epot() << std::endl;
+  for(int t=0; t<=nt_; t++) ofile << ePot_(t) << std::endl;
+  ofile.close();
 }
 
+template <typename Repr>
+void tti_DecompSpinSimulation<Repr>::do_energy() {
+  int nao2 = nao_*nao_;
+  ZTensor<2> rho(nao_, nao_);
+
+  for(int t=0; t<=nt_; t++) {
+    eKin_(t) = 0;
+    ePot_(t) = 0;
+    for(int s=0; s<2; s++) {
+      G[s].get().get_dm(t,rho.data());
+
+      auto rhomat = ZMatrixMap(rho.data(), nao_, nao_);
+      auto hmfmat = DMatrixConstMap(p_MatSim_->fock().data()+s*nao2, nao_, nao_);
+      auto h0mat = DMatrixConstMap(h0.data(),nao_,nao_);
+
+      eKin_(t) += 0.5*rhomat.cwiseProduct((hmfmat+h0mat).transpose()).sum().real();
+      ePot_(t) += energy_conv(t, I, Sigma[s], G[s], beta_, dt_);
+    }
+  }
+}
 
 template <typename Repr>
 void tti_DecompSpinSimulation<Repr>::load(const h5::File &file, const std::string &path) {

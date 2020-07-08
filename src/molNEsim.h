@@ -42,6 +42,9 @@ protected:
 
   DTensor<1> eKin_;
   DTensor<1> ePot_;
+  DTensor<1> tot_time;
+  DTensor<1> dys_time;
+  DTensor<1> gf2_time;
   
 public:
   // Base class constructor
@@ -64,6 +67,9 @@ public:
 
   // Calculate the spectral function
   virtual void do_spectral() = 0;
+
+  // Calculate energy
+  virtual void do_energy() =0;
 
   // Output Results to HDF5
   virtual void save(h5::File &file, const std::string &path) = 0;
@@ -113,6 +119,8 @@ public:
   void do_spectral() override;
 
   inline void L_to_Tau() override;
+  
+  void do_energy() override;
 
   void save(h5::File &file, const std::string &path) override;
 
@@ -155,6 +163,7 @@ public:
 
   void do_mat() override;
 
+  void do_energy() override;
   void do_spectral() override;
 
   inline void L_to_Tau() override;
@@ -206,6 +215,7 @@ public:
 
   void do_mat() override;
 
+  void do_energy() override;
   void do_spectral() override;
 
   inline void L_to_Tau() override;
@@ -257,6 +267,7 @@ public:
 
   void do_mat() override;
 
+  void do_energy() override;
   void do_spectral() override;
 
   inline void L_to_Tau() override;
@@ -281,9 +292,7 @@ class tti_Simulation : public SimulationBase {
   double dtau_;
   std::unique_ptr<tti_molGF2Solver> p_NEgf2_;
 
-  ZTensor<2> hmf;
   const DTensor<2> &h0;
-  ZTensor<2> rho;
   TTI_GREEN Sigma;
   TTI_GREEN G; 
   TTI_SPECT A;
@@ -306,6 +315,7 @@ public:
 
   void do_mat() override;
 
+  void do_energy() override;
   void do_spectral() override;
 
   inline void L_to_Tau() override;
@@ -324,9 +334,7 @@ class tti_DecompSimulation : public SimulationBase {
   double dtau_;
   std::unique_ptr<tti_molGF2SolverDecomp> p_NEgf2_;
 
-  ZTensor<2> hmf;
   const DTensor<2> &h0;
-  ZTensor<2> rho;
   TTI_GREEN Sigma;
   TTI_GREEN G; 
   TTI_SPECT A;
@@ -350,6 +358,7 @@ public:
 
   void do_mat() override;
 
+  void do_energy() override;
   void do_spectral() override;
 
   inline void L_to_Tau() override;
@@ -368,9 +377,7 @@ class tti_SpinSimulation : public SimulationBase {
   double dtau_;
   std::unique_ptr<tti_molGF2SolverSpin> p_NEgf2_;
 
-  ZTensor<3> hmf;
   const DTensor<2> &h0;
-  ZTensor<3> rho;
 
   TTI_GREEN Sup;
   TTI_GREEN Sdown;
@@ -400,6 +407,7 @@ public:
 
   void do_mat() override;
 
+  void do_energy() override;
   void do_spectral() override;
 
   inline void L_to_Tau() override;
@@ -419,9 +427,7 @@ class tti_DecompSpinSimulation : public SimulationBase {
   double dtau_;
   std::unique_ptr<tti_molGF2SolverSpinDecomp> p_NEgf2_;
 
-  ZTensor<3> hmf;
   const DTensor<2> &h0;
-  ZTensor<3> rho;
 
   TTI_GREEN Sup;
   TTI_GREEN Sdown;
@@ -451,6 +457,7 @@ public:
 
   void do_mat() override;
 
+  void do_energy() override;
   void do_spectral() override;
 
   inline void L_to_Tau() override;

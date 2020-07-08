@@ -2,6 +2,7 @@
 #define DYSON_IMPL
 
 #include "dyson.h"
+#include "chrono"
 
 namespace NEdyson{
 
@@ -319,6 +320,11 @@ void G0_from_h0(GREEN &G, double mu, const ZMatrix &H0, double beta, double h){
 
 void G0_from_h0(GREEN &G, double mu, const DTensor<2> &H0, double beta, double h){
   ZMatrix HMatrix = DMatrixConstMap(H0.data(), G.size1(), G.size1());
+  G0_from_h0(G, mu, HMatrix, beta, h);
+}
+
+void G0_from_h0(GREEN &G, double mu, const double *H0, double beta, double h){
+  ZMatrix HMatrix = DMatrixConstMap(H0, G.size1(), G.size1());
   G0_from_h0(G, mu, HMatrix, beta, h);
 }
 
@@ -680,7 +686,11 @@ double dyson_start_tv(const INTEG &I, GREEN &G, const GREEN &Sig, const cplx *hm
 void dyson_step_ret(int tstp, const INTEG &I, GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double dt){
   // Counters and sizes
   int k=I.k(), size1=G.size1(), es=G.element_size(),m,l,n,i;
-  
+ 
+        std::chrono::time_point<std::chrono::system_clock> start, end;
+        std::chrono::duration<double> elapsed_seconds;
+        start = std::chrono::system_clock::now();
+
   // Matricies
   cplx *M = new cplx[k*k*es];
   cplx *Q = new cplx[k*es];
@@ -695,14 +705,15 @@ void dyson_step_ret(int tstp, const INTEG &I, GREEN &G, const GREEN &Sig, const 
 
   // Initial condition
   element_iden(size1,G.retptr(tstp,tstp),ncplxi);
+        end = std::chrono::system_clock::now();
+        elapsed_seconds = end-start;
+        double memtime = elapsed_seconds.count();
 
+  
+        start = std::chrono::system_clock::now();
   // Fill the first k timesteps
-  for(l=0;l<k*k*es;l++){
-    M[l]=0.;
-  }
-  for(l=0;l<k*es;l++){
-    Q[l]=0.;
-  }
+  memset(M,0,k*k*es*sizeof(cplx));
+  memset(Q,0,k*es*sizeof(cplx));
   for(n=1;n<=k;n++){
     for(l=0;l<=k;l++){
       // Derivative terms
@@ -792,7 +803,13 @@ void dyson_step_ret(int tstp, const INTEG &I, GREEN &G, const GREEN &Sig, const 
     // Add this newly computed value to the integrals which need it
     for(m=n+1;m<=tstp;m++) element_incr(size1,qqint+m*es,I.gregory_weights(m,n),G.retptr(tstp,tstp-n),Sig.retptr(tstp-n,tstp-m));
   }
+        end = std::chrono::system_clock::now();
+        elapsed_seconds = end-start;
+        double runtime = elapsed_seconds.count();
 
+        std::ofstream out;
+        out.open("dystiming.dat", std::ofstream::app);
+        out<<memtime<<" "<<runtime<<" ";
   delete[] bdweight;
   delete[] qqint;
   delete[] M;
@@ -811,6 +828,9 @@ void dyson_step_tv(int tstp, const INTEG &I, GREEN &G, const GREEN &Sig, const c
   cplx weight;
   cplx weight2;
 
+        std::chrono::time_point<std::chrono::system_clock> start, end;
+        std::chrono::duration<double> elapsed_seconds;
+        start = std::chrono::system_clock::now();
   // Matricies
   cplx *iden = new cplx[es];
   cplx *M = new cplx[es];
@@ -826,8 +846,13 @@ void dyson_step_tv(int tstp, const INTEG &I, GREEN &G, const GREEN &Sig, const c
 
   cplx *gtv = G.tvptr(tstp ,0);
   int top = (ntau+1)*es;
-  for(l=0;l<top;l++) gtv[l]=0;
+  memset(gtv,0,top*sizeof(cplx));
+        end = std::chrono::system_clock::now();
+        elapsed_seconds = end-start;
+        double memtime = elapsed_seconds.count();
 
+  
+        start = std::chrono::system_clock::now();
   Ctv_tstp(tstp, G, Sig, Sig, G, G, I, beta, dt);
 
 
@@ -853,6 +878,13 @@ void dyson_step_tv(int tstp, const INTEG &I, GREEN &G, const GREEN &Sig, const c
     element_set(size1,Q,G.tvptr(tstp,m));
     element_linsolve_left(size1,size1,size1,M,G.tvptr(tstp,m),Q);
   }
+        end = std::chrono::system_clock::now();
+        elapsed_seconds = end-start;
+        double runtime = elapsed_seconds.count();
+
+        std::ofstream out;
+        out.open("dystiming.dat", std::ofstream::app);
+        out<<memtime<<" "<<runtime<<" ";
 
   delete[] stmp;
   delete[] tmp;
@@ -869,6 +901,9 @@ double dyson_step_les(int n, const INTEG &I, GREEN &G, const GREEN &Sig, const c
   int num = (n>=k)?(n):(k);
   double err=0;
 
+        std::chrono::time_point<std::chrono::system_clock> start, end;
+        std::chrono::duration<double> elapsed_seconds;
+        start = std::chrono::system_clock::now();
   // Matricies
   cplx *M = new cplx[k*k*es];
   cplx *X = new cplx[(num+1)*es];
@@ -879,6 +914,12 @@ double dyson_step_les(int n, const INTEG &I, GREEN &G, const GREEN &Sig, const c
   cplx cplxi = cplx(0,1);
   element_iden(size1,iden);
 
+        end = std::chrono::system_clock::now();
+        elapsed_seconds = end-start;
+        double memtime = elapsed_seconds.count();
+
+  
+        start = std::chrono::system_clock::now();
   // Initial condition
   element_set(size1,tmp,G.lesptr(0,n));
   element_set(size1,G.lesptr(0,n),G.tvptr(n,0));
@@ -974,7 +1015,15 @@ double dyson_step_les(int n, const INTEG &I, GREEN &G, const GREEN &Sig, const c
     if(n<=k) err += element_diff(size1,G.lesptr(l,n),X+l*es);
     element_set(size1,G.lesptr(l,n),X+l*es);
   }
-  
+        end = std::chrono::system_clock::now();
+        elapsed_seconds = end-start;
+        double runtime = elapsed_seconds.count();
+        if(n>k){
+          std::ofstream out;
+          out.open("dystiming.dat", std::ofstream::app);
+          out<<memtime<<" "<<runtime<<std::endl;
+        }
+
   delete[] M;
   delete[] Q;
   delete[] X;
@@ -1088,6 +1137,13 @@ void dyson_step(int n, const INTEG &I, GREEN &G, const GREEN &Sig, const ZTensor
 
 
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 
 
 
@@ -1169,12 +1225,17 @@ void G0_from_h0(TTI_GREEN &G, double mu, const ZMatrix &H0, double beta, double 
       Ut.get_value(m,exppt1);
       tmp = std::complex<double>(0,-1.0)*exppt1;
       G.set_ret(m,tmp);
-      tmp=std::complex<double>(0,1.0)*value*exppt1;
+      tmp=std::complex<double>(0,1.0)*value*exppt1.adjoint();
       G.set_les(-m,tmp);
     }
   }
 }
 
+
+void G0_from_h0(TTI_GREEN &G, double mu, const double *H0, double beta, double h){
+  ZMatrix HMatrix = DMatrixConstMap(H0, G.size1(), G.size1());
+  G0_from_h0(G, mu, HMatrix, beta, h);
+}
 
 void G0_from_h0(TTI_GREEN &G, double mu, const DTensor<2> &H0, double beta, double h){
   ZMatrix HMatrix = DMatrixConstMap(H0.data(), G.size1(), G.size1());
@@ -1213,7 +1274,7 @@ void Extrapolate(const INTEG &I, TTI_GREEN &G, int n){
   delete[] pref;
 }
 
-double dyson_start_ret(const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig, const cplx *hmf, double mu, double dt){
+double dyson_start_ret(const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig, const double *hmf, double mu, double dt){
   assert(G.size1()==Sig.size1());
   assert(G.nt()==Sig.nt());
   assert(G.nt()>=I.k());
@@ -1298,7 +1359,7 @@ double dyson_start_ret(const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig, const
   return err;
 }
 
-double dyson_start_tv(const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig, const cplx *hmf, double mu, double beta, double dt){
+double dyson_start_tv(const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig, const double *hmf, double mu, double beta, double dt){
   // Counters and sizes
   int k=I.k(), size1=G.size1(), es=G.element_size(),ntau=G.ntau(),m,l,n,i;
   cplx weight;
@@ -1394,7 +1455,7 @@ double dyson_start_tv(const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig, const 
   return err;
 }
 
-double dyson_start_les(const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig, const cplx *hmf, double mu, double beta, double dt){
+double dyson_start_les(const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig, const double *hmf, double mu, double beta, double dt){
   int size1 = G.size1();
   int k = I.k();
   cplx *tmp = new cplx[size1*size1];
@@ -1409,7 +1470,7 @@ double dyson_start_les(const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig, const
   return err;
 }
 
-double dyson_start(const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig, const cplx* hmf, double mu, double beta, double dt){
+double dyson_start(const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig, const double* hmf, double mu, double beta, double dt){
   assert(G.size1()==Sig.size1());
   assert(G.nt()==Sig.nt());
   assert(G.nt()>=I.k());
@@ -1422,7 +1483,7 @@ double dyson_start(const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig, const cpl
   return err;
 }
 
-double dyson_start(const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig, const ZTensor<2> &hmf, double mu, double beta, double dt){
+double dyson_start(const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig, const DTensor<2> &hmf, double mu, double beta, double dt){
   assert(G.size1()==Sig.size1());
   assert(G.size1()==hmf.shape()[1]);
   assert(G.size1()==hmf.shape()[0]);
@@ -1437,7 +1498,7 @@ double dyson_start(const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig, const ZTe
   return err;
 }
 
-void dyson_step_ret(int tstp, const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig, const cplx *hmf, double mu, double dt){
+void dyson_step_ret(int tstp, const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig, const double *hmf, double mu, double dt){
   // Counters and sizes
   int k=I.k(), size1=G.size1(), es=G.element_size(),m,l,n,i;
   
@@ -1449,6 +1510,9 @@ void dyson_step_ret(int tstp, const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig
   cplx ncplxi = cplx(0,-1);
   element_iden(size1,iden);
 
+        std::chrono::time_point<std::chrono::system_clock> start, end;
+        std::chrono::duration<double> elapsed_seconds;
+        start = std::chrono::system_clock::now();
   // Do the integral
   // qqint = \sum_{l=0}^{n-1} w_{nl} GR(t,t-l) SR(t-l,t-n) for n=k+1...tstp
   memset(qqint,0,sizeof(cplx)*es);
@@ -1476,6 +1540,13 @@ void dyson_step_ret(int tstp, const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig
 
   // Solve XM=Q for X
   element_linsolve_right(size1,size1,size1,G.retptr(tstp),M,qqint);
+        end = std::chrono::system_clock::now();
+        elapsed_seconds = end-start;
+        double runtime = elapsed_seconds.count();
+
+        std::ofstream out;
+        out.open("tti_dystiming.dat", std::ofstream::app);
+        out<<runtime<<" ";
     
   delete[] bdweight;
   delete[] qqint;
@@ -1484,7 +1555,7 @@ void dyson_step_ret(int tstp, const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig
   return;
 }
 
-void dyson_step_tv(int tstp, const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig, const cplx *hmf, double mu, double beta, double dt){
+void dyson_step_tv(int tstp, const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig, const double *hmf, double mu, double beta, double dt){
   // Counters and sizes
   int k=I.k(), size1=G.size1(), es=G.element_size(), ntau=G.ntau(), m, l, n, i;
   cplx weight;
@@ -1507,6 +1578,10 @@ void dyson_step_tv(int tstp, const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig,
   int top = (ntau+1)*es;
   for(l=0;l<top;l++) gtv[l]=0;
 
+        std::chrono::time_point<std::chrono::system_clock> start, end;
+        std::chrono::duration<double> elapsed_seconds;
+        start = std::chrono::system_clock::now();
+
   Ctv_tstp(tstp, G, Sig, Sig, G, G, I, beta, dt);
 
 
@@ -1522,16 +1597,22 @@ void dyson_step_tv(int tstp, const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig,
   
   // Make M
   weight = cplxi/dt*I.bd_weights(0);
-  hptr = hmf;
   weight2= -dt*I.omega(0);
   Gptr = Sig.retptr(0);
-  for(i=0;i<es;i++) M[i] = (weight+mu)*iden[i] - hptr[i] + weight2*Gptr[i];
+  for(i=0;i<es;i++) M[i] = (weight+mu)*iden[i] - hmf[i] + weight2*Gptr[i];
 
   // Solve MX=Q
   for(m=0;m<=ntau;m++){
     element_set(size1,Q,G.tvptr(tstp,m));
     element_linsolve_left(size1,size1,size1,M,G.tvptr(tstp,m),Q);
   }
+        end = std::chrono::system_clock::now();
+        elapsed_seconds = end-start;
+        double runtime = elapsed_seconds.count();
+
+        std::ofstream out;
+        out.open("tti_dystiming.dat", std::ofstream::app);
+        out<<runtime<<std::endl;
 
   delete[] stmp;
   delete[] tmp;
@@ -1540,14 +1621,14 @@ void dyson_step_tv(int tstp, const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig,
   delete[] Q;
 }
 
-void dyson_step_les(int n, const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig, const cplx *hmf, double mu, double beta, double dt){
+void dyson_step_les(int n, const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig, const double *hmf, double mu, double beta, double dt){
   int size1 = G.size1();
   element_set(size1,G.lesptr(-n),G.tvptr(n,0));
   element_conj(size1,G.lesptr(-n));
   element_smul(size1,G.lesptr(-n),-1);
 }
 
-void dyson_step(int n, const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig, const cplx *hmf, double mu, double beta, double dt){
+void dyson_step(int n, const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig, const double *hmf, double mu, double beta, double dt){
   assert(G.size1()==Sig.size1());
   assert(G.nt()==Sig.nt());
   assert(G.ntau()==Sig.ntau());
@@ -1560,7 +1641,7 @@ void dyson_step(int n, const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig, const
   dyson_step_les(n, I, G, Sig, hmf, mu, beta, dt);
 }
 
-void dyson_step(int n, const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig, const ZTensor<2> &hmf, double mu, double beta, double dt){
+void dyson_step(int n, const INTEG &I, TTI_GREEN &G, const TTI_GREEN &Sig, const DTensor<2> &hmf, double mu, double beta, double dt){
   assert(G.size1()==Sig.size1());
   assert(G.size1()==hmf.shape()[0]);
   assert(G.size1()==hmf.shape()[1]);

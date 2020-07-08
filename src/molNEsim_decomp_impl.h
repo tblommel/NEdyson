@@ -24,12 +24,47 @@ DecompSimulation<Repr>::DecompSimulation(const gfmol::HartreeFock &hf,
                                  h0(hf.hcore()), 
                                  rho(nao_,nao_)
 {
+  int nl = frepr.nl();
+  const size_t size_MB = 1024*1024;
+  size_t mem = 0;
+  // Members of gfmol::sim
+  mem += 5*nao_*nao_*sizeof(double); 
+  mem += 5*nao_*nao_*nl*sizeof(double);
+  mem += 3*nao_*nao_*nl*sizeof(cplx);
+  // gfmol::SESolver
+  mem += 2*4*nao_*nao_*nao_*sizeof(double); // V
+  mem += (2*4+1)*nao_*nao_*nao_*sizeof(double); // X,Y,tmp
+  mem += (4*4+1)*nao_*nao_*sizeof(double);      // P, rho
+  mem += nao_*nao_*nao_*nao_*sizeof(double);// Z
+  // gfmol::repn
+  mem += 2*2*nl*sizeof(double);
+  mem += 2*2*nl*sizeof(int);
+  mem += 2*3*nl*nl*sizeof(double);
+  mem += 2*2*nl*nl*sizeof(cplx);
+  // Members of NEdyson::sim
+  mem += (nt+1)*(nao_*nao_+2)*sizeof(double);     // hmf, energy
+  mem += nao_*nao_*sizeof(double);                // rho
+  mem += 2*(nt+1)*(nt+2)/2*nao_*nao_*sizeof(cplx);// G,S, R,<
+  mem += 2*(ntau+1)*(nt+1)*nao_*nao_*sizeof(cplx);// G,S, tv
+  mem += 2*(ntau+1)*nao_*nao_*sizeof(cplx);       // G,S, M
+  mem += nw*(nt+1)*nao_*nao_*sizeof(cplx);        // A
+  // molNEgf2
+  mem += nao_*nao_*nao_*sizeof(cplx);   // tmp
+  mem += 5*nao_*nao_*4*nao_*sizeof(cplx); // X, Y
+  mem += 2*4*nao_*nao_*sizeof(cplx); // P
+  mem += nao_*nao_*nao_*nao_*sizeof(cplx); // Z
+  // dyson
+  mem += k*nao_*nao_*(k+2)*sizeof(cplx);
+  mem += (2*nt+ntau)*nao_*nao_*sizeof(cplx); // temporary integral storage
+  
+  std::cout<< " Approximate memory needed for simulation : " << std::ceil(mem / (double)size_MB) << " MB"<<std::endl;
+
   switch (mode) {
     case gfmol::Mode::GF2:
       p_MatSim_ = std::unique_ptr<gfmol::DecompSimulation<Repr> >(new gfmol::DecompSimulation<Repr>(hf, frepr, brepr, mode, 0., decomp_prec));
       beta_ = p_MatSim_->frepr().beta();
       dtau_ = beta_/ntau;
-      p_NEgf2_ = std::unique_ptr<molGF2SolverDecomp>(new molGF2SolverDecomp(p_MatSim_->Vija()));
+      p_NEgf2_ = std::unique_ptr<molGF2SolverDecomp>(new molGF2SolverDecomp(p_MatSim_->Vija(), p_MatSim_->Viaj()));
   }
 
   Sigma = GREEN(nt, ntau, nao_, -1);
@@ -40,7 +75,7 @@ DecompSimulation<Repr>::DecompSimulation(const gfmol::HartreeFock &hf,
 
 template <typename Repr>
 void DecompSimulation<Repr>::free_gf() {
-  G0_from_h0(G, p_MatSim_->mu(), h0, p_MatSim_->frepr().beta(), dt_);
+  G0_from_h0(G, p_MatSim_->mu(), p_MatSim_->fock(), p_MatSim_->frepr().beta(), dt_);
 }
 
 
@@ -114,8 +149,14 @@ void DecompSimulation<Repr>::save(h5::File &file, const std::string &path) {
       }
     }
   }
-  ofile.close();*/
+*/
+  ofile.close();
   A.print_to_file("/home/thomas/Libraries/NEdyson/");
+  ofile.open("/home/thomas/Libraries/NEdyson/energy.dat", std::ofstream::out);
+  ofile << nt_ << std::endl;
+  ofile << p_MatSim_->etot()-p_MatSim_->enuc() << std::endl;
+  for(int t=0; t<=nt_; t++) ofile << ePot_(t)+eKin_(t) << std::endl;
+  ofile.close();
 }
 
 
@@ -130,6 +171,20 @@ void DecompSimulation<Repr>::do_spectral() {
   A.AfromG(G,nw_,wmax_,dt_);
 }
 
+template <typename Repr>
+void DecompSimulation<Repr>::do_energy() {
+  int nao2 = nao_*nao_;
+  for(int t=0; t<=nt_; t++) {
+    G.get_dm(t,rho);
+
+    auto rhomat = ZMatrixMap(rho.data(), nao_, nao_);
+    auto hmfmat = ZMatrixMap(hmf.data() + t*nao2, nao_, nao_);
+    auto h0mat = DMatrixConstMap(h0.data(),nao_,nao_);
+
+    eKin_(t) = rhomat.cwiseProduct((hmfmat+h0mat).transpose()).sum().real();
+    ePot_(t) = 2*energy_conv(t, I, Sigma, G, beta_, dt_);
+  }
+}
 
 template <>
 inline void DecompSimulation<gfmol::ChebyshevRepr>::L_to_Tau(){
@@ -170,16 +225,48 @@ tti_DecompSimulation<Repr>::tti_DecompSimulation(const gfmol::HartreeFock &hf,
                              double damping,
                              double decomp_prec) : 
                                  SimulationBase(hf, nt, ntau, k, dt, nw, wmax, MatMax, MatTol, BootMax, BootTol, CorrSteps),
-                                 hmf(nao_, nao_), 
-                                 h0(hf.hcore()), 
-                                 rho(nao_,nao_)
+                                 h0(hf.hcore())
 {
+  int nl = frepr.nl();
+  const size_t size_MB = 1024*1024;
+  size_t mem = 0;
+  // Members of gfmol::sim
+  mem += 5*nao_*nao_*sizeof(double); 
+  mem += 5*nao_*nao_*nl*sizeof(double);
+  mem += 3*nao_*nao_*nl*sizeof(cplx);
+  // gfmol::SESolver
+  mem += 2*4*nao_*nao_*nao_*sizeof(double); // V
+  mem += (2*4+1)*nao_*nao_*nao_*sizeof(double); // X,Y,tmp
+  mem += (4*4+1)*nao_*nao_*sizeof(double);      // P, rho
+  mem += nao_*nao_*nao_*nao_*sizeof(double);// Z
+  // gfmol::repn
+  mem += 2*2*nl*sizeof(double);
+  mem += 2*2*nl*sizeof(int);
+  mem += 2*3*nl*nl*sizeof(double);
+  mem += 2*2*nl*nl*sizeof(cplx);
+  // Members of NEdyson::sim
+  mem += (nt+1)*sizeof(double);     // energy
+  mem += 2*(nt+1)*nao_*nao_*sizeof(cplx);// G,S, R,<
+  mem += 2*(ntau+1)*(nt+1)*nao_*nao_*sizeof(cplx);// G,S, tv
+  mem += 2*(ntau+1)*nao_*nao_*sizeof(cplx);       // G,S, M
+  mem += nw*(nt+1)*nao_*nao_*sizeof(cplx);        // A
+  // molNEgf2
+  mem += nao_*nao_*nao_*sizeof(cplx);   // tmp
+  mem += 5*nao_*nao_*4*nao_*sizeof(cplx); // X, Y
+  mem += 2*4*nao_*nao_*sizeof(cplx); // P
+  mem += nao_*nao_*nao_*nao_*sizeof(cplx); // Z
+  // dyson
+  mem += k*nao_*nao_*(k+2)*sizeof(cplx);
+  mem += (2*nt+ntau)*nao_*nao_*sizeof(cplx); // temporary integral storage
+  
+  std::cout<< " Approximate memory needed for simulation : " << std::ceil(mem / (double)size_MB) << " MB"<<std::endl;
+
   switch (mode) {
     case gfmol::Mode::GF2:
       p_MatSim_ = std::unique_ptr<gfmol::DecompSimulation<Repr> >(new gfmol::DecompSimulation<Repr>(hf, frepr, brepr, mode, 0., decomp_prec));
       beta_ = p_MatSim_->frepr().beta();
       dtau_ = beta_/ntau;
-      p_NEgf2_ = std::unique_ptr<tti_molGF2SolverDecomp>(new tti_molGF2SolverDecomp(p_MatSim_->Vija()));
+      p_NEgf2_ = std::unique_ptr<tti_molGF2SolverDecomp>(new tti_molGF2SolverDecomp(p_MatSim_->Vija(), p_MatSim_->Viaj()));
   }
 
   Sigma = TTI_GREEN(nt, ntau, nao_, -1);
@@ -190,7 +277,7 @@ tti_DecompSimulation<Repr>::tti_DecompSimulation(const gfmol::HartreeFock &hf,
 
 template <typename Repr>
 void tti_DecompSimulation<Repr>::free_gf() {
-  G0_from_h0(G, p_MatSim_->mu(), h0, p_MatSim_->frepr().beta(), dt_);
+  G0_from_h0(G, p_MatSim_->mu(), p_MatSim_->fock(), p_MatSim_->frepr().beta(), dt_);
 }
 
 
@@ -206,15 +293,12 @@ void tti_DecompSimulation<Repr>::do_boot() {
     double err = 0;
 
     // Update mean field & self energy
-    G.get_dm(0, rho);
-    ZMatrixMap(hmf.data(), nao_, nao_) = DMatrixConstMap(h0.data(),nao_,nao_);
-    p_NEgf2_->solve_HF(hmf, rho);
     for(int tstp = 0; tstp <= k_; tstp++){
       p_NEgf2_->solve(tstp, Sigma, G);
     }
 
     // Solve G Equation of Motion
-    err = dyson_start(I, G, Sigma, hmf, p_MatSim_->mu(), beta_, dt_);
+    err = dyson_start(I, G, Sigma, p_MatSim_->fock(), p_MatSim_->mu(), beta_, dt_);
 
     std::cout<<"Bootstrapping iteration : "<<iter<<" | Error = "<<err<<std::endl;
     if(err<BootTol_){
@@ -224,6 +308,22 @@ void tti_DecompSimulation<Repr>::do_boot() {
   }
 }
 
+template <typename Repr>
+void tti_DecompSimulation<Repr>::do_energy() {
+  int nao2 = nao_*nao_;
+  ZTensor<2> rho(nao_, nao_);
+
+  for(int t=0; t<=nt_; t++) {
+    G.get_dm(t,rho);
+
+    auto rhomat = ZMatrixMap(rho.data(), nao_, nao_);
+    auto hmfmat = DMatrixConstMap(p_MatSim_->fock().data(), nao_, nao_);
+    auto h0mat = DMatrixConstMap(h0.data(),nao_,nao_);
+
+    eKin_(t) = rhomat.cwiseProduct((hmfmat+h0mat).transpose()).sum().real();
+    ePot_(t) = 2*energy_conv(t, I, Sigma, G, beta_, dt_);
+  }
+}
 
 template <typename Repr>
 void tti_DecompSimulation<Repr>::do_tstp(int tstp) {
@@ -233,7 +333,7 @@ void tti_DecompSimulation<Repr>::do_tstp(int tstp) {
   // Corrector
   for(int iter = 0; iter < CorrSteps_; iter++) {
     p_NEgf2_->solve(tstp, Sigma, G);
-    dyson_step(tstp, I, G, Sigma, hmf, p_MatSim_->mu(), beta_, dt_);
+    dyson_step(tstp, I, G, Sigma, p_MatSim_->fock(), p_MatSim_->mu(), beta_, dt_);
   }
 }
 
@@ -260,8 +360,14 @@ void tti_DecompSimulation<Repr>::save(h5::File &file, const std::string &path) {
       }
     }
   }
-  ofile.close();*/
+*/
+  ofile.close();
   A.print_to_file("/home/thomas/Libraries/NEdyson/");
+  ofile.open("/home/thomas/Libraries/NEdyson/energy.dat", std::ofstream::out);
+  ofile << nt_ << std::endl;
+  ofile << p_MatSim_->etot()-p_MatSim_->enuc() << std::endl;
+  for(int t=0; t<=nt_; t++) ofile << ePot_(t)+eKin_(t) << std::endl;
+  ofile.close();
 }
 
 

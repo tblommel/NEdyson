@@ -4,6 +4,7 @@ cmake.sh
 *.lyx~
 build.sh
 *.dat
+*.eps
 
 # Created by .ignore support plugin (hsz.mobi)
 ### CMake template

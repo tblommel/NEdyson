@@ -23,12 +23,43 @@ Simulation<Repr>::Simulation(const gfmol::HartreeFock &hf,
                                  h0(hf.hcore()), 
                                  rho(nao_,nao_)
 {
+  int nl = frepr.nl();
+  const size_t size_MB = 1024*1024;
+  size_t mem = 0;
+  // Members of gfmol::sim
+  mem += 5*nao_*nao_*sizeof(double);
+  mem += 5*nao_*nao_*nl*sizeof(double);
+  mem += 3*nao_*nao_*nl*sizeof(cplx);
+  // gfmol::SESolver
+  mem += 2*nao_*nao_*nao_*nao_*sizeof(double);
+  mem += 2*nao_*nao_*nao_*sizeof(double);
+  mem += 2*nao_*nao_*sizeof(double);
+  // gfmol::repn
+  mem += 2*2*nl*sizeof(double);
+  mem += 2*2*nl*sizeof(int);
+  mem += 2*3*nl*nl*sizeof(double);
+  mem += 2*2*nl*nl*sizeof(cplx);
+  // Members of NEdyson::sim
+  mem += (nt+1)*(nao_*nao_+2)*sizeof(double);
+  mem += nao_*nao_*sizeof(double);
+  mem += 2*(nt+1)*(nt+2)/2*nao_*nao_*sizeof(cplx);
+  mem += 2*(ntau+1)*(nt+1)*nao_*nao_*sizeof(cplx);
+  mem += 2*(ntau+1)*nao_*nao_*sizeof(cplx);
+  mem += nw*(nt+1)*nao_*nao_*sizeof(cplx);
+  // molNEgf2
+  mem += 3*nao_*nao_*(nao_+1)*sizeof(double);
+  // dyson
+  mem += k*nao_*nao_*(k+2)*sizeof(cplx);
+  mem += (2*nt+ntau)*nao_*nao_*sizeof(cplx); // temporary integral storage
+  
+  std::cout<< " Approximate memory needed for simulation : " << std::ceil(mem / (double)size_MB) << " MB"<<std::endl;
+
   switch (mode) {
     case gfmol::Mode::GF2:
       p_MatSim_ = std::unique_ptr<gfmol::Simulation<Repr> >(new gfmol::Simulation<Repr>(hf, frepr, brepr, mode, 0.));
       beta_ = p_MatSim_->frepr().beta();
       dtau_ = beta_/ntau;
-      p_NEgf2_ = std::unique_ptr<molGF2Solver>(new molGF2Solver(hf.uchem()));
+      p_NEgf2_ = std::unique_ptr<molGF2Solver>(new molGF2Solver(hf.uchem(), p_MatSim_->u_exch()));
   }
 
   Sigma = GREEN(nt, ntau, nao_, -1);
@@ -39,7 +70,7 @@ Simulation<Repr>::Simulation(const gfmol::HartreeFock &hf,
 
 template <typename Repr>
 void Simulation<Repr>::free_gf() {
-  G0_from_h0(G, p_MatSim_->mu(), h0, p_MatSim_->frepr().beta(), dt_);
+  G0_from_h0(G, p_MatSim_->mu(), p_MatSim_->fock(), p_MatSim_->frepr().beta(), dt_);
 }
 
 
@@ -79,14 +110,26 @@ void Simulation<Repr>::do_tstp(int tstp) {
   // Predictor
   Extrapolate(I,G,tstp);
 
+  std::chrono::time_point<std::chrono::system_clock> start, end;
+  std::chrono::duration<double> elapsed_seconds;
+
+  
   // Corrector
   for(int iter = 0; iter < CorrSteps_; iter++) {
     G.get_dm(tstp, rho);
     ZMatrixMap(hmf.data() + tstp*nao_*nao_, nao_, nao_) = DMatrixConstMap(h0.data(),nao_,nao_);
+    start = std::chrono::system_clock::now();
     p_NEgf2_->solve_HF(tstp, hmf, rho);
     p_NEgf2_->solve(tstp, Sigma, G);
+    end = std::chrono::system_clock::now();
+    elapsed_seconds = end-start;
+    gf2_time(tstp) += elapsed_seconds.count();
 
+    start = std::chrono::system_clock::now();
     dyson_step(tstp, I, G, Sigma, hmf, p_MatSim_->mu(), beta_, dt_);
+    end = std::chrono::system_clock::now();
+    elapsed_seconds = end-start;
+    dys_time(tstp) += elapsed_seconds.count();
   }
 }
 
@@ -115,6 +158,14 @@ void Simulation<Repr>::save(h5::File &file, const std::string &path) {
   }
   ofile.close();
   A.print_to_file("/home/thomas/Libraries/NEdyson/");
+  ofile.open("/home/thomas/Libraries/NEdyson/energy.dat", std::ofstream::out);
+  ofile << nt_ << std::endl;
+  ofile << p_MatSim_->etot()-p_MatSim_->enuc() << std::endl;
+  for(int t=0; t<=nt_; t++) ofile << ePot_(t)+eKin_(t) << std::endl;
+  ofile.close();
+  ofile.open("/home/thomas/Libraries/NEdyson/timing.dat", std::ofstream::out);
+  for(int t=0; t<=nt_; t++) ofile << t << " " << tot_time(t) << " " << dys_time(t) << " " << gf2_time(t) << std::endl;
+  ofile.close();
 }
 
 
@@ -127,6 +178,21 @@ void Simulation<Repr>::load(const h5::File &file, const std::string &path) {
 template <typename Repr>
 void Simulation<Repr>::do_spectral() {
   A.AfromG(G,nw_,wmax_,dt_);
+}
+
+template <typename Repr>
+void Simulation<Repr>::do_energy() {
+  int nao2 = nao_*nao_;
+  for(int t=0; t<=nt_; t++) {
+    G.get_dm(t,rho);
+
+    auto rhomat = ZMatrixMap(rho.data(), nao_, nao_);
+    auto hmfmat = ZMatrixMap(hmf.data() + t*nao2, nao_, nao_);
+    auto h0mat = DMatrixConstMap(h0.data(),nao_,nao_);
+
+    eKin_(t) = rhomat.cwiseProduct((hmfmat+h0mat).transpose()).sum().real();
+    ePot_(t) = 2*energy_conv(t, I, Sigma, G, beta_, dt_);
+  }
 }
 
 
@@ -175,16 +241,43 @@ tti_Simulation<Repr>::tti_Simulation(const gfmol::HartreeFock &hf,
                              gfmol::Mode mode,
                              double damping) : 
                                  SimulationBase(hf, nt, ntau, k, dt, nw, wmax, MatMax, MatTol, BootMax, BootTol, CorrSteps),
-                                 hmf(nao_, nao_), 
-                                 h0(hf.hcore()), 
-                                 rho(nao_,nao_)
+                                 h0(hf.hcore()) 
 {
+  int nl = frepr.nl();
+  const size_t size_MB = 1024*1024;
+  size_t mem = 0;
+  // Members of gfmol::sim
+  mem += 5*nao_*nao_*sizeof(double);
+  mem += 5*nao_*nao_*nl*sizeof(double);
+  mem += 3*nao_*nao_*nl*sizeof(cplx);
+  // gfmol::SESolver
+  mem += 2*nao_*nao_*nao_*nao_*sizeof(double);
+  mem += 2*nao_*nao_*nao_*sizeof(double);
+  mem += 2*nao_*nao_*sizeof(double);
+  // gfmol::repn
+  mem += 2*2*nl*sizeof(double);
+  mem += 2*2*nl*sizeof(int);
+  mem += 2*3*nl*nl*sizeof(double);
+  mem += 2*2*nl*nl*sizeof(cplx);
+  // Members of NEdyson::sim
+  mem += (nt+1)*2*sizeof(double); // energy
+  mem += 2*(nt+1)*nao_*nao_*sizeof(cplx); // G, Sig, ret les
+  mem += 2*(ntau+1)*(nt+1)*nao_*nao_*sizeof(cplx); // G, Sig tv
+  mem += 2*(ntau+1)*nao_*nao_*sizeof(cplx); // G, Sig M
+  mem += nw*(nt+1)*nao_*nao_*sizeof(cplx); // A
+  // molNEgf2
+  mem += 3*nao_*nao_*(nao_+1)*sizeof(double); // tmp stuff
+  // dyson
+  mem += k*nao_*nao_*(k+2)*sizeof(cplx); // start up matricies
+  mem += (ntau+1)*nao_*nao_*sizeof(cplx); // temporary integral storage
+  
+  std::cout<< " Approximate memory needed for simulation : " << std::ceil(mem / (double)size_MB) << " MB"<<std::endl;
   switch (mode) {
     case gfmol::Mode::GF2:
       p_MatSim_ = std::unique_ptr<gfmol::Simulation<Repr> >(new gfmol::Simulation<Repr>(hf, frepr, brepr, mode, 0.));
       beta_ = p_MatSim_->frepr().beta();
       dtau_ = beta_/ntau;
-      p_NEgf2_ = std::unique_ptr<tti_molGF2Solver>(new tti_molGF2Solver(hf.uchem()));
+      p_NEgf2_ = std::unique_ptr<tti_molGF2Solver>(new tti_molGF2Solver(hf.uchem(), p_MatSim_->u_exch()));
   }
 
   Sigma = TTI_GREEN(nt, ntau, nao_, -1);
@@ -195,7 +288,7 @@ tti_Simulation<Repr>::tti_Simulation(const gfmol::HartreeFock &hf,
 
 template <typename Repr>
 void tti_Simulation<Repr>::free_gf() {
-  G0_from_h0(G, p_MatSim_->mu(), h0, p_MatSim_->frepr().beta(), dt_);
+  G0_from_h0(G, p_MatSim_->mu(), p_MatSim_->fock(), p_MatSim_->frepr().beta(), dt_);
 }
 
 
@@ -211,15 +304,12 @@ void tti_Simulation<Repr>::do_boot() {
     double err = 0;
 
     // Update mean field & self energy
-    G.get_dm(0, rho);
-    ZMatrixMap(hmf.data(), nao_, nao_) = DMatrixConstMap(h0.data(),nao_,nao_);
-    p_NEgf2_->solve_HF(hmf, rho);
     for(int tstp = 0; tstp <= k_; tstp++){
       p_NEgf2_->solve(tstp, Sigma, G);
     }
 
     // Solve G Equation of Motion
-    err = dyson_start(I, G, Sigma, hmf, p_MatSim_->mu(), beta_, dt_);
+    err = dyson_start(I, G, Sigma, p_MatSim_->fock(), p_MatSim_->mu(), beta_, dt_);
 
     std::cout<<"Bootstrapping iteration : "<<iter<<" | Error = "<<err<<std::endl;
     if(err<BootTol_){
@@ -235,10 +325,22 @@ void tti_Simulation<Repr>::do_tstp(int tstp) {
   // Predictor
   Extrapolate(I,G,tstp);
 
+  std::chrono::time_point<std::chrono::system_clock> start, end;
+  std::chrono::duration<double> elapsed_seconds;
+
   // Corrector
   for(int iter = 0; iter < CorrSteps_; iter++) {
+    start = std::chrono::system_clock::now();
     p_NEgf2_->solve(tstp, Sigma, G);
-    dyson_step(tstp, I, G, Sigma, hmf, p_MatSim_->mu(), beta_, dt_);
+    end = std::chrono::system_clock::now();
+    elapsed_seconds = end-start;
+    gf2_time(tstp) += elapsed_seconds.count();
+
+    start = std::chrono::system_clock::now();
+    dyson_step(tstp, I, G, Sigma, p_MatSim_->fock(), p_MatSim_->mu(), beta_, dt_);
+    end = std::chrono::system_clock::now();
+    elapsed_seconds = end-start;
+    dys_time(tstp) += elapsed_seconds.count();
   }
 }
 
@@ -267,6 +369,14 @@ void tti_Simulation<Repr>::save(h5::File &file, const std::string &path) {
   }
   ofile.close();
   A.print_to_file("/home/thomas/Libraries/NEdyson/");
+  ofile.open("/home/thomas/Libraries/NEdyson/energy.dat", std::ofstream::out);
+  ofile << nt_ << std::endl;
+  ofile << p_MatSim_->etot()-p_MatSim_->enuc() << std::endl;
+  for(int t=0; t<=nt_; t++) ofile << ePot_(t)+eKin_(t) << std::endl;
+  ofile.close();
+  ofile.open("/home/thomas/Libraries/NEdyson/timing.dat", std::ofstream::out);
+  for(int t=0; t<=nt_; t++) ofile << t << " " << tot_time(t) << " " << dys_time(t) << " " << gf2_time(t) << std::endl;
+  ofile.close();
 }
 
 
@@ -275,6 +385,22 @@ void tti_Simulation<Repr>::load(const h5::File &file, const std::string &path) {
   int a=0;
 }
 
+template <typename Repr>
+void tti_Simulation<Repr>::do_energy() {
+  int nao2 = nao_*nao_;
+  ZTensor<2> rho(nao_, nao_);
+
+  for(int t=0; t<=nt_; t++) {
+    G.get_dm(t,rho);
+
+    auto rhomat = ZMatrixMap(rho.data(), nao_, nao_);
+    auto hmfmat = DMatrixConstMap(p_MatSim_->fock().data(), nao_, nao_);
+    auto h0mat = DMatrixConstMap(h0.data(),nao_,nao_);
+
+    eKin_(t) = rhomat.cwiseProduct((hmfmat+h0mat).transpose()).sum().real();
+    ePot_(t) = 2*energy_conv(t, I, Sigma, G, beta_, dt_);
+  }
+}
 
 template <typename Repr>
 void tti_Simulation<Repr>::do_spectral() {

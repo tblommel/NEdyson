@@ -20,6 +20,14 @@ void element_set(int size1, cplx *z, const cplx *z1){
 	std::memcpy(z,z1,sizeof(cplx)*size1*size1);
 }
 
+// Copies Z1 to Z
+void element_set(int size1, cplx *z, const double *z1){
+  int es = size1*size1;
+  for(int i=0; i<es; i++){
+    z[i] = z1[i];
+  }
+}
+
 // Sets Z to be the identity matrix
 void element_iden(int size1, cplx *z){
 	element_set_zero(size1, z);

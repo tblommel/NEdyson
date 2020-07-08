@@ -10,18 +10,6 @@ namespace NEdyson{
 //                      Spin Decomp Functions                           //
 //////////////////////////////////////////////////////////////////////////
 
-void molGF2SolverSpinDecomp::TransposeV()
-{ 
-  for(int i=0; i<nao_; i++){
-    for(int j=0; j<nao_; j++){
-      for(int a=0; a<nalpha_; a++){
-        Viaj_(i,a,j) = Vija_(i,j,a);
-      }
-    }
-  }
-}
-
-
 void molGF2SolverSpinDecomp::solve_bubble_les(int tstp, std::vector<std::reference_wrapper<GREEN>> &Sigma, std::vector<std::reference_wrapper<GREEN>> &G) const {
   int nao2 = nao_ * nao_;
   int naa = nao_ * nalpha_;
@@ -754,17 +742,6 @@ void molGF2SolverSpinDecomp::solve_loop(int tstp, std::vector<std::reference_wra
 //                           Decomp Functions                           //
 //////////////////////////////////////////////////////////////////////////
 
-void molGF2SolverDecomp::TransposeV()
-{ 
-  for(int i=0; i<nao_; i++){
-    for(int j=0; j<nao_; j++){
-      for(int a=0; a<nalpha_; a++){
-        Viaj_(i,a,j) = Vija_(i,j,a);
-      }
-    }
-  }
-}
-
 
 void molGF2SolverDecomp::solve_bubble_les(int tstp, GREEN &Sigma, GREEN &G) const {
   int nao2 = nao_ * nao_;
@@ -1445,20 +1422,6 @@ void molGF2SolverDecomp::solve_loop(int tstp, GREEN &Sigma, GREEN &G) const {
 //                      Spin Functions                                  //
 //////////////////////////////////////////////////////////////////////////
 
-void molGF2SolverSpin::make_U_exch()
-{ 
-  for(int i=0; i<nao_; i++){
-    for(int j=0; j<nao_; j++){
-      for(int k=0; k<nao_; k++){
-        for(int l=0; l<nao_; l++){
-          Uijkl_exch_(i,k,j,l) = Uijkl_(i,j,k,l);
-        }
-      }
-    }
-  }
-}
-
-
 void molGF2SolverSpin::solve_les(int tstp, std::vector<std::reference_wrapper<GREEN>> &Sigma, std::vector<std::reference_wrapper<GREEN>> &G) const {
   int nao2 = nao_ * nao_;
   int nao3 = nao_ * nao2;
@@ -1764,20 +1727,6 @@ void molGF2SolverSpin::solve_loop(int tstp, std::vector<std::reference_wrapper<G
 //                           Full   Functions                           //
 //////////////////////////////////////////////////////////////////////////
 
-void molGF2Solver::make_U_exch()
-{ 
-  for(int j=0; j<nao_; j++){
-    for(int q=0; q<nao_; q++){
-      for(int k=0; k<nao_; k++){
-        for(int m=0; m<nao_; m++){
-          Uijkl_exch_(j,q,k,m) = 2*Uijkl_(j,k,q,m) - Uijkl_(j,q,k,m);
-        }
-      }
-    }
-  }
-}
-
-
 void molGF2Solver::solve_les(int tstp, GREEN &Sigma, GREEN &G) const {
   int nao2 = nao_ * nao_;
   int nao3 = nao2 * nao_;
@@ -2028,18 +1977,6 @@ void molGF2Solver::solve_loop(int tstp, GREEN &Sigma, GREEN &G) const {
 //                      TTI Spin Decomp Functions                       //
 //////////////////////////////////////////////////////////////////////////
 
-void tti_molGF2SolverSpinDecomp::TransposeV()
-{ 
-  for(int i=0; i<nao_; i++){
-    for(int j=0; j<nao_; j++){
-      for(int a=0; a<nalpha_; a++){
-        Viaj_(i,a,j) = Vija_(i,j,a);
-      }
-    }
-  }
-}
-
-
 void tti_molGF2SolverSpinDecomp::solve_bubble_les(int tstp, std::vector<std::reference_wrapper<TTI_GREEN>> &Sigma, std::vector<std::reference_wrapper<TTI_GREEN>> &G) const {
   int nao2 = nao_ * nao_;
   int naa = nao_ * nalpha_;
@@ -2234,64 +2171,14 @@ void tti_molGF2SolverSpinDecomp::solve_bubble_ret(int tstp, std::vector<std::ref
 
 
 void tti_molGF2SolverSpinDecomp::solve_bubble(int tstp, std::vector<std::reference_wrapper<TTI_GREEN>> &Sigma, std::vector<std::reference_wrapper<TTI_GREEN>> &G) const {
-  solve_bubble_les(tstp, Sigma, G);
   solve_bubble_ret(tstp, Sigma, G);
   solve_bubble_tv(tstp, Sigma, G);
 }
 
 
 void tti_molGF2SolverSpinDecomp::solve_exch_les(int tstp, std::vector<std::reference_wrapper<TTI_GREEN>> &Sigma, std::vector<std::reference_wrapper<TTI_GREEN>> &G) const {
-  int nao2 = nao_ * nao_;
-  int nao3 = nao2 * nao_;
-  int naa = nao_ * nalpha_;
-
-  for(int s=0; s<ns_; ++s){
-    // X^>_nkb = (G^>T_s)_nm (V^T)_m(kb)
-    //         = (G^RT_snm - G^L*_smn) V^T_m(kb)
-    ZMatrixMap(X1sija.data(), nao_, naa) = 
-        (ZMatrixMap(G[s].get().retptr(tstp), nao_, nao_).transpose()
-      -  ZMatrixMap(G[s].get().lesptr(-tstp), nao_, nao_).conjugate())
-      *  DMatrixConstMap(Viaj_.data(), naa, nao_).transpose();
-
-    // Transpose last two arguments of X
-    for(int n=0; n<nao_; ++n){
-      ZMatrixMap(X2sija.data() + n*naa, nalpha_, nao_) = 
-          ZMatrixMap(X1sija.data() + n*naa, nao_, nalpha_).transpose();
-    }
-
-    // X^<_nbl = X^>_nbk * G^<T_kl
-    ZMatrixMap(X1sija.data(), naa, nao_) = 
-        ZMatrixMap(X2sija.data(), naa, nao_)
-      * ZMatrixMap(G[s].get().lesptr(-tstp), nao_, nao_).transpose();
-    
-    // Z^<_nqjl = V_qjb * X^<_nbl
-    for(int n=0; n<nao_; ++n){
-      ZMatrixMap(Zijkl.data() + n*nao3, nao2, nao_) = 
-          DMatrixConstMap(Vija_.data(), nao2, nalpha_)
-        * ZMatrixMap(X1sija.data() + n*naa, nalpha_, nao_);
-    }
-
-    // Y^<_naq = V_nap G^<_pq
-    ZMatrixMap(Y1sija.data(), naa, nao_) = 
-        DMatrixConstMap(Viaj_.data(), naa, nao_)
-      * ZMatrixMap(G[s].get().lesptr(-tstp), nao_, nao_);
-
-    // Transpose last two arguments of Y
-    for(int n=0; n<nao_; ++n){
-      ZMatrixMap(Y2sija.data() + n*naa, nao_, nalpha_) = 
-          ZMatrixMap(Y1sija.data() + n*naa, nalpha_, nao_).transpose();
-    }
-
-    // X_jla = Z^T_(jl)(nq) * Y_nqa
-    ZMatrixMap(X1sija.data(), nao2, nalpha_) =
-        ZMatrixMap(Zijkl.data(), nao2, nao2).transpose()
-      * ZMatrixMap(Y2sija.data(), nao2, nalpha_);
-    
-    // Sigma_ij += V_ila X^T(la)j
-    ZMatrixMap(Sigma[s].get().lesptr(-tstp), nao_, nao_) -= 
-        DMatrixConstMap(Vija_.data(), nao_, naa)
-      * ZMatrixMap(X1sija.data(), nao_, naa).transpose();
-  }
+  ZMatrixMap(Sigma[0].get().lesptr(-tstp), nao_, nao_) = -ZMatrixMap(Sigma[0].get().tvptr(tstp,0), nao_, nao_).adjoint();
+  ZMatrixMap(Sigma[1].get().lesptr(-tstp), nao_, nao_) = -ZMatrixMap(Sigma[1].get().tvptr(tstp,0), nao_, nao_).adjoint();
 }
 
 
@@ -2458,9 +2345,9 @@ void tti_molGF2SolverSpinDecomp::solve_exch_ret(int tstp, std::vector<std::refer
 
 
 void tti_molGF2SolverSpinDecomp::solve_exch(int tstp, std::vector<std::reference_wrapper<TTI_GREEN>> &Sigma, std::vector<std::reference_wrapper<TTI_GREEN>> &G) const {
-  solve_exch_les(tstp, Sigma, G);
   solve_exch_ret(tstp, Sigma, G);
   solve_exch_tv(tstp, Sigma, G);
+  solve_exch_les(tstp, Sigma, G);
 }
 
 void tti_molGF2SolverSpinDecomp::solve(int tstp, std::vector<std::reference_wrapper<TTI_GREEN>> &Sigma, std::vector<std::reference_wrapper<TTI_GREEN>> &G) const {
@@ -2761,18 +2648,6 @@ void tti_molGF2SolverSpinDecomp::solve_loop(int tstp, std::vector<std::reference
 //                           TTI Decomp Functions                       //
 //////////////////////////////////////////////////////////////////////////
 
-void tti_molGF2SolverDecomp::TransposeV()
-{ 
-  for(int i=0; i<nao_; i++){
-    for(int j=0; j<nao_; j++){
-      for(int a=0; a<nalpha_; a++){
-        Viaj_(i,a,j) = Vija_(i,j,a);
-      }
-    }
-  }
-}
-
-
 void tti_molGF2SolverDecomp::solve_bubble_les(int tstp, TTI_GREEN &Sigma, TTI_GREEN &G) const {
   int nao2 = nao_ * nao_;
   int naa = nao_ * nalpha_;
@@ -2940,61 +2815,13 @@ void tti_molGF2SolverDecomp::solve_bubble_ret(int tstp, TTI_GREEN &Sigma, TTI_GR
 
 
 void tti_molGF2SolverDecomp::solve_bubble(int tstp, TTI_GREEN &Sigma, TTI_GREEN &G) const {
-  solve_bubble_les(tstp, Sigma, G);
   solve_bubble_ret(tstp, Sigma, G);
   solve_bubble_tv(tstp, Sigma, G);
 }
 
 
 void tti_molGF2SolverDecomp::solve_exch_les(int tstp, TTI_GREEN &Sigma, TTI_GREEN &G) const {
-  int nao2 = nao_ * nao_;
-  int nao3 = nao2 * nao_;
-  int naa = nao_ * nalpha_;
-  // X^>_nkb = (G^>T)_nm (V^T)_m(kb)
-  //         = (G^RTnm - G^L*mn) V^T_m(kb)
-  ZMatrixMap(X1ija.data(), nao_, naa) = 
-      (ZMatrixMap(G.retptr(tstp), nao_, nao_).transpose()
-    -  ZMatrixMap(G.lesptr(-tstp), nao_, nao_).conjugate())
-    *  DMatrixConstMap(Viaj_.data(), naa, nao_).transpose();
-
-  // Transpose last two arguments of X
-  for(int n=0; n<nao_; ++n){
-    ZMatrixMap(X2ija.data() + n*naa, nalpha_, nao_) = 
-        ZMatrixMap(X1ija.data() + n*naa, nao_, nalpha_).transpose();
-  }
-
-  // X^<_nbl = X^>_nbk * G^<T_kl
-  ZMatrixMap(X1ija.data(), naa, nao_) = 
-      ZMatrixMap(X2ija.data(), naa, nao_)
-    * ZMatrixMap(G.lesptr(-tstp), nao_, nao_).transpose();
-  
-  // Z^<_nqjl = V_qjb * X^<_nbl
-  for(int n=0; n<nao_; ++n){
-    ZMatrixMap(Zijkl.data() + n*nao3, nao2, nao_) = 
-        DMatrixConstMap(Vija_.data(), nao2, nalpha_)
-      * ZMatrixMap(X1ija.data() + n*naa, nalpha_, nao_);
-  }
-
-  // Y^<_naq = V_nap G^<_pq
-  ZMatrixMap(Y1ija.data(), naa, nao_) = 
-      DMatrixConstMap(Viaj_.data(), naa, nao_)
-    * ZMatrixMap(G.lesptr(-tstp), nao_, nao_);
-
-  // Transpose last two arguments of Y
-  for(int n=0; n<nao_; ++n){
-    ZMatrixMap(Y2ija.data() + n*naa, nao_, nalpha_) = 
-        ZMatrixMap(Y1ija.data() + n*naa, nalpha_, nao_).transpose();
-  }
-
-  // X_jla = Z^T_(jl)(nq) * Y_nqa
-  ZMatrixMap(X1ija.data(), nao2, nalpha_) =
-      ZMatrixMap(Zijkl.data(), nao2, nao2).transpose()
-    * ZMatrixMap(Y2ija.data(), nao2, nalpha_);
-  
-  // Sigma_ij += V_ila X^T(la)j
-  ZMatrixMap(Sigma.lesptr(-tstp), nao_, nao_) -= 
-      DMatrixConstMap(Vija_.data(), nao_, naa)
-    * ZMatrixMap(X1ija.data(), nao_, naa).transpose();
+  ZMatrixMap(Sigma.lesptr(-tstp), nao_, nao_) = -ZMatrixMap(Sigma.tvptr(tstp,0), nao_, nao_).adjoint();
 }
 
 
@@ -3166,9 +2993,9 @@ void tti_molGF2SolverDecomp::solve_exch_ret(int tstp, TTI_GREEN &Sigma, TTI_GREE
 
 
 void tti_molGF2SolverDecomp::solve_exch(int tstp, TTI_GREEN &Sigma, TTI_GREEN &G) const {
-  solve_exch_les(tstp, Sigma, G);
   solve_exch_ret(tstp, Sigma, G);
   solve_exch_tv(tstp, Sigma, G);
+  solve_exch_les(tstp, Sigma, G);
 }
 
 
@@ -3436,56 +3263,10 @@ void tti_molGF2SolverDecomp::solve_loop(int tstp, TTI_GREEN &Sigma, TTI_GREEN &G
 //                      Spin Functions                                  //
 //////////////////////////////////////////////////////////////////////////
 
-void tti_molGF2SolverSpin::make_U_exch()
-{ 
-  for(int i=0; i<nao_; i++){
-    for(int j=0; j<nao_; j++){
-      for(int k=0; k<nao_; k++){
-        for(int l=0; l<nao_; l++){
-          Uijkl_exch_(i,k,j,l) = Uijkl_(i,j,k,l);
-        }
-      }
-    }
-  }
-}
-
 
 void tti_molGF2SolverSpin::solve_les(int tstp, std::vector<std::reference_wrapper<TTI_GREEN>> &Sigma, std::vector<std::reference_wrapper<TTI_GREEN>> &G) const {
-  int nao2 = nao_ * nao_;
-  int nao3 = nao_ * nao2;
-
-  auto A1_Aa = ZMatrixMap(A1_aaa.data(), nao2, nao_);
-  auto A1_Q = ZColVectorMap(A1_aaa.data(), nao3);
-
-  auto C1_aA = ZMatrixMap(C1_aaa.data(), nao_, nao2);
-  auto C1_Aa = ZMatrixMap(C1_aaa.data(), nao2, nao_);
-  auto B1_aA = ZMatrixMap(B1_aaa.data(), nao_, nao2);
-  auto B1_Aa = ZMatrixMap(B1_aaa.data(), nao2, nao_);
-
-  auto Uexch_i_jkl = DMatrixConstMap(Uijkl_exch_.data(), nao_, nao3);
-  auto U_i_jkl = DMatrixConstMap(Uijkl_.data(), nao_, nao3);
-
-  for(int s=0; s<ns_; ++s){
-    auto gL_s_lk = ZMatrixMap(G[s].get().lesptr(-tstp), nao_, nao_);
-
-    for(int i=0; i<nao_; ++i){
-      cplx *sigptr = Sigma[s].get().lesptr(-tstp) + i*nao_;
-      auto Ui_l_np = DMatrixConstMap(Uijkl_.data() + i*nao3, nao_, nao2);
-      C1_aA.noalias() = gL_s_lk.transpose() * Ui_l_np;
-
-      for(int sp=0; sp<ns_; ++sp){
-        B1_aA.noalias() = (C1_Aa * ZMatrixMap(G[sp].get().lesptr(-tstp),nao_,nao_)).transpose();
-        A1_Aa.noalias() = B1_Aa * 
-                            (-ZMatrixMap(G[sp].get().lesptr(-tstp),nao_,nao_).conjugate()
-                             +ZMatrixMap(G[sp].get().retptr(tstp),nao_,nao_).transpose());
-        ZColVectorMap(sigptr, nao_).noalias() += Uexch_i_jkl * A1_Q;
-
-        if(s==sp) {
-          ZColVectorMap(sigptr, nao_).noalias() -= U_i_jkl * A1_Q;
-        }
-      }
-    }
-  }
+  ZMatrixMap(Sigma[0].get().lesptr(-tstp), nao_, nao_) = -ZMatrixMap(Sigma[0].get().tvptr(tstp,0), nao_, nao_).adjoint();
+  ZMatrixMap(Sigma[1].get().lesptr(-tstp), nao_, nao_) = -ZMatrixMap(Sigma[1].get().tvptr(tstp,0), nao_, nao_).adjoint();
 }
 
 
@@ -3609,9 +3390,9 @@ void tti_molGF2SolverSpin::solve(int tstp, std::vector<std::reference_wrapper<TT
   Sigma[0].get().set_tstp_zero(tstp);
   Sigma[1].get().set_tstp_zero(tstp);
 
-  solve_les(tstp, Sigma, G);
   solve_ret(tstp, Sigma, G);
   solve_tv(tstp, Sigma, G);
+  solve_les(tstp, Sigma, G);
 }
 
 
@@ -3747,51 +3528,8 @@ void tti_molGF2SolverSpin::solve_loop(int tstp, std::vector<std::reference_wrapp
 //                         TTI Full Functions                           //
 //////////////////////////////////////////////////////////////////////////
 
-void tti_molGF2Solver::make_U_exch()
-{ 
-  for(int j=0; j<nao_; j++){
-    for(int q=0; q<nao_; q++){
-      for(int k=0; k<nao_; k++){
-        for(int m=0; m<nao_; m++){
-          Uijkl_exch_(j,q,k,m) = 2*Uijkl_(j,k,q,m) - Uijkl_(j,q,k,m);
-        }
-      }
-    }
-  }
-}
-
-
 void tti_molGF2Solver::solve_les(int tstp, TTI_GREEN &Sigma, TTI_GREEN &G) const {
-  int nao2 = nao_ * nao_;
-  int nao3 = nao2 * nao_;
-
-  auto A1_aA = ZMatrixMap(A1_aaa.data(), nao_, nao2);
-  auto A1_Aa = ZMatrixMap(A1_aaa.data(), nao2, nao_);
-  auto A1_Q =  ZColVectorMap(A1_aaa.data(), nao3);
-
-  auto B1_Aa = ZMatrixMap(B1_aaa.data(), nao2, nao_);
-  auto B1_aA = ZMatrixMap(B1_aaa.data(), nao_, nao2);
-
-  auto Uexch_j_qkm = DMatrixConstMap(Uijkl_exch_.data(), nao_, nao2*nao_);
-
-  auto gles = ZMatrixMap(G.lesptr(-tstp), nao_, nao_);
-  auto gret = ZMatrixMap(G.retptr(tstp), nao_, nao_);
-
-  for(int i=0; i<nao_; ++i){
-    // A^<(t,t')knp = (G^<T(t,t'))_kl Ui_lnp
-    A1_aA = gles.transpose() * DMatrixConstMap(Uijkl_.data() + i * nao3, nao_, nao2);
-    
-    // B^<(t,t')_qkn = [A^<(t,t')_knp * G^<(t,t')_pq]^T
-    B1_aA = (A1_Aa * gles).transpose();
-
-    // A^<(t,t')_qkm = B^<(t,t')_qkn * (G^>(t',t)^T)_nm
-    //               =               * (G^R(t',t)^T + G^<(t',t)^T)_nm
-    //               =               * (G^R(t',t)^T)_nm - G^<(t,t')^*_nm
-    A1_Aa = B1_Aa * (gret.transpose() - gles.conjugate());
-
-    // Sigma^<(t,t')i_j = Uexch_jqkm A^<(t,t')_qkm
-    ZRowVectorMap(Sigma.lesptr(-tstp) + i * nao_, nao_) += Uexch_j_qkm * A1_Q;
-  }
+  ZMatrixMap(Sigma.lesptr(-tstp), nao_, nao_) = -ZMatrixMap(Sigma.tvptr(tstp,0), nao_, nao_).adjoint();
 }
 
 
@@ -3897,8 +3635,8 @@ void tti_molGF2Solver::solve(int tstp, TTI_GREEN &Sigma, TTI_GREEN &G) const {
   Sigma.set_tstp_zero(tstp);
   Sigma.set_tstp_zero(tstp);
   
-  solve_les(tstp, Sigma, G);
   solve_tv(tstp, Sigma, G);
+  solve_les(tstp, Sigma, G);
   solve_ret(tstp, Sigma, G);
 }
 

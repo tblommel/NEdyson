@@ -12,7 +12,10 @@ SimulationBase::SimulationBase(const gfmol::HartreeFock &hf,
                                : enuc_(hf.enuc()), 
                                  nao_(hf.nao()), 
                                  eKin_(nt+1), 
-                                 ePot_(nt+1), 
+                                 ePot_(nt+1),
+                                 tot_time(nt+1),
+                                 dys_time(nt+1),
+                                 gf2_time(nt+1), 
                                  I(k) { 
   nw_ = nw;
   wmax_ = wmax;
@@ -27,17 +30,21 @@ SimulationBase::SimulationBase(const gfmol::HartreeFock &hf,
   BootMax_ = BootMax;
   BootTol_ = BootTol;
   CorrSteps_ = CorrSteps;
+
+  memset(tot_time.data(), 0, (nt+1)*sizeof(double));
+  memset(gf2_time.data(), 0, (nt+1)*sizeof(double));
+  memset(dys_time.data(), 0, (nt+1)*sizeof(double));
 }
 
 void SimulationBase::run(){
   std::chrono::time_point<std::chrono::system_clock> start, end;
   std::chrono::duration<double> elapsed_seconds;
   
-  // Calculate the free GF
-  free_gf();
-
   // Run the gfmol Matsubara solver
   do_mat();
+
+  // Calculate the free GF
+  free_gf();
 
   // Take the coefficients from gfmol and transform them into equidistant mesh
   L_to_Tau();
@@ -53,11 +60,16 @@ void SimulationBase::run(){
   if (bootstrap_converged == true) {
     for(int tstp = k_+1; tstp <= nt_; tstp++){
       std::cout<<tstp<<std::endl;
+      start = std::chrono::system_clock::now();
       do_tstp(tstp);
+      end = std::chrono::system_clock::now();
+      elapsed_seconds = end-start;
+      tot_time(tstp) = elapsed_seconds.count();
     }
 
     // Calculate the spectral function
     do_spectral();
+    do_energy();
   }
   else {
     std::cout << "Bootstrapping did not converge after " << BootMax_ << " iterations!" << std::endl;
