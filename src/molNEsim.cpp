@@ -15,8 +15,8 @@ SimulationBase::SimulationBase(const gfmol::HartreeFock &hf,
                                  ePot_(nt+1),
                                  tot_time(nt+1),
                                  dys_time(nt+1),
-                                 gf2_time(nt+1), 
-                                 I(k) { 
+                                 gf2_time(nt+1),
+                                 Dyson(nt, ntau, nao_, k) { 
   nw_ = nw;
   wmax_ = wmax;
   nt_ = nt;

@@ -4,11 +4,16 @@ add_executable(runtests
   tests-def.h
   dyson-test.cpp
   spectral-test.cpp
-  dyson_omp-test.cpp
   free-test.cpp
-  vie2-test.cpp
   integration-test.cpp
-  hubb-test.cpp
+  Nsim-test.cpp
+  NTTIsim-test.cpp
+  Dsim-test.cpp
+  DTTIsim-test.cpp
+  Ssim-test.cpp
+  STTIsim-test.cpp
+  SDsim-test.cpp
+  SDTTIsim-test.cpp
   molHFSolver-test.cpp
   mol2bSolver-test.cpp)
 

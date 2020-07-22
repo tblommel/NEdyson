@@ -38,13 +38,13 @@ protected:
 
   bool bootstrap_converged;
 
-  INTEG I;
-
   DTensor<1> eKin_;
   DTensor<1> ePot_;
   DTensor<1> tot_time;
   DTensor<1> dys_time;
   DTensor<1> gf2_time;
+
+  dyson Dyson;
   
 public:
   // Base class constructor
@@ -69,7 +69,7 @@ public:
   virtual void do_spectral() = 0;
 
   // Calculate energy
-  virtual void do_energy() =0;
+  virtual void do_energy() = 0;
 
   // Output Results to HDF5
   virtual void save(h5::File &file, const std::string &path) = 0;
@@ -86,6 +86,7 @@ public:
 // Vanilla Simulation without decomp and spin
 template <typename Repr>
 class Simulation : public SimulationBase {
+public:
   std::unique_ptr<gfmol::Simulation<Repr>> p_MatSim_;
   double beta_;
   double dtau_;
@@ -98,7 +99,6 @@ class Simulation : public SimulationBase {
   GREEN G; 
   SPECT A;
 
-public:
   // Construct sim
   Simulation(const gfmol::HartreeFock &hf,
              const gfmol::RepresentationBase<Repr> &frepr,
@@ -132,6 +132,7 @@ public:
 // Spin Restricted with Decomp
 template <typename Repr>
 class DecompSimulation : public SimulationBase {
+public:
   std::unique_ptr<gfmol::DecompSimulation<Repr>> p_MatSim_;
   double beta_;
   double dtau_;
@@ -144,7 +145,6 @@ class DecompSimulation : public SimulationBase {
   GREEN G; 
   SPECT A;
 
-public:
   // Construct sim
   DecompSimulation(const gfmol::HartreeFock &hf,
              const gfmol::RepresentationBase<Repr> &frepr,
@@ -178,6 +178,7 @@ public:
 // Simulation without decomp and with spin
 template <typename Repr>
 class SpinSimulation : public SimulationBase {
+public:
   std::unique_ptr<gfmol::SpinSimulation<Repr>> p_MatSim_;
   double beta_;
   double dtau_;
@@ -197,7 +198,6 @@ class SpinSimulation : public SimulationBase {
   
   SPECT A;
 
-public:
   // Construct sim
   SpinSimulation(const gfmol::HartreeFock &hf,
              const gfmol::RepresentationBase<Repr> &frepr,
@@ -230,6 +230,7 @@ public:
 // Simulation with decomp and with spin
 template <typename Repr>
 class DecompSpinSimulation : public SimulationBase {
+public:
   std::unique_ptr<gfmol::DecompSpinSimulation<Repr>> p_MatSim_;
   double beta_;
   double dtau_;
@@ -249,7 +250,6 @@ class DecompSpinSimulation : public SimulationBase {
   
   SPECT A;
 
-public:
   // Construct sim
   DecompSpinSimulation(const gfmol::HartreeFock &hf,
              const gfmol::RepresentationBase<Repr> &frepr,
@@ -287,6 +287,7 @@ public:
 
 template <typename Repr>
 class tti_Simulation : public SimulationBase {
+public:
   std::unique_ptr<gfmol::Simulation<Repr>> p_MatSim_;
   double beta_;
   double dtau_;
@@ -297,7 +298,6 @@ class tti_Simulation : public SimulationBase {
   TTI_GREEN G; 
   TTI_SPECT A;
 
-public:
   // Construct sim
   tti_Simulation(const gfmol::HartreeFock &hf,
              const gfmol::RepresentationBase<Repr> &frepr,
@@ -329,6 +329,7 @@ public:
 // Spin Restricted with Decomp
 template <typename Repr>
 class tti_DecompSimulation : public SimulationBase {
+public:
   std::unique_ptr<gfmol::DecompSimulation<Repr>> p_MatSim_;
   double beta_;
   double dtau_;
@@ -339,7 +340,6 @@ class tti_DecompSimulation : public SimulationBase {
   TTI_GREEN G; 
   TTI_SPECT A;
 
-public:
   // Construct sim
   tti_DecompSimulation(const gfmol::HartreeFock &hf,
              const gfmol::RepresentationBase<Repr> &frepr,
@@ -372,6 +372,7 @@ public:
 // Simulation without decomp and with spin
 template <typename Repr>
 class tti_SpinSimulation : public SimulationBase {
+public:
   std::unique_ptr<gfmol::SpinSimulation<Repr>> p_MatSim_;
   double beta_;
   double dtau_;
@@ -389,7 +390,6 @@ class tti_SpinSimulation : public SimulationBase {
   
   TTI_SPECT A;
 
-public:
   // Construct sim
   tti_SpinSimulation(const gfmol::HartreeFock &hf,
              const gfmol::RepresentationBase<Repr> &frepr,
@@ -422,6 +422,7 @@ public:
 // Simulation with decomp and with spin
 template <typename Repr>
 class tti_DecompSpinSimulation : public SimulationBase {
+public:
   std::unique_ptr<gfmol::DecompSpinSimulation<Repr>> p_MatSim_;
   double beta_;
   double dtau_;
@@ -439,7 +440,6 @@ class tti_DecompSpinSimulation : public SimulationBase {
   
   TTI_SPECT A;
 
-public:
   // Construct sim
   tti_DecompSpinSimulation(const gfmol::HartreeFock &hf,
              const gfmol::RepresentationBase<Repr> &frepr,

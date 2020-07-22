@@ -80,8 +80,8 @@ DecompSpinSimulation<Repr>::DecompSpinSimulation(const gfmol::HartreeFock &hf,
 
 template <typename Repr>
 void DecompSpinSimulation<Repr>::free_gf() {
-  G0_from_h0(Gup, p_MatSim_->mu()[0], p_MatSim_->fock().data(), p_MatSim_->frepr().beta(), dt_);
-  G0_from_h0(Gdown, p_MatSim_->mu()[1], p_MatSim_->fock().data() + nao_*nao_, p_MatSim_->frepr().beta(), dt_);
+  Dyson.G0_from_h0(Gup, p_MatSim_->mu()[0], p_MatSim_->fock().data(), p_MatSim_->frepr().beta(), dt_);
+  Dyson.G0_from_h0(Gdown, p_MatSim_->mu()[1], p_MatSim_->fock().data() + nao_*nao_, p_MatSim_->frepr().beta(), dt_);
 }
 
 
@@ -111,8 +111,8 @@ void DecompSpinSimulation<Repr>::do_boot() {
     }
 
     // Solve G Equation of Motion
-    err = dyson_start(I, Gup, Sup, hmf.data(), p_MatSim_->mu()[0], beta_, dt_);
-    err = dyson_start(I, Gdown, Sdown, hmf.data() + (nt_+1)*nao2, p_MatSim_->mu()[1], beta_, dt_);
+    err = Dyson.dyson_start(Gup, Sup, hmf.data(), p_MatSim_->mu()[0], beta_, dt_);
+    err = Dyson.dyson_start(Gdown, Sdown, hmf.data() + (nt_+1)*nao2, p_MatSim_->mu()[1], beta_, dt_);
 
     std::cout<<"Bootstrapping iteration : "<<iter<<" | Error = "<<err<<std::endl;
     if(err<BootTol_){
@@ -127,8 +127,8 @@ template <typename Repr>
 void DecompSpinSimulation<Repr>::do_tstp(int tstp) {
   int nao2 = nao_ * nao_;
   // Predictor
-  Extrapolate(I, Gup, tstp);
-  Extrapolate(I, Gdown, tstp);
+  Dyson.Extrapolate(tstp, Gup);
+  Dyson.Extrapolate(tstp, Gdown);
 
   // Corrector
   for(int iter = 0; iter < CorrSteps_; iter++) {
@@ -141,8 +141,8 @@ void DecompSpinSimulation<Repr>::do_tstp(int tstp) {
     p_NEgf2_->solve_HF(tstp, hmf, rho);
     p_NEgf2_->solve(tstp, Sigma, G);
 
-    dyson_step(tstp, I, Gup, Sup, hmf.data(), p_MatSim_->mu()[0], beta_, dt_);
-    dyson_step(tstp, I, Gdown, Sdown, hmf.data() + (nt_+1)*nao2, p_MatSim_->mu()[1], beta_, dt_);
+    Dyson.dyson_step(tstp, Gup, Sup, hmf.data(), p_MatSim_->mu()[0], beta_, dt_);
+    Dyson.dyson_step(tstp, Gdown, Sdown, hmf.data() + (nt_+1)*nao2, p_MatSim_->mu()[1], beta_, dt_);
   }
 }
 
@@ -196,7 +196,7 @@ void DecompSpinSimulation<Repr>::do_energy() {
       auto h0mat = DMatrixConstMap(h0.data(),nao_,nao_);
 
       eKin_(t) += 0.5*rhomat.cwiseProduct((hmfmat+h0mat).transpose()).sum().real();
-      ePot_(t) += energy_conv(t, I, Sigma[s], G[s], beta_, dt_);
+      ePot_(t) += Dyson.energy_conv(t, Sigma[s], G[s], beta_, dt_);
     }
   }
 }
@@ -313,8 +313,8 @@ tti_DecompSpinSimulation<Repr>::tti_DecompSpinSimulation(const gfmol::HartreeFoc
 
 template <typename Repr>
 void tti_DecompSpinSimulation<Repr>::free_gf() {
-  G0_from_h0(Gup, p_MatSim_->mu()[0], p_MatSim_->fock().data(), p_MatSim_->frepr().beta(), dt_);
-  G0_from_h0(Gdown, p_MatSim_->mu()[1], p_MatSim_->fock().data() + nao_*nao_, p_MatSim_->frepr().beta(), dt_);
+  Dyson.G0_from_h0(Gup, p_MatSim_->mu()[0], p_MatSim_->fock().data(), p_MatSim_->frepr().beta(), dt_);
+  Dyson.G0_from_h0(Gdown, p_MatSim_->mu()[1], p_MatSim_->fock().data() + nao_*nao_, p_MatSim_->frepr().beta(), dt_);
 }
 
 
@@ -336,8 +336,8 @@ void tti_DecompSpinSimulation<Repr>::do_boot() {
     }
 
     // Solve G Equation of Motion
-    err = dyson_start(I, Gup, Sup, p_MatSim_->fock().data(), p_MatSim_->mu()[0], beta_, dt_);
-    err = dyson_start(I, Gdown, Sdown, p_MatSim_->fock().data() + nao2, p_MatSim_->mu()[1], beta_, dt_);
+    err = Dyson.dyson_start(Gup, Sup, p_MatSim_->fock().data(), p_MatSim_->mu()[0], beta_, dt_);
+    err = Dyson.dyson_start(Gdown, Sdown, p_MatSim_->fock().data() + nao2, p_MatSim_->mu()[1], beta_, dt_);
 
     std::cout<<"Bootstrapping iteration : "<<iter<<" | Error = "<<err<<std::endl;
     if(err<BootTol_){
@@ -352,15 +352,15 @@ template <typename Repr>
 void tti_DecompSpinSimulation<Repr>::do_tstp(int tstp) {
   int nao2 = nao_ * nao_;
   // Predictor
-  Extrapolate(I, Gup, tstp);
-  Extrapolate(I, Gdown, tstp);
+  Dyson.Extrapolate(tstp, Gup);
+  Dyson.Extrapolate(tstp, Gdown);
 
   // Corrector
   for(int iter = 0; iter < CorrSteps_; iter++) {
     p_NEgf2_->solve(tstp, Sigma, G);
 
-    dyson_step(tstp, I, Gup, Sup, p_MatSim_->fock().data(), p_MatSim_->mu()[0], beta_, dt_);
-    dyson_step(tstp, I, Gdown, Sdown, p_MatSim_->fock().data() + nao2, p_MatSim_->mu()[1], beta_, dt_);
+    Dyson.dyson_step(tstp, Gup, Sup, p_MatSim_->fock().data(), p_MatSim_->mu()[0], beta_, dt_);
+    Dyson.dyson_step(tstp, Gdown, Sdown, p_MatSim_->fock().data() + nao2, p_MatSim_->mu()[1], beta_, dt_);
   }
 }
 
@@ -420,7 +420,7 @@ void tti_DecompSpinSimulation<Repr>::do_energy() {
       auto h0mat = DMatrixConstMap(h0.data(),nao_,nao_);
 
       eKin_(t) += 0.5*rhomat.cwiseProduct((hmfmat+h0mat).transpose()).sum().real();
-      ePot_(t) += energy_conv(t, I, Sigma[s], G[s], beta_, dt_);
+      ePot_(t) += Dyson.energy_conv(t, Sigma[s], G[s], beta_, dt_);
     }
   }
 }
