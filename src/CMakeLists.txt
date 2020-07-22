@@ -2,20 +2,10 @@ add_library(libNEdyson
   molHFSolver.cpp molHFSolver.h
   mol2bSolver.cpp mol2bSolver.h
   dyson.cpp dyson.h
-  dyson_omp.cpp dyson_omp.h
-  elementops.cpp elementops.h
-  function.cpp function.h
   greens.cpp greens.h
-  greens_tstp.cpp greens_tstp.h
-  hubbchainops.cpp hubbchainops.h
-  integrals.cpp integrals.h
   integration.cpp integration.h
-  mat_utils.cpp mat_utils.h
   spectral.cpp spectral.h
-  vie2.cpp vie2.h
   utils.cpp utils.h
-  NEdyson.cpp  NEdyson.h
-  param.cpp param.h
   molNEsim.cpp molNEsim.h molNEsim_impl.h molNEsim_decomp_impl.h molNEsim_spin_impl.h molNEsim_decomp_spin_impl.h
   params.cpp params.h
 )
