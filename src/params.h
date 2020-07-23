@@ -168,6 +168,7 @@ inline Params parse_args(const int argc, char *const *const argv)
   args::ValueFlag<double> wmax(parser, "wmax", "absolute value of the bounds of the sampled frequency space", {"wmax"});
 
   args::HelpFlag help(parser, "help", "Display this help menu", {'h', "help"});
+
   try {
     parser.ParseCLI(argc, argv);
   } catch (const args::Help &) {

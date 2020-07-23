@@ -102,6 +102,7 @@ green_func& green_func::operator=(const green_func &g){
   return *this;
 }
 
+
 //======================
 //RESIZE
 //======================
@@ -129,7 +130,6 @@ void green_func::resize(int nt, int ntau, int size1){
 }
 
 
-
 //======================
 //GET POINTERS
 //======================
@@ -153,6 +153,196 @@ cplx *green_func::matptr(int i) const {
   assert(i>=0 && i<=ntau_);
   return mat_ + i*element_size_;
 }
+
+
+
+void green_func::set_tstp(int tstp, const green_func_tstp &G){
+  assert(tstp>=-1 && tstp<=nt_ && tstp==G.tstp() && G.size1()==size1_ && G.ntau()==ntau_);
+  if(tstp == -1){
+    memcpy(mat_,G.matptr(0),sizeof(cplx)*(ntau_+1)*element_size_);
+  }
+  else{
+    memcpy(this->retptr(tstp,0),G.retptr(0),sizeof(cplx)*(tstp+1)*element_size_);
+    memcpy(this->tvptr(tstp,0),G.tvptr(0),sizeof(cplx)*(ntau_+1)*element_size_);
+    memcpy(this->lesptr(0,tstp),G.lesptr(0),sizeof(cplx)*(tstp+1)*element_size_);
+  }
+}
+
+
+void green_func::set_tstp_zero(int tstp){
+  assert(tstp>=-1 && tstp <=nt_);
+  if(tstp==-1){
+    memset(matptr(0), 0, sizeof(cplx)*(ntau_+1)*element_size_);
+  }
+  else{
+    memset(retptr(tstp,0), 0, sizeof(cplx)*(tstp+1)*element_size_);
+    memset(tvptr(tstp,0), 0, sizeof(cplx)*(ntau_+1)*element_size_);
+    memset(lesptr(0,tstp), 0, sizeof(cplx)*(tstp+1)*element_size_);
+  }
+}
+
+
+void green_func::set_tstp(int tstp, const green_func &G){
+  assert(tstp>=-1 && tstp<=nt_ && tstp<=G.nt() && G.size1()==size1_ && G.ntau()==ntau_);
+  if(tstp == -1){
+    memcpy(mat_,G.mat_,sizeof(cplx)*(ntau_+1)*element_size_);
+  }
+  else{
+    memcpy(this->retptr(tstp,0),G.retptr(tstp,0),sizeof(cplx)*(tstp+1)*element_size_);
+    memcpy(this->tvptr(tstp,0),G.tvptr(tstp,0),sizeof(cplx)*(ntau_+1)*element_size_);
+    memcpy(this->lesptr(0,tstp),G.lesptr(0,tstp),sizeof(cplx)*(tstp+1)*element_size_);
+  }
+}
+
+
+void green_func::get_tstp(int tstp, green_func_tstp &G) const {
+  assert(tstp>=-1 && tstp<=nt_ && tstp==G.tstp() && G.size1()==size1_ && G.ntau()==ntau_);
+  if(tstp == -1){
+    memcpy(G.matptr(0),mat_,sizeof(cplx)*(ntau_+1)*element_size_);
+  }
+  else{
+    memcpy(G.retptr(0),this->retptr(tstp,0),sizeof(cplx)*(tstp+1)*element_size_);
+    memcpy(G.tvptr(0),this->tvptr(tstp,0),sizeof(cplx)*(ntau_+1)*element_size_);
+    memcpy(G.lesptr(0),this->lesptr(0,tstp),sizeof(cplx)*(tstp+1)*element_size_);
+  }
+}
+
+//======================
+//MULTIPLICATIONS
+//======================
+
+void green_func::smul(int tstp, cplx weight){
+  assert(tstp>=-1 && tstp<=nt_);
+  if(tstp==-1){
+    int len = (ntau_+1)*element_size_;
+    for(int i=0;i<len;i++) mat_[i]*=weight;
+  }
+  else{
+    int len = (ntau_+1)*element_size_;
+    cplx *tv = this->tvptr(tstp,0);
+    for(int i=0;i<len;i++) tv[i]*=weight;
+
+    len = (tstp+1)*element_size_;
+    cplx *les = this->lesptr(0,tstp);
+    cplx *ret = this->retptr(tstp,0);
+    for(int i=0;i<len;i++){
+      les[i]*=weight;
+      ret[i]*=weight;
+    }
+  }
+}
+
+
+void green_func::right_multiply(int tstp, cplx *f0, cplx *ft, cplx weight){
+  assert(tstp>=-1 && tstp<=nt_);
+  int m;
+  cplx *x0, *xtmp, *ftmp;
+  xtmp = new cplx[element_size_];
+  if(tstp == -1){
+    // Matsubara component
+    x0=mat_;
+    for(m=0;m<=ntau_;m++){
+      element_mult(size1_,xtmp,x0,f0);
+      element_smul(size1_,xtmp,weight);
+      element_set(size1_,x0,xtmp);
+      x0+=element_size_;
+    }
+  }
+  else{
+    // TV component
+    x0=this->tvptr(tstp,0);
+    for(m=0;m<=ntau_;m++){
+      element_mult(size1_,xtmp,x0,f0);
+      element_smul(size1_,xtmp,weight);
+      element_set(size1_,x0,xtmp);
+      x0+=element_size_;
+    }
+    // Ret component
+    x0=this->retptr(tstp,0);
+    ftmp=ft;
+    for(m=0;m<=tstp;m++){
+      element_mult(size1_,xtmp,x0,ftmp);
+      element_smul(size1_,xtmp,weight);
+      element_set(size1_,x0,xtmp);
+      x0+=element_size_;
+      ftmp+=element_size_;
+    }
+    // Les component
+    x0=this->lesptr(0,tstp);
+    ftmp=ft+tstp*element_size_;
+    for(m=0;m<=tstp;m++){
+      element_mult(size1_,xtmp,x0,ftmp);
+      element_smul(size1_,xtmp,weight);
+      element_set(size1_,x0,xtmp);
+      x0+=element_size_;
+    }
+  }
+  delete[] xtmp;
+}
+
+
+void green_func::right_multiply(int tstp, const function &ft, cplx weight){
+  assert(tstp>=-1 && tstp<=nt_);
+  assert(ft.nt()>=tstp);
+  assert(size1_==ft.size1());
+  this->right_multiply(tstp,ft.ptr(-1),ft.ptr(0),weight);
+}
+
+
+void green_func::left_multiply(int tstp, cplx *f0, cplx *ft, cplx weight){
+  assert(tstp>=-1 && tstp<=nt_);
+  int m;
+  cplx *x0, *ftmp, *xtmp;
+  
+  xtmp = new cplx[element_size_];
+
+  if(tstp==-1){
+    x0=mat_;
+    for(m=0;m<=ntau_;m++){
+      element_mult(size1_,xtmp,x0,f0);
+      element_smul(size1_,xtmp,weight);
+      element_set(size1_,x0,xtmp);
+      x0+=element_size_;
+    }
+  }
+  else{
+    // TV component
+    x0=this->tvptr(tstp,0);
+    ftmp = ft+tstp*element_size_;
+    for(m=0;m<=ntau_;m++){
+      element_mult(size1_,xtmp,ftmp,x0);
+      element_smul(size1_,xtmp,weight);
+      element_set(size1_,x0,xtmp);
+      x0+=element_size_;
+    }
+    // Ret component
+    x0=this->retptr(tstp,0);
+    for(m=0;m<=tstp;m++){
+      element_mult(size1_,xtmp,ftmp,x0);
+      element_smul(size1_,xtmp,weight);
+      element_set(size1_,x0,xtmp);
+      x0+=element_size_;
+    }
+    // Les component
+    x0=this->lesptr(0,tstp);
+    for(m=0;m<=tstp;m++){
+      element_mult(size1_,xtmp,ft+m*element_size_,x0);
+      element_smul(size1_,xtmp,weight);
+      element_set(size1_,x0,xtmp);
+      x0+=element_size_;
+    } 
+  }
+  delete[] xtmp;
+}
+
+
+void green_func::left_multiply(int tstp, const function &ft, cplx weight){
+  assert(tstp>=-1 && tstp<=nt_);
+  assert(ft.nt()>=tstp);
+  assert(size1_==ft.size1());
+  this->left_multiply(tstp,ft.ptr(-1),ft.ptr(0),weight);
+}
+
 
 
 
@@ -260,6 +450,7 @@ void green_func::print_to_file(std::string file, double dt, double dtau, int pre
 }
 
 
+
 void green_func::read_from_file_ret(const char *file, double &dt, double &dtau){
   int i,j,l,size1,sg,sig,nt,ntau;
   double real, imag, dt2, dtau2;
@@ -296,8 +487,6 @@ void green_func::read_from_file_ret(const char *file, double &dt, double &dtau){
   }
   in.close();
 }
-
-
 void green_func::read_from_file(const char *file, double &dt, double &dtau){
   int i,j,l,size1,sg,sig,nt,ntau;
   double real, imag, dt2, dtau2;
@@ -537,6 +726,49 @@ void green_func::read_from_file(h5e::File &File, std::string path) {
   element_size_=size1_*size1_;
 }
 
+double distance_norm2(int tstp, GREEN &G1, GREEN &G2){
+  assert(G1.size1()==G2.size1());
+  assert(G1.ntau()==G2.ntau());
+  assert(tstp<=G1.nt());
+  assert(tstp<=G2.nt());
+
+  int size1 = G1.size1(), ntau=G1.ntau(),i;
+  double err = 0;
+  cplx *tmp = new cplx[size1*size1];
+  if(tstp == -1){
+    for(i=0;i<=ntau;i++){
+      element_set(size1,tmp,G1.matptr(i));
+      element_incr(size1,tmp,-1.,G2.matptr(i));
+      err += element_norm2(size1,tmp);
+    }
+  }
+  else{
+    for(i=0;i<=tstp;i++){
+      element_set(size1,tmp,G1.retptr(tstp,i));
+      element_incr(size1,tmp,-1.,G2.retptr(tstp,i));
+      err += element_norm2(size1,tmp);
+    }
+    for(i=0;i<=ntau;i++){
+      element_set(size1,tmp,G1.tvptr(tstp,i));
+      element_incr(size1,tmp,-1.,G2.tvptr(tstp,i));
+      err += element_norm2(size1,tmp);
+    }
+    for(i=0;i<=tstp;i++){
+      element_set(size1,tmp,G1.lesptr(i,tstp));
+      element_incr(size1,tmp,-1.,G2.lesptr(i,tstp));
+      err += element_norm2(size1,tmp);
+    }
+  }
+  delete[] tmp;
+  return err;
+}
+
+
+
+
+
+
+
 //===========================================
 //CONSTRUCTORS
 //===========================================
@@ -634,6 +866,8 @@ tti_green_func& tti_green_func::operator=(const tti_green_func &g){
   memcpy(tv_,g.tv_,sizeof(cplx)*((nt_+1)*(ntau_+1))*element_size_);
   return *this;
 }
+
+
 //======================
 //RESIZE
 //======================
@@ -659,7 +893,6 @@ void tti_green_func::resize(int nt, int ntau, int size1){
     tv_=0;
   }
 }
-
 
 
 //======================
@@ -1058,6 +1291,18 @@ void tti_green_func::read_from_file(h5e::File &File, std::string path) {
   ntau_ = h5e::load<int>(File,path+"/ntau");
   size1_ = h5e::load<int>(File,path+"/nao");
   element_size_=size1_*size1_;
+}
+
+void tti_green_func::set_tstp_zero(int tstp){
+  assert(tstp>=-1 && tstp <=nt_);
+  if(tstp==-1){
+    memset(matptr(0), 0, sizeof(cplx)*(ntau_+1)*element_size_);
+  }
+  else{
+    memset(retptr(tstp), 0, sizeof(cplx)*element_size_);
+    memset(tvptr(tstp,0), 0, sizeof(cplx)*(ntau_+1)*element_size_);
+    memset(lesptr(-tstp), 0, sizeof(cplx)*element_size_);
+  }
 }
 
 }//Namespace

@@ -1,5 +1,4 @@
 #include "dyson.h"
-//#include "omp_integrals.h"
 #include "utils.h"
 #include "tests-def.h"
 
@@ -15,8 +14,8 @@ TEST_CASE("Integrals"){
   GREEN Bcc = GREEN(Nt, Ntau, Nsites, -1);
   GREEN Cact = GREEN(Nt, Ntau, Nsites, -1);
   GREEN Ctest= GREEN(Nt, Ntau, Nsites, -1);
-  DYSON Dyson = DYSON(Nt, Ntau, Nsites, 5);
-
+  INTEG I(5);
+  
   h5e::File File(std::string(TEST_DATA_DIR)+"/int_test_data.h5");
   A.read_from_file(File, "A");
   Acc.read_from_file(File, "Acc");
@@ -25,7 +24,7 @@ TEST_CASE("Integrals"){
   Cact.read_from_file(File, "C");
 
   for(int tstp=0;tstp<=Nt;tstp++)
-    Dyson.Ctv_tstp(tstp, Ctest, A, Acc, B, Bcc, beta, dt);
+    Ctv_tstp(tstp, Ctest, A, Acc, B, Bcc, I, beta, dt);
 
   ZColVectorMap CTVtstpVec = ZColVectorMap(Ctest.tvptr(0,0), (Nt+1)*(Ntau+1)*Nsites*Nsites);
   ZColVectorMap CTVtstpCVec = ZColVectorMap(Cact.tvptr(0,0), (Nt+1)*(Ntau+1)*Nsites*Nsites);
@@ -33,8 +32,8 @@ TEST_CASE("Integrals"){
 
   cplx *tvvt = new cplx[984];
   int count=0;
-  for(int tstp=0; tstp<=Nt; tstp++) {
-    Dyson.Cles3_tstp(A, Acc, B, Bcc, tstp, beta, tvvt+count);
+  for(int tstp=0;tstp<=Nt;tstp++){
+    Cles3_tstp(I, A, Acc, B, Bcc, tstp, beta, tvvt+count);
     count+=((tstp>5)?(tstp+1)*4:6*4);
   }
   
@@ -46,8 +45,8 @@ TEST_CASE("Integrals"){
   cplx *lesadv = new cplx[984];
   memset(lesadv,0,sizeof(cplx)*984);
   count=0;
-  for(int tstp=0; tstp<=Nt; tstp++) {
-    Dyson.Cles2_tstp(A, Acc, B, Bcc, tstp, dt, lesadv+count);
+  for(int tstp=0;tstp<=Nt;tstp++){
+    Cles2_tstp(I, A, Acc, B, Bcc, tstp, dt, lesadv+count);
     count+=((tstp>5)?(tstp+1)*4:6*4);
   }
 
@@ -56,9 +55,9 @@ TEST_CASE("Integrals"){
   REQUIRE((CLAtstpVec-CLAtstpCVec).norm() < 1e-11);
   delete[] lesadv;
   
-/*
+
   Cact.read_from_file(File, "Comp");
-  for(int t=-1; t<=Nt; t++) Ctest.set_tstp_zero(t);
+  for(int t=-1;t<=Nt;t++) Ctest.set_tstp_zero(t);
   for(int t=0;t<=Nt;t++){
     std::vector<bool> mask_rl(t+1,true);
     std::vector<bool> mask_tv(Ntau+1,true);
@@ -78,5 +77,4 @@ TEST_CASE("Integrals"){
   ZColVectorMap CTVomptstpVec = ZColVectorMap(Ctest.tvptr(0,0), (Ntau+1)*(Nt+1)*4);
   ZColVectorMap CTVomptstpCVec = ZColVectorMap(Cact.tvptr(0,0), (Ntau+1)*(Nt+1)*4);
   REQUIRE((CTVomptstpVec-CTVomptstpCVec).norm() < 1e-11);
-*/
 }

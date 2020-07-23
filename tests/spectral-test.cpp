@@ -24,7 +24,7 @@ TEST_CASE("Spectral function calculations"){
 
   REQUIRE((ATestVM-AActVM).norm() < 10e-12);
 }
-/*
+
 TEST_CASE("Expanded Spectral function calculations"){
   int Nt=20, Ntau=30, Nsites=2;
   h5e::File File(std::string(TEST_DATA_DIR) + "/Gfree_const.h5",h5e::File::ReadWrite);
@@ -67,4 +67,4 @@ TEST_CASE("Expanded Spectral function calculations"){
   DColVectorMap AActVM = DColVectorMap(AAct.ptr(0,0),(AAct.nt()+1)*AAct.nw()*4);
 
   REQUIRE((ATestVM-AActVM).norm() < 1e-12);
-}*/
+}

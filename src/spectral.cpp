@@ -165,23 +165,23 @@ void spectral::AfromG(const green_func &G, int nw, double wmax, double dt){
 	A_ = new double[(nt_+1)*nw_*es_];
 	memset(A_,0,sizeof(double)*(nt_+1)*nw_*es_);
 
+
 	int ita, iw, itr;
 	cplx *tmp;
 	cplx weight;
+	
+	tmp = new cplx[es_];
 	cplx arg, cplxi = cplx(0.,1.);
-
-	for(ita=0; ita<=nt_; ita++) {
+	for(ita=0;ita<=nt_;ita++){
 		int max1 = ita;
 		int max2 = nt_-ita;	
 		int max = max1>=max2?max2:max1;
-
-		for(itr=ita%2; itr<=max; itr+=2) {
-      ZMatrixMap GMap = ZMatrixMap(G.retptr((ita+itr)/2,(ita-itr)/2), size1_, size1_);
-
+		for(itr=ita%2;itr<=max;itr+=2){
+			element_set(size1_,tmp,G.retptr((ita+itr)/2,(ita-itr)/2));
 			for(iw=0;iw<nw;iw++){
 				arg = (iw-(nw-1)/2)*dw_*itr*dt_*cplxi;
 				weight = std::exp(arg);
-        DMatrixMap(ptr(ita,iw), size1_, size1_) += (weight * GMap).imag();
+				element_imag_incr(size1_,ptr(ita,iw),weight,tmp);
 			}
 		}
 	}
@@ -189,14 +189,15 @@ void spectral::AfromG(const green_func &G, int nw, double wmax, double dt){
 	double a = -2*dt_/PI;
 	for(ita=0;ita<=nt_;ita++){
 		for(iw=0;iw<nw;iw++){
-      DMatrixMap(ptr(ita,iw), size1_, size1_) *= a;
+			element_smul(size1_,ptr(ita,iw),a);
 		}
 	}
 
+	delete[] tmp;
 }
 
 
-/*
+
 // see spectral notes
 void spectral::AfromG(const green_func &G, int nw, double wmax, double dt, const cplx *extdata, int nfit, int ntp){
 	nt_ = 2*G.nt();
@@ -251,7 +252,7 @@ void spectral::AfromG(const green_func &G, int nw, double wmax, double dt, const
 
 	delete[] tmp;
 }
-*/
+
 
 
 ////////////////////////////////////////////
@@ -418,32 +419,32 @@ void tti_spectral::AfromG(const tti_green_func &G, int nw, double wmax, double d
 	cplx *tmp;
 	cplx weight;
 	
+	tmp = new cplx[es_];
 	cplx arg, cplxi = cplx(0.,1.);
-
   for(it = 0; it <= nt_; it++) {
-    ZMatrixMap GMap = ZMatrixMap(G.retptr(it), size1_, size1_);
-
+    element_set(size1_, tmp, G.retptr(it));
     for(iw = 0; iw < nw; iw++) {
       arg = (iw-(nw-1)/2)*dw_*it*dt_*cplxi;
       weight = std::exp(arg);
-      DMatrixMap(ptr(iw), size1_, size1_) += (weight*GMap).imag();
+      element_imag_incr(size1_, ptr(iw), weight, tmp);
     }
   }
 
 	double a = -dt_/PI;
 	for(iw = 0; iw < nw; iw++){
-    DMatrixMap(ptr(iw), size1_, size1_) *= a;
+		element_smul(size1_,ptr(iw),a);
 	}
 
+	delete[] tmp;
 }
 
 
-/*
+
 // see spectral notes
 void tti_spectral::AfromG(const green_func &G, int nw, double wmax, double dt, const cplx *extdata, int nfit, int ntp){
   std::cout<<"Not yet implemented"<<std::endl;
 }
-*/
+
 
 
 

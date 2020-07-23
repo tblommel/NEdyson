@@ -75,7 +75,7 @@ DecompSimulation<Repr>::DecompSimulation(const gfmol::HartreeFock &hf,
 
 template <typename Repr>
 void DecompSimulation<Repr>::free_gf() {
-  Dyson.G0_from_h0(G, p_MatSim_->mu(), p_MatSim_->fock(), p_MatSim_->frepr().beta(), dt_);
+  G0_from_h0(G, p_MatSim_->mu(), p_MatSim_->fock(), p_MatSim_->frepr().beta(), dt_);
 }
 
 
@@ -99,7 +99,7 @@ void DecompSimulation<Repr>::do_boot() {
     }
 
     // Solve G Equation of Motion
-    err = Dyson.dyson_start(G, Sigma, hmf, p_MatSim_->mu(), beta_, dt_);
+    err = dyson_start(I, G, Sigma, hmf, p_MatSim_->mu(), beta_, dt_);
 
     std::cout<<"Bootstrapping iteration : "<<iter<<" | Error = "<<err<<std::endl;
     if(err<BootTol_){
@@ -113,7 +113,7 @@ void DecompSimulation<Repr>::do_boot() {
 template <typename Repr>
 void DecompSimulation<Repr>::do_tstp(int tstp) {
   // Predictor
-  Dyson.Extrapolate(tstp, G);
+  Extrapolate(I,G,tstp);
 
   // Corrector
   for(int iter = 0; iter < CorrSteps_; iter++) {
@@ -122,7 +122,7 @@ void DecompSimulation<Repr>::do_tstp(int tstp) {
     p_NEgf2_->solve_HF(tstp, hmf, rho);
     p_NEgf2_->solve(tstp, Sigma, G);
 
-    Dyson.dyson_step(tstp, G, Sigma, hmf, p_MatSim_->mu(), beta_, dt_);
+    dyson_step(tstp, I, G, Sigma, hmf, p_MatSim_->mu(), beta_, dt_);
   }
 }
 
@@ -182,7 +182,7 @@ void DecompSimulation<Repr>::do_energy() {
     auto h0mat = DMatrixConstMap(h0.data(),nao_,nao_);
 
     eKin_(t) = rhomat.cwiseProduct((hmfmat+h0mat).transpose()).sum().real();
-    ePot_(t) = 2*Dyson.energy_conv(t, Sigma, G, beta_, dt_);
+    ePot_(t) = 2*energy_conv(t, I, Sigma, G, beta_, dt_);
   }
 }
 
@@ -277,7 +277,7 @@ tti_DecompSimulation<Repr>::tti_DecompSimulation(const gfmol::HartreeFock &hf,
 
 template <typename Repr>
 void tti_DecompSimulation<Repr>::free_gf() {
-  Dyson.G0_from_h0(G, p_MatSim_->mu(), p_MatSim_->fock(), p_MatSim_->frepr().beta(), dt_);
+  G0_from_h0(G, p_MatSim_->mu(), p_MatSim_->fock(), p_MatSim_->frepr().beta(), dt_);
 }
 
 
@@ -298,7 +298,7 @@ void tti_DecompSimulation<Repr>::do_boot() {
     }
 
     // Solve G Equation of Motion
-    err = Dyson.dyson_start(G, Sigma, p_MatSim_->fock(), p_MatSim_->mu(), beta_, dt_);
+    err = dyson_start(I, G, Sigma, p_MatSim_->fock(), p_MatSim_->mu(), beta_, dt_);
 
     std::cout<<"Bootstrapping iteration : "<<iter<<" | Error = "<<err<<std::endl;
     if(err<BootTol_){
@@ -321,19 +321,19 @@ void tti_DecompSimulation<Repr>::do_energy() {
     auto h0mat = DMatrixConstMap(h0.data(),nao_,nao_);
 
     eKin_(t) = rhomat.cwiseProduct((hmfmat+h0mat).transpose()).sum().real();
-    ePot_(t) = 2*Dyson.energy_conv(t, Sigma, G, beta_, dt_);
+    ePot_(t) = 2*energy_conv(t, I, Sigma, G, beta_, dt_);
   }
 }
 
 template <typename Repr>
 void tti_DecompSimulation<Repr>::do_tstp(int tstp) {
   // Predictor
-  Dyson.Extrapolate(tstp, G);
+  Extrapolate(I,G,tstp);
 
   // Corrector
   for(int iter = 0; iter < CorrSteps_; iter++) {
     p_NEgf2_->solve(tstp, Sigma, G);
-    Dyson.dyson_step(tstp, G, Sigma, p_MatSim_->fock(), p_MatSim_->mu(), beta_, dt_);
+    dyson_step(tstp, I, G, Sigma, p_MatSim_->fock(), p_MatSim_->mu(), beta_, dt_);
   }
 }
 

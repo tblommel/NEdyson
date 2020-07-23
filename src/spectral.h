@@ -7,6 +7,7 @@
 #include <cmath>
 #include <cstring>
 #include "greens.h"
+#include "elementops.h"
 #include "utils.h"
 
 namespace NEdyson{
@@ -50,7 +51,7 @@ class spectral{
 		
 		// Actually Calculate
 		void AfromG(const green_func &G, int nw, double wmax, double dt);
-//		void AfromG(const green_func &G, int nw, double wmax, double dt, const cplx *extdata, int nfit, int ntp);
+		void AfromG(const green_func &G, int nw, double wmax, double dt, const cplx *extdata, int nfit, int ntp);
 };
 
 
@@ -93,7 +94,7 @@ class tti_spectral{
 		
 		// Actually Calculate
 		void AfromG(const tti_green_func &G, int nw, double wmax, double dt);
-//		void AfromG(const green_func &G, int nw, double wmax, double dt, const cplx *extdata, int nfit, int ntp);
+		void AfromG(const green_func &G, int nw, double wmax, double dt, const cplx *extdata, int nfit, int ntp);
 };
 
 } // namespace

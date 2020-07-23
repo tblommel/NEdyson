@@ -21,7 +21,7 @@ Simulation<Repr>::Simulation(const gfmol::HartreeFock &hf,
                                  SimulationBase(hf, nt, ntau, k, dt, nw, wmax, MatMax, MatTol, BootMax, BootTol, CorrSteps),
                                  hmf(nt+1, nao_, nao_), 
                                  h0(hf.hcore()), 
-                                 rho(nao_, nao_)
+                                 rho(nao_,nao_)
 {
   int nl = frepr.nl();
   const size_t size_MB = 1024*1024;
@@ -70,7 +70,7 @@ Simulation<Repr>::Simulation(const gfmol::HartreeFock &hf,
 
 template <typename Repr>
 void Simulation<Repr>::free_gf() {
-  Dyson.G0_from_h0(G, p_MatSim_->mu(), p_MatSim_->fock(), p_MatSim_->frepr().beta(), dt_);
+  G0_from_h0(G, p_MatSim_->mu(), p_MatSim_->fock(), p_MatSim_->frepr().beta(), dt_);
 }
 
 
@@ -94,7 +94,7 @@ void Simulation<Repr>::do_boot() {
     }
 
     // Solve G Equation of Motion
-    err = Dyson.dyson_start(G, Sigma, hmf, p_MatSim_->mu(), beta_, dt_);
+    err = dyson_start(I, G, Sigma, hmf, p_MatSim_->mu(), beta_, dt_);
 
     std::cout<<"Bootstrapping iteration : "<<iter<<" | Error = "<<err<<std::endl;
     if(err<BootTol_){
@@ -108,28 +108,26 @@ void Simulation<Repr>::do_boot() {
 template <typename Repr>
 void Simulation<Repr>::do_tstp(int tstp) {
   // Predictor
-  Dyson.Extrapolate(tstp, G);
+  Extrapolate(I,G,tstp);
 
   std::chrono::time_point<std::chrono::system_clock> start, end;
   std::chrono::duration<double> elapsed_seconds;
 
+  
   // Corrector
   for(int iter = 0; iter < CorrSteps_; iter++) {
     G.get_dm(tstp, rho);
     ZMatrixMap(hmf.data() + tstp*nao_*nao_, nao_, nao_) = DMatrixConstMap(h0.data(),nao_,nao_);
-
     start = std::chrono::system_clock::now();
     p_NEgf2_->solve_HF(tstp, hmf, rho);
     p_NEgf2_->solve(tstp, Sigma, G);
     end = std::chrono::system_clock::now();
-
     elapsed_seconds = end-start;
     gf2_time(tstp) += elapsed_seconds.count();
 
     start = std::chrono::system_clock::now();
-    Dyson.dyson_step(tstp, G, Sigma, hmf, p_MatSim_->mu(), beta_, dt_);
+    dyson_step(tstp, I, G, Sigma, hmf, p_MatSim_->mu(), beta_, dt_);
     end = std::chrono::system_clock::now();
-
     elapsed_seconds = end-start;
     dys_time(tstp) += elapsed_seconds.count();
   }
@@ -186,14 +184,14 @@ template <typename Repr>
 void Simulation<Repr>::do_energy() {
   int nao2 = nao_*nao_;
   for(int t=0; t<=nt_; t++) {
-    G.get_dm(t, rho);
+    G.get_dm(t,rho);
 
     auto rhomat = ZMatrixMap(rho.data(), nao_, nao_);
     auto hmfmat = ZMatrixMap(hmf.data() + t*nao2, nao_, nao_);
     auto h0mat = DMatrixConstMap(h0.data(),nao_,nao_);
 
     eKin_(t) = rhomat.cwiseProduct((hmfmat+h0mat).transpose()).sum().real();
-    ePot_(t) = 2*Dyson.energy_conv(t, Sigma, G, beta_, dt_);
+    ePot_(t) = 2*energy_conv(t, I, Sigma, G, beta_, dt_);
   }
 }
 
@@ -290,7 +288,7 @@ tti_Simulation<Repr>::tti_Simulation(const gfmol::HartreeFock &hf,
 
 template <typename Repr>
 void tti_Simulation<Repr>::free_gf() {
-  Dyson.G0_from_h0(G, p_MatSim_->mu(), p_MatSim_->fock(), p_MatSim_->frepr().beta(), dt_);
+  G0_from_h0(G, p_MatSim_->mu(), p_MatSim_->fock(), p_MatSim_->frepr().beta(), dt_);
 }
 
 
@@ -311,7 +309,7 @@ void tti_Simulation<Repr>::do_boot() {
     }
 
     // Solve G Equation of Motion
-    err = Dyson.dyson_start(G, Sigma, p_MatSim_->fock(), p_MatSim_->mu(), beta_, dt_);
+    err = dyson_start(I, G, Sigma, p_MatSim_->fock(), p_MatSim_->mu(), beta_, dt_);
 
     std::cout<<"Bootstrapping iteration : "<<iter<<" | Error = "<<err<<std::endl;
     if(err<BootTol_){
@@ -325,7 +323,7 @@ void tti_Simulation<Repr>::do_boot() {
 template <typename Repr>
 void tti_Simulation<Repr>::do_tstp(int tstp) {
   // Predictor
-  Dyson.Extrapolate(tstp, G);
+  Extrapolate(I,G,tstp);
 
   std::chrono::time_point<std::chrono::system_clock> start, end;
   std::chrono::duration<double> elapsed_seconds;
@@ -335,14 +333,12 @@ void tti_Simulation<Repr>::do_tstp(int tstp) {
     start = std::chrono::system_clock::now();
     p_NEgf2_->solve(tstp, Sigma, G);
     end = std::chrono::system_clock::now();
-
     elapsed_seconds = end-start;
     gf2_time(tstp) += elapsed_seconds.count();
 
     start = std::chrono::system_clock::now();
-    Dyson.dyson_step(tstp, G, Sigma, p_MatSim_->fock(), p_MatSim_->mu(), beta_, dt_);
+    dyson_step(tstp, I, G, Sigma, p_MatSim_->fock(), p_MatSim_->mu(), beta_, dt_);
     end = std::chrono::system_clock::now();
-
     elapsed_seconds = end-start;
     dys_time(tstp) += elapsed_seconds.count();
   }
@@ -402,7 +398,7 @@ void tti_Simulation<Repr>::do_energy() {
     auto h0mat = DMatrixConstMap(h0.data(),nao_,nao_);
 
     eKin_(t) = rhomat.cwiseProduct((hmfmat+h0mat).transpose()).sum().real();
-    ePot_(t) = 2*Dyson.energy_conv(t, Sigma, G, beta_, dt_);
+    ePot_(t) = 2*energy_conv(t, I, Sigma, G, beta_, dt_);
   }
 }
 

@@ -1,5 +1,6 @@
 #include "molHFSolver.h"
 #include "greens.h"
+#include "function.h"
 #include "tests-def.h"
 
 TEST_CASE("Sigma HF")
