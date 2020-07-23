@@ -102,7 +102,6 @@ void dyson::Extrapolate(int n, GREEN &G) const {
 
 
 
-
 // Start Functions =======================================================================================
 double dyson::dyson_start_ret(GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double dt) const {
   // Counters
