@@ -16,7 +16,7 @@ TEST_CASE("DTTIsim Tests") {
   std::cout.rdbuf(stream.rdbuf()); // redirect 'cout' to a 'fout'
 
   // Read in actual values
-  h5e::File check_file(std::string(TEST_DATA_DIR) + "/NTTIsim.h5");
+  h5e::File check_file(std::string(TEST_DATA_DIR) + "/DTTIsim.h5");
   TTI_GREEN Gcheck;
   TTI_SPECT Acheck;
   Gcheck.read_from_file(check_file, "/G");

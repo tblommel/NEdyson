@@ -16,7 +16,7 @@ TEST_CASE("Dsim Tests") {
   std::cout.rdbuf(stream.rdbuf()); // redirect 'cout' to a 'fout'
 
   // Read in actual values
-  h5e::File check_file(std::string(TEST_DATA_DIR) + "/Nsim.h5");
+  h5e::File check_file(std::string(TEST_DATA_DIR) + "/Dsim.h5");
   GREEN Gcheck;
   SPECT Acheck;
   Gcheck.read_from_file(check_file, "/G");
