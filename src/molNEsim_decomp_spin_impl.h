@@ -149,37 +149,23 @@ void DecompSpinSimulation<Repr>::do_tstp(int tstp) {
 
 template <typename Repr>
 void DecompSpinSimulation<Repr>::save(h5::File &file, const std::string &path) {
-  Gup.print_to_file("/home/thomas/Libraries/NEdyson/up", dt_, dtau_);
-  Gdown.print_to_file("/home/thomas/Libraries/NEdyson/down", dt_, dtau_);
-  std::ofstream ofile;
-/*  ofile.open("/home/thomas/Libraries/NEdyson/h2H.dat",std::ofstream::out);
-  ofile<<nao_<<std::endl;
-  ofile<<p_MatSim_->mu()[0]<<std::endl;
-  ofile<<p_MatSim_->mu()[1]<<std::endl;
-  for(int i = 0; i < nao_; i++){
-    for(int j = 0; j < nao_; j++){
-      ofile<<h0(i,j)<<std::endl;
-    }
-  }
-  for(int i = 0; i < nao_; i++){
-    for(int j = 0; j < nao_; j++){
-      for(int k = 0; k < nao_; k++){
-        for(int l = 0; l < nao_; l++){
-          ofile<<p_NEgf2_->Uijkl()(i,j,k,l)<<std::endl;
-        }
-      }
-    }
-  }
-*/
-  ofile.close();
-  A.print_to_file("/home/thomas/Libraries/NEdyson/Aup");
+  save_base(file, path);
+
+  Gup.print_to_file(file, path + "/G/up");
+  Sup.print_to_file(file, path + "/Sigma/up");
+  Gup.print_to_file(file, path + "/G/up");
+  Sup.print_to_file(file, path + "/Sigma/up");
+  A.print_to_file(file, path + "/A/up");
   A.AfromG(Gdown,nw_,wmax_,dt_);
-  A.print_to_file("/home/thomas/Libraries/NEdyson/Adown");
-  ofile.open("/home/thomas/Libraries/NEdyson/energy.dat", std::ofstream::out);
-  ofile << nt_ << std::endl;
-  ofile << p_MatSim_->etot()-p_MatSim_->enuc() << std::endl;
-  for(int t=0; t<=nt_; t++) ofile << ePot_(t)+eKin_(t) << std::endl;
-  ofile.close();
+  A.print_to_file(file, path + "/A/down");
+  
+  h5e::dump(file, path + "/params/beta", beta_);
+  h5e::dump(file, path + "/params/dtau", dtau_);
+  h5e::dump(file, path + "/mu", std::vector<double>{p_MatSim_->mu()[0], p_MatSim_->mu()[1]});
+  h5e::dump(file, path + "/hmf", hmf);
+  h5e::dump(file, path + "/params/h0", h0);
+  h5e::dump(file, path + "/params/filling", std::vector<double>{p_MatSim_->filling()[0], p_MatSim_->filling()[1]});
+  h5e::dump(file, path + "/tti", 0);
 }
 
 template <typename Repr>
@@ -367,41 +353,23 @@ void tti_DecompSpinSimulation<Repr>::do_tstp(int tstp) {
 
 template <typename Repr>
 void tti_DecompSpinSimulation<Repr>::save(h5::File &file, const std::string &path) {
-  Gup.print_to_file("/home/thomas/Libraries/NEdyson/up", dt_, dtau_);
-  Gdown.print_to_file("/home/thomas/Libraries/NEdyson/down", dt_, dtau_);
-  Sup.print_to_file("/home/thomas/Libraries/NEdyson/Sup", dt_, dtau_);
-  Sdown.print_to_file("/home/thomas/Libraries/NEdyson/Sdown", dt_, dtau_);
-  std::ofstream ofile;
-/*  ofile.open("/home/thomas/Libraries/NEdyson/h2H.dat",std::ofstream::out);
-  ofile<<nao_<<std::endl;
-  ofile<<p_MatSim_->mu()[0]<<std::endl;
-  ofile<<p_MatSim_->mu()[1]<<std::endl;
-  for(int i = 0; i < nao_; i++){
-    for(int j = 0; j < nao_; j++){
-      ofile<<h0(i,j)<<std::endl;
-    }
-  }
-  for(int i = 0; i < nao_; i++){
-    for(int j = 0; j < nao_; j++){
-      for(int k = 0; k < nao_; k++){
-        for(int l = 0; l < nao_; l++){
-          ofile<<p_NEgf2_->Uijkl()(i,j,k,l)<<std::endl;
-        }
-      }
-    }
-  }
-*/
-  ofile.close();
-  A.print_to_file("/home/thomas/Libraries/NEdyson/Aup");
+  save_base(file, path);
+
+  Gup.print_to_file(file, path + "/G/up");
+  Sup.print_to_file(file, path + "/Sigma/up");
+  Gup.print_to_file(file, path + "/G/up");
+  Sup.print_to_file(file, path + "/Sigma/up");
+  A.print_to_file(file, path + "/A/up");
   A.AfromG(Gdown,nw_,wmax_,dt_);
-  A.print_to_file("/home/thomas/Libraries/NEdyson/Adown");
-  ofile.open("/home/thomas/Libraries/NEdyson/energy.dat", std::ofstream::out);
-  ofile << nt_ << std::endl;
-//  ofile << p_MatSim_->etot()-p_MatSim_->enuc() << std::endl;
-//  for(int t=0; t<=nt_; t++) ofile << ePot_(t)+eKin_(t) << std::endl;
-  ofile << p_MatSim_->epot() << std::endl;
-  for(int t=0; t<=nt_; t++) ofile << ePot_(t) << std::endl;
-  ofile.close();
+  A.print_to_file(file, path + "/A/down");
+  
+  h5e::dump(file, path + "/params/beta", beta_);
+  h5e::dump(file, path + "/params/dtau", dtau_);
+  h5e::dump(file, path + "/mu", std::vector<double>{p_MatSim_->mu()[0], p_MatSim_->mu()[1]});
+  h5e::dump(file, path + "/hmf", p_MatSim_->fock());
+  h5e::dump(file, path + "/params/h0", h0);
+  h5e::dump(file, path + "/params/filling", std::vector<double>{p_MatSim_->filling()[0], p_MatSim_->filling()[1]});
+  h5e::dump(file, path + "/tti", 1);
 }
 
 template <typename Repr>

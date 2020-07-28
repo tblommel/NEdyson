@@ -138,30 +138,25 @@ void Simulation<Repr>::do_tstp(int tstp) {
 
 template <typename Repr>
 void Simulation<Repr>::save(h5::File &file, const std::string &path) {
-  G.print_to_file("/home/thomas/Libraries/NEdyson/", dt_, dtau_);
+  save_base(file, path);
+
+  G.print_to_file(file, path + "/G");
+  Sigma.print_to_file(file, path + "/Sigma");
+  A.print_to_file(file, path + "/A");
+  
+  h5e::dump(file, path + "/params/beta", beta_);
+  h5e::dump(file, path + "/params/dtau", dtau_);
+  h5e::dump(file, path + "/mu", p_MatSim_->mu());
+  h5e::dump(file, path + "/hmf", hmf);
+  h5e::dump(file, path + "/params/h0", h0);
+  h5e::dump(file, path + "/params/filling", p_MatSim_->filling());
+  h5e::dump(file, path + "/tti", 0);
+  
+  
+  
+
+  std::string data_dir = std::string(DATA_DIR);
   std::ofstream ofile;
-  ofile.open("/home/thomas/Libraries/NEdyson/h2H.dat",std::ofstream::out);
-  ofile<<nao_<<std::endl;
-  ofile<<p_MatSim_->mu()<<std::endl;
-  ofile<<p_MatSim_->mu()<<std::endl;
-  for(int i = 0; i < nao_; i++){
-    for(int j = 0; j < nao_; j++){
-      ofile<<h0(i,j)<<std::endl;
-    }
-  }
-  for(int i = 0; i < nao_; i++){
-    for(int j = 0; j < nao_; j++){
-      for(int k = 0; k < nao_; k++){
-        for(int l = 0; l < nao_; l++){
-          ofile<<p_NEgf2_->Uijkl()(i,j,k,l)<<std::endl;
-        }
-      }
-    }
-  }
-  ofile.close();
-  A.print_to_file("/home/thomas/Libraries/NEdyson/");
-  ofile.open("/home/thomas/Libraries/NEdyson/energy.dat", std::ofstream::out);
-  ofile << nt_ << std::endl;
   ofile << p_MatSim_->etot()-p_MatSim_->enuc() << std::endl;
   for(int t=0; t<=nt_; t++) ofile << ePot_(t)+eKin_(t) << std::endl;
   ofile.close();
@@ -351,36 +346,19 @@ void tti_Simulation<Repr>::do_tstp(int tstp) {
 
 template <typename Repr>
 void tti_Simulation<Repr>::save(h5::File &file, const std::string &path) {
-  G.print_to_file("/home/thomas/Libraries/NEdyson/", dt_, dtau_);
-  std::ofstream ofile;
-  ofile.open("/home/thomas/Libraries/NEdyson/h2H.dat",std::ofstream::out);
-  ofile<<nao_<<std::endl;
-  ofile<<p_MatSim_->mu()<<std::endl;
-  ofile<<p_MatSim_->mu()<<std::endl;
-  for(int i = 0; i < nao_; i++){
-    for(int j = 0; j < nao_; j++){
-      ofile<<h0(i,j)<<std::endl;
-    }
-  }
-  for(int i = 0; i < nao_; i++){
-    for(int j = 0; j < nao_; j++){
-      for(int k = 0; k < nao_; k++){
-        for(int l = 0; l < nao_; l++){
-          ofile<<p_NEgf2_->Uijkl()(i,j,k,l)<<std::endl;
-        }
-      }
-    }
-  }
-  ofile.close();
-  A.print_to_file("/home/thomas/Libraries/NEdyson/");
-  ofile.open("/home/thomas/Libraries/NEdyson/energy.dat", std::ofstream::out);
-  ofile << nt_ << std::endl;
-  ofile << p_MatSim_->etot()-p_MatSim_->enuc() << std::endl;
-  for(int t=0; t<=nt_; t++) ofile << ePot_(t)+eKin_(t) << std::endl;
-  ofile.close();
-  ofile.open("/home/thomas/Libraries/NEdyson/timing.dat", std::ofstream::out);
-  for(int t=0; t<=nt_; t++) ofile << t << " " << tot_time(t) << " " << dys_time(t) << " " << gf2_time(t) << std::endl;
-  ofile.close();
+  save_base(file, path);
+
+  G.print_to_file(file, path + "/G");
+  Sigma.print_to_file(file, path + "/Sigma");
+  A.print_to_file(file, path + "/A");
+  
+  h5e::dump(file, path + "/params/beta", beta_);
+  h5e::dump(file, path + "/params/dtau", dtau_);
+  h5e::dump(file, path + "/mu", p_MatSim_->mu());
+  h5e::dump(file, path + "/hmf", p_MatSim_->fock());
+  h5e::dump(file, path + "/params/h0", h0);
+  h5e::dump(file, path + "/params/filling", p_MatSim_->filling());
+  h5e::dump(file, path + "/tti", 1);
 }
 
 

@@ -45,6 +45,8 @@ protected:
   DTensor<1> gf2_time;
 
   dyson Dyson;
+
+  void save_base(h5::File &file, const std::string &path) const;
   
 public:
   // Base class constructor

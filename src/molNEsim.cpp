@@ -36,6 +36,29 @@ SimulationBase::SimulationBase(const gfmol::HartreeFock &hf,
   memset(dys_time.data(), 0, (nt+1)*sizeof(double));
 }
 
+void SimulationBase::save_base(h5::File &file, const std::string &path) const {
+  h5e::dump(file, path + "/energy/nuclear", enuc_);
+  h5e::dump(file, path + "/energy/kinetic", eKin_);
+  h5e::dump(file, path + "/energy/potential", ePot_);
+  
+  h5e::dump(file, path + "/solve/params/nao", nao_);
+  h5e::dump(file, path + "/solve/params/dt", dt_);
+  h5e::dump(file, path + "/solve/params/nt", nt_);
+  h5e::dump(file, path + "/solve/params/ntau", ntau_);
+  h5e::dump(file, path + "/solve/params/k", k_);
+  h5e::dump(file, path + "/solve/params/nw", nw_);
+  h5e::dump(file, path + "/solve/params/wmax", wmax_);
+
+  h5e::dump(file, path + "/solve/params/MatMax", MatMax_);
+  h5e::dump(file, path + "/solve/params/MatTol", MatTol_);
+  h5e::dump(file, path + "/solve/params/BootMax", BootMax_);
+  h5e::dump(file, path + "/solve/params/BootTol", BootTol_);
+  h5e::dump(file, path + "/solve/params/CorrSteps", CorrSteps_);
+  
+  h5e::dump(file, path + "/solve/params/boot_conv", bootstrap_converged);
+}
+
+
 void SimulationBase::run(){
   std::chrono::time_point<std::chrono::system_clock> start, end;
   std::chrono::duration<double> elapsed_seconds;

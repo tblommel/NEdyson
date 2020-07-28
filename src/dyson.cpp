@@ -370,7 +370,6 @@ void dyson::dyson_step_tv(int tstp, GREEN &G, const GREEN &Sig, const cplx *hmf,
 
   std::chrono::time_point<std::chrono::system_clock> start, end;
   std::chrono::duration<double> elapsed_seconds;
-  start = std::chrono::system_clock::now();
 
   cplx cplxi = cplx(0.,1.);
   auto IMap = ZMatrixMap(iden.data(), nao_, nao_);
@@ -417,8 +416,8 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
   int num = n>=k_ ? n : k_;
   double err=0;
 
-  std::chrono::time_point<std::chrono::system_clock> start, end;
-  std::chrono::duration<double> elapsed_seconds;
+  std::chrono::time_point<std::chrono::system_clock> start, end, intstart, intend;
+  std::chrono::duration<double> elapsed_seconds, int1, int2, int3;
   
   // Matricies
   cplx cplxi = cplx(0,1);
@@ -434,8 +433,15 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
   // Integrals go into Q
   memset(Q.data(),0,sizeof(cplx)*(num+1)*es_);
   memset(M.data(),0,sizeof(cplx)*k_*k_*es_);
+  intstart = std::chrono::system_clock::now();
   Cles2_tstp(Sig,Sig,G,G,n,dt,Q.data());
+  intend = std::chrono::system_clock::now();
+  int1 = intend-intstart;
+
+  intstart = std::chrono::system_clock::now();
   Cles3_tstp(Sig,Sig,G,G,n,beta,Q.data());
+  intend = std::chrono::system_clock::now();
+  int2 = intend-intstart;
 
   // Set up the kxk linear problem MX=Q
   for(m=1; m<=k_; m++) {
@@ -492,10 +498,13 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
     }
 
     // Rest of the retles integral
+    intstart = std::chrono::system_clock::now();
     for(l=0; l<m; l++) {
       QMapBlock.noalias() += dt*I.gregory_weights(m,l) * ZMatrixMap(Sig.retptr(m,l), nao_, nao_)
                                              * ZMatrixMap(X.data() + l*es_, nao_, nao_);
     }
+    intend = std::chrono::system_clock::now();
+    int3 += intend-intstart;
 
     // Solve MX=Q
     Eigen::FullPivLU<ZMatrix> lu2(MMapSmall);
@@ -514,7 +523,7 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
   if(n>k_){
     std::ofstream out;
     out.open("dystiming.dat", std::ofstream::app);
-    out<<runtime<<std::endl;
+    out << runtime << " " << int1.count() << " " << int2.count() << " " << int3.count() << " " << std::endl;
   }
   return err;
 }
