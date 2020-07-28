@@ -157,11 +157,18 @@ void Simulation<Repr>::save(h5::File &file, const std::string &path) {
 
   std::string data_dir = std::string(DATA_DIR);
   std::ofstream ofile;
-  ofile << p_MatSim_->etot()-p_MatSim_->enuc() << std::endl;
-  for(int t=0; t<=nt_; t++) ofile << ePot_(t)+eKin_(t) << std::endl;
-  ofile.close();
-  ofile.open("/home/thomas/Libraries/NEdyson/timing.dat", std::ofstream::out);
+  ofile.open(data_dir + "/timings.dat", std::ofstream::out);
   for(int t=0; t<=nt_; t++) ofile << t << " " << tot_time(t) << " " << dys_time(t) << " " << gf2_time(t) << std::endl;
+  ofile.close();
+
+  ofile.open(data_dir + "/spectral.dat", std::ofstream::out);
+  double dw = 2*wmax_/(nw_-1);
+  for(int w=0; w<nw_; w++) {
+    ofile << (w-(nw_-1)/2)*dw << " ";
+    for(int i=0; i<nao_; i++) {  
+      ofile << A.ptr(nt_, w)[i] << std::endl;
+    }
+  }
   ofile.close();
 }
 
