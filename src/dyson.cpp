@@ -359,7 +359,8 @@ void dyson::dyson_step_ret(int tstp, GREEN &G, const GREEN &Sig, const cplx *hmf
   double runtime = elapsed_seconds.count();
 
   std::ofstream out;
-  out.open("dystiming.dat", std::ofstream::app);
+  std::string data_dir = std::string(DATA_DIR);
+  out.open(data_dir + "dystiming.dat" + std::to_string(G.nt()), std::ofstream::app);
   out<<runtime<<" ";
 }
 
@@ -406,7 +407,8 @@ void dyson::dyson_step_tv(int tstp, GREEN &G, const GREEN &Sig, const cplx *hmf,
   double runtime = elapsed_seconds.count();
 
   std::ofstream out;
-  out.open("dystiming.dat", std::ofstream::app);
+  std::string data_dir = std::string(DATA_DIR);
+  out.open(data_dir + "dystiming.dat" + std::to_string(G.nt()), std::ofstream::app);
   out<<runtime<<" ";
 }
 
@@ -522,7 +524,8 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
   double runtime = elapsed_seconds.count();
   if(n>k_){
     std::ofstream out;
-    out.open("dystiming.dat", std::ofstream::app);
+    std::string data_dir = std::string(DATA_DIR);
+    out.open(data_dir + "dystiming.dat" + std::to_string(G.nt()), std::ofstream::app);
     out << runtime << " " << int1.count() << " " << int2.count() << " " << int3.count() << " " << std::endl;
   }
   return err;
@@ -856,7 +859,8 @@ void dyson::dyson_step_ret(int tstp, TTI_GREEN &G, const TTI_GREEN &Sig, const d
   double runtime = elapsed_seconds.count();
 
   std::ofstream out;
-  out.open("dystiming.dat", std::ofstream::app);
+  std::string data_dir = std::string(DATA_DIR);
+  out.open(data_dir + "tti_dystiming.dat" + "," + std::to_string(G.size1()) + "," + std::to_string(G.nt()) + "," + std::to_string(G.ntau()), std::ofstream::app);
   out<<runtime<<" ";
 }
 
@@ -901,7 +905,8 @@ void dyson::dyson_step_tv(int tstp, TTI_GREEN &G, const TTI_GREEN &Sig, const do
   double runtime = elapsed_seconds.count();
 
   std::ofstream out;
-  out.open("tti_dystiming.dat", std::ofstream::app);
+  std::string data_dir = std::string(DATA_DIR);
+  out.open(data_dir + "tti_dystiming.dat" + "," + std::to_string(G.size1()) + "," + std::to_string(G.nt()) + "," + std::to_string(G.ntau()), std::ofstream::app);
   out<<runtime<<std::endl;
 }
 

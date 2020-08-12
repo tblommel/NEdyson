@@ -254,15 +254,29 @@ void dyson::Ctv_tstp(int tstp, TTI_GREEN &C, const TTI_GREEN &A, const TTI_GREEN
 
   ZMatrixMap tmpMap = ZMatrixMap(tmp.data(), nao_, nao_);
 
-  // First do the A^TV B^M convolution.  This gets put into temporary storage since CTV1 may need access to C^TV(tstp, m)
+  std::chrono::time_point<std::chrono::system_clock> start, end;
+  std::chrono::duration<double> elapsed_seconds;
+
+  std::ofstream out;
+  std::string data_dir = std::string(DATA_DIR);
+  out.open(data_dir + "tti_dystiming.dat" + "," + std::to_string(A.size1()) + "," + std::to_string(A.nt()) + "," + std::to_string(A.ntau()), std::ofstream::app);
+
+  start = std::chrono::system_clock::now();
   for(int m=0; m<=ntau_; m++) {
     CTV2(A, B, tstp, m, beta, NTauTmp.data() + m*es_);
     CTV3(A, B, tstp, m, beta, tmp.data());
     ZMatrixMap(NTauTmp.data() + m*es_, nao_, nao_).noalias() += tmpMap;
   }
+  end = std::chrono::system_clock::now();
+  elapsed_seconds = end-start;
+  out << elapsed_seconds.count() << " " ;
 
   // This does the A^R B^TV convolution and puts into first argument via increment
+  start = std::chrono::system_clock::now();
   CTV1(NTauTmp.data(), A, Acc, B, tstp, dt);
+  end = std::chrono::system_clock::now();
+  elapsed_seconds = end-start;
+  out << elapsed_seconds.count() << " " ;
 
   // Copy over the results into C.tv(tstp,m)
   memcpy(C.tvptr(tstp,0), NTauTmp.data(), (ntau_+1)*es_*sizeof(cplx));
