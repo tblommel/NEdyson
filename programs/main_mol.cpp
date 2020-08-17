@@ -40,7 +40,10 @@ int main(const int argc, char *const *const argv)
     p_sim->run();
 
     // Save the simulation
-    p_sim->save(fout, "");
+    if(p.boolOutput) {
+      h5e::File fout(p.output, h5e::File::Overwrite | h5e::File::ReadWrite | h5e::File::Create);
+      p_sim->save(fout, "");
+    }
   } 
   else if(p.repr == "ir") {
     throw std::runtime_error("ir basis for NEdyson not yet implemented");
