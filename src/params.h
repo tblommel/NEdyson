@@ -27,6 +27,7 @@ struct Params {
   std::string output;
   bool checkpoint;
   std::string checkpoint_file;
+  bool boolOutput;
 
   int nt;
   int ntau;
@@ -104,6 +105,7 @@ inline std::ostream &operator<<(std::ostream &os, const Params &p)
   os << "    beta:            " << p.beta << std::endl;
   os << "    damping:         " << p.damping << std::endl;
   os << "    hf_input:        " << p.hf_input << std::endl;
+  os << "    boolOutput:      " << p.boolOutput << std::endl;
   os << "    output:          " << p.output << std::endl;
   os << "    checkpoint:      " << p.checkpoint << std::endl;
   os << "    checkpoint_file: " << p.checkpoint_file << std::endl;
@@ -157,6 +159,7 @@ inline Params parse_args(const int argc, char *const *const argv)
                                                "path to checkpoint HDF5 file",
                                                {"checkpoint-file"},
                                                "gfmol-chk.h5");
+  args::Flag boolOutput(parser, "boolOutput", "output results", {"boolOutput"});
   args::ValueFlag<int> nt(parser, "nt", "number of real time points", {"nt"});
   args::ValueFlag<int> ntau(parser, "ntau", "number of imaginary time points", {"ntau"});
   args::ValueFlag<int> k(parser, "k", "calculus accuracy order", {"k"});
@@ -193,6 +196,7 @@ inline Params parse_args(const int argc, char *const *const argv)
            extract_value(param_file, output),
            extract_value(param_file, checkpoint),
            extract_value(param_file, checkpoint_file),
+           extract_value(param_file, boolOutput),
            extract_value(param_file, nt),
            extract_value(param_file, ntau),
            extract_value(param_file, k),

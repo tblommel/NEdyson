@@ -157,11 +157,11 @@ void Simulation<Repr>::save(h5::File &file, const std::string &path) {
 
   std::string data_dir = std::string(DATA_DIR);
   std::ofstream ofile;
-  ofile.open(data_dir + "/timings.dat" + std::to_string(nt_), std::ofstream::out);
+  ofile.open(data_dir + "/timings.dat" + "," + std::to_string(nao_) + "," + std::to_string(nt_) + "," + std::to_string(ntau_), std::ofstream::out);
   for(int t=0; t<=nt_; t++) ofile << t << " " << tot_time(t) << " " << dys_time(t) << " " << gf2_time(t) << std::endl;
   ofile.close();
 
-  ofile.open(data_dir + "/spectral.dat" + std::to_string(nt_), std::ofstream::out);
+  ofile.open(data_dir + "/spectral.dat" + "," + std::to_string(nao_) + "," + std::to_string(nt_) + "," + std::to_string(ntau_), std::ofstream::out);
   double dw = 2*wmax_/(nw_-1);
   for(int w=0; w<nw_; w++) {
     ofile << (w-(nw_-1)/2)*dw << " ";
