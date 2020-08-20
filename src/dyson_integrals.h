@@ -258,7 +258,7 @@ void dyson::Ctv_tstp(int tstp, GREEN &C, const GREEN &A, const GREEN &Acc, const
 
   std::ofstream out;
   std::string data_dir = std::string(DATA_DIR);
-  out.open(data_dir + "dystiming.dat" + std::to_string(C.nt()), std::ofstream::app);
+  out.open(data_dir + "dystiming.dat" + "," + std::to_string(C.size1()) + "," + std::to_string(C.nt()) + "," + std::to_string(C.ntau()), std::ofstream::app);
 
   // First do the A^TV B^M convolution.  This gets put into temporary storage since CTV1 may need access to C^TV(tstp, m)
   start = std::chrono::system_clock::now();

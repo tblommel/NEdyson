@@ -153,8 +153,8 @@ void DecompSpinSimulation<Repr>::save(h5::File &file, const std::string &path) {
 
   Gup.print_to_file(file, path + "/G/up");
   Sup.print_to_file(file, path + "/Sigma/up");
-  Gup.print_to_file(file, path + "/G/up");
-  Sup.print_to_file(file, path + "/Sigma/up");
+  Gdown.print_to_file(file, path + "/G/down");
+  Sdown.print_to_file(file, path + "/Sigma/down");
   A.print_to_file(file, path + "/A/up");
   A.AfromG(Gdown,nw_,wmax_,dt_);
   A.print_to_file(file, path + "/A/down");
@@ -357,8 +357,8 @@ void tti_DecompSpinSimulation<Repr>::save(h5::File &file, const std::string &pat
 
   Gup.print_to_file(file, path + "/G/up");
   Sup.print_to_file(file, path + "/Sigma/up");
-  Gup.print_to_file(file, path + "/G/up");
-  Sup.print_to_file(file, path + "/Sigma/up");
+  Gdown.print_to_file(file, path + "/G/down");
+  Sdown.print_to_file(file, path + "/Sigma/down");
   A.print_to_file(file, path + "/A/up");
   A.AfromG(Gdown,nw_,wmax_,dt_);
   A.print_to_file(file, path + "/A/down");
