@@ -7,6 +7,8 @@
 #include "greens.h"
 #include "integration.h"
 #include "utils.h"
+#include "cpsitop/nonequilibrium.h"
+#include "chrono"
 
 namespace NEdyson{
 
@@ -30,8 +32,13 @@ private:
 
   const INTEG I;
 
+  mutable cpsitop::nonequilibrium::convolution Conv;
+
 public:
   dyson(int nt, int ntau, int nao, int k);
+
+  // return convolution class
+  const cpsitop::nonequilibrium::convolution Convolution() const { return Conv; }
   
   // Non constant free GF
   void G0_from_h0(GREEN &G, double mu, const double *hM, const double *ht, double beta, double dt) const ;

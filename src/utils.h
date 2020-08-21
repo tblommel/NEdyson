@@ -100,19 +100,9 @@ using ZMatrixMap4 = Eigen::Map<Eigen::Matrix<cplx,4,4,Eigen::RowMajor> >;
 
 } // namespace NEdyson
 
-namespace Hubb{
- 
-  using cplx = std::complex<double>;
-
-template <typename T>
-using Matrix = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
-  using ZMatrix = Matrix<cplx>;
-
-} // namespace Hubb
-
 namespace Integration{
  
-  using cplx = std::complex<double>;
+using cplx = std::complex<double>;
 
 template <typename T>
 using Matrix = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;

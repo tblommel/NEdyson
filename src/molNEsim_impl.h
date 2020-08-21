@@ -207,7 +207,7 @@ inline void Simulation<gfmol::ChebyshevRepr>::L_to_Tau(){
   int nL = p_MatSim_->frepr().nl();
   DMatrix Trans(ntau+1, nL);
   for(int t=0; t<=ntau; t++){
-    double x = (2.*t-ntau)/ntau;
+    double x = Dyson.Convolution().collocation().x_i()(t);
     for(int l=0; l<nL; l++){
       Trans(t,l) = boost::math::chebyshev_t(l,x);
     }
@@ -422,7 +422,7 @@ inline void tti_Simulation<gfmol::ChebyshevRepr>::L_to_Tau(){
   int nL = p_MatSim_->frepr().nl();
   DMatrix Trans(ntau+1, nL);
   for(int t=0; t<=ntau; t++){
-    double x = (2.*t-ntau)/ntau;
+    double x = Dyson.Convolution().collocation().x_i()(t);
     for(int l=0; l<nL; l++){
       Trans(t,l) = boost::math::chebyshev_t(l,x);
     }

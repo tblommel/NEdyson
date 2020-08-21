@@ -2,7 +2,6 @@
 #define DYSON_IMPL
 
 #include "dyson.h"
-#include "chrono"
 #include "dyson_integrals.h"
 #include "dyson_free.h"
 #include "dyson_tti_integrals.h"
@@ -21,8 +20,9 @@ dyson::dyson(int nt, int ntau, int nao, int k) : nt_(nt),
                                                  M(k_*k_*es_),
                                                  Q((nt_+1)*es_),
                                                  X((nt_+1)*es_),
-                                                 NTauTmp((ntau_+1)*es_),
-                                                 I(k_)
+                                                 NTauTmp(k*(ntau_+1)*es_),
+                                                 I(k_),
+                                                 Conv(nao, ntau+1)
 {
   ZMatrixMap(iden.data(), nao_, nao_).noalias() = ZMatrix::Identity(nao_, nao_);
 }
@@ -190,6 +190,15 @@ double dyson::dyson_start_tv(GREEN &G, const GREEN &Sig, const cplx *hmf, double
     tvmap.noalias() = (double)G.sig()*cplxi*matmap;
   }
 
+  // Do the integrals
+  for(n=1; n<=k_; n++) {
+    auto ZTVNTT = ZTensorView<3>(NTauTmp.data() + (n-1)*(ntau_+1)*nao_*nao_, ntau_+1, nao_, nao_);
+    Conv.mixing(ZTVNTT, 
+                ZTensorView<3>(Sig.tvptr(n,0), ntau_+1, nao_, nao_), 
+                ZTensorView<3>(G.matptr(0), ntau_+1, nao_, nao_),
+                beta, (double)G.sig());
+  }
+
   // At each m, get n=1...k
   for(m=0; m<=ntau_; m++) {
     memset(M.data(),0,k_*k_*es_*sizeof(cplx));
@@ -229,10 +238,8 @@ double dyson::dyson_start_tv(GREEN &G, const GREEN &Sig, const cplx *hmf, double
         }
       }
 
-      // Add in the integrals
-      CTV2(Sig, G, n, m, beta, tmp.data());
-      CTV3(Sig, G, n, m, beta, tmp2.data());
-      QMapBlock.noalias() += ZMatrixMap(tmp.data(), nao_, nao_) + ZMatrixMap(tmp2.data(), nao_, nao_);
+      // Add in the integral
+      QMapBlock.noalias() += ZMatrixMap(NTauTmp.data() + (n-1)*(ntau_+1)*nao_*nao_ + m*nao_*nao_, nao_, nao_);
     }
 
     // Solve MX=Q
@@ -718,6 +725,16 @@ double dyson::dyson_start_tv(TTI_GREEN &G, const TTI_GREEN &Sig, const double *h
     tvmap.noalias() = (double)G.sig()*cplxi*matmap;
   }
 
+
+  // Do the integrals
+  for(n=1; n<=k_; n++) {
+    auto ZTVNTT = ZTensorView<3>(NTauTmp.data() + (n-1)*(ntau_+1)*nao_*nao_, ntau_+1, nao_, nao_);
+    Conv.mixing(ZTVNTT, 
+                ZTensorView<3>(Sig.tvptr(n,0), ntau_+1, nao_, nao_), 
+                ZTensorView<3>(G.matptr(0), ntau_+1, nao_, nao_),
+                beta, (double)G.sig());
+  }
+
   // At each m, get n=1...k
   for(m=0; m<=ntau_; m++) {
     memset(M.data(),0,k_*k_*es_*sizeof(cplx));
@@ -757,10 +774,8 @@ double dyson::dyson_start_tv(TTI_GREEN &G, const TTI_GREEN &Sig, const double *h
         }
       }
 
-      // Add in the integrals
-      CTV2(Sig, G, n, m, beta, tmp.data());
-      CTV3(Sig, G, n, m, beta, tmp2.data());
-      QMapBlock.noalias() += ZMatrixMap(tmp.data(), nao_, nao_) + ZMatrixMap(tmp2.data(), nao_, nao_);
+      // Add in the integral
+      QMapBlock.noalias() += ZMatrixMap(NTauTmp.data() + (n-1)*(ntau_+1)*nao_*nao_ + m*nao_*nao_, nao_, nao_);
     }
 
     // Solve MX=Q
