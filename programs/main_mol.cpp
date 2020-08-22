@@ -41,9 +41,7 @@ int main(const int argc, char *const *const argv)
 
     // Save the simulation
     if(p.boolOutput) {
-      std::cout<<"hello"<<std::endl;
       h5e::File fout(p.output, h5e::File::Create);
-      std::cout<<"hello"<<std::endl;
       p_sim->save(fout, "");
     }
   } 
