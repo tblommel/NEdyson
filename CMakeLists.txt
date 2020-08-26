@@ -36,7 +36,7 @@ link_directories("~/Libraries/Install/lib/")
 
 add_subdirectory(src)
 add_subdirectory(programs)
-#add_subdirectory(CalcA)
+add_subdirectory(CalcA)
 
 
 enable_testing()

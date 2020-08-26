@@ -83,11 +83,7 @@ void SimulationBase::run(){
   if (bootstrap_converged == true) {
     for(int tstp = k_+1; tstp <= nt_; tstp++){
       std::cout<<tstp<<std::endl;
-      start = std::chrono::system_clock::now();
       do_tstp(tstp);
-      end = std::chrono::system_clock::now();
-      elapsed_seconds = end-start;
-      tot_time(tstp) = elapsed_seconds.count();
     }
 
     // Calculate the spectral function

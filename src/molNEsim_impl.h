@@ -112,6 +112,9 @@ void Simulation<Repr>::do_tstp(int tstp) {
 
   std::chrono::time_point<std::chrono::system_clock> start, end;
   std::chrono::duration<double> elapsed_seconds;
+  std::ofstream out;
+  std::string data_dir = std::string(DATA_DIR);
+  out.open(data_dir + "tottiming.dat" + "," + std::to_string(G.size1()) + "," + std::to_string(G.nt()) + "," + std::to_string(G.ntau()), std::ofstream::app);
 
   // Corrector
   for(int iter = 0; iter < CorrSteps_; iter++) {
@@ -120,18 +123,23 @@ void Simulation<Repr>::do_tstp(int tstp) {
 
     start = std::chrono::system_clock::now();
     p_NEgf2_->solve_HF(tstp, hmf, rho);
+    end = std::chrono::system_clock::now();
+    elapsed_seconds = end-start;
+    out << elapsed_seconds.count() << " ";
+
+
+    start = std::chrono::system_clock::now();
     p_NEgf2_->solve(tstp, Sigma, G);
     end = std::chrono::system_clock::now();
-
     elapsed_seconds = end-start;
-    gf2_time(tstp) += elapsed_seconds.count();
+    out << elapsed_seconds.count() << " ";
+
 
     start = std::chrono::system_clock::now();
     Dyson.dyson_step(tstp, G, Sigma, hmf, p_MatSim_->mu(), beta_, dt_);
     end = std::chrono::system_clock::now();
-
     elapsed_seconds = end-start;
-    dys_time(tstp) += elapsed_seconds.count();
+    out << elapsed_seconds.count() << " ";
   }
 }
 
@@ -332,25 +340,36 @@ void tti_Simulation<Repr>::do_tstp(int tstp) {
 
   std::chrono::time_point<std::chrono::system_clock> start, end;
   std::chrono::duration<double> elapsed_seconds;
+  std::ofstream out;
+  std::string data_dir = std::string(DATA_DIR);
+  out.open(data_dir + "tti_tottiming.dat" + "," + std::to_string(G.size1()) + "," + std::to_string(G.nt()) + "," + std::to_string(G.ntau()), std::ofstream::app);
 
   // Corrector
   for(int iter = 0; iter < CorrSteps_; iter++) {
+
     start = std::chrono::system_clock::now();
     p_NEgf2_->solve(tstp, Sigma, G);
     end = std::chrono::system_clock::now();
-
     elapsed_seconds = end-start;
-    gf2_time(tstp) += elapsed_seconds.count();
+    out << elapsed_seconds.count() << " ";
 
     start = std::chrono::system_clock::now();
     Dyson.dyson_step(tstp, G, Sigma, p_MatSim_->fock(), p_MatSim_->mu(), beta_, dt_);
     end = std::chrono::system_clock::now();
-
     elapsed_seconds = end-start;
-    dys_time(tstp) += elapsed_seconds.count();
+    out << elapsed_seconds.count() << std::endl;
   }
 }
 
+template <typename Repr>
+double CoeffMax(ZTensorView<1> GetMaxOf) {
+  int length = GetMaxOf.shape()[0];
+  double ret = std::abs(GetMaxOf(0));
+  for(int i = 1; i < length; i++) {
+    if(std::abs(GetMaxOf(i)) > ret) ret = std::abs(GetMaxOf(i));
+  }
+  return ret;
+}
 
 template <typename Repr>
 void tti_Simulation<Repr>::save(h5::File &file, const std::string &path) {
@@ -383,6 +402,35 @@ void tti_Simulation<Repr>::save(h5::File &file, const std::string &path) {
       ofile << A.ptr(w)[i*nao_+i] << " ";
     }
     ofile << std::endl;
+  }
+  ofile.close();
+
+  ofile.open(data_dir + "/tti_LegCoeff.dat" + "," + std::to_string(nao_) + "," + std::to_string(nt_) + "," + std::to_string(ntau_), std::ofstream::out);
+  auto c = Dyson.Convolution().collocation();
+  ZTensor<3> G_naa(ntau_+1, nao_, nao_);
+  for(int t = 0; t <= nt_; t++) {
+    ZTensorView<3> GTVTV(G.tvptr(t,0), ntau_+1, nao_, nao_);
+    c.to_spectral(G_naa, GTVTV);
+    for(int tau = 0; tau <= ntau_; tau++) {
+      ZTensorView<1> GetMaxOf(G_naa.data() + tau*nao_*nao_, nao_*nao_);
+      Sigma.tvptr(t,tau)[0] = CoeffMax<Repr>(GetMaxOf);
+    }
+  }
+
+  for(int tau = 0; tau <= ntau_; tau++) {
+    for(int t = 0; t <= nt_; t++) {
+      ofile << Sigma.tvptr(t,tau)[0].real() << " ";
+    }
+    ofile << std::endl;
+  }
+  ofile.close();
+
+  ofile.open(data_dir + "/tti_GR.dat" + "," + std::to_string(nao_) + "," + std::to_string(nt_) + "," + std::to_string(ntau_), std::ofstream::out);
+  ofile << nt_ << " " << nao_ << " " << dt_ << std::endl;
+  for(int i = 0; i<nao_*nao_; i++) {
+    for(int t = 0; t<=nt_; t++) {
+      ofile << G.retptr(t)[i].real() << "+" << G.retptr(t)[i].imag() << "j ";
+    }
   }
   ofile.close();
 }

@@ -1867,10 +1867,37 @@ void molGF2Solver::solve(int tstp, GREEN &Sigma, GREEN &G) const {
   Sigma.set_tstp_zero(tstp);
   Sigma.set_tstp_zero(tstp);
   
+  std::chrono::time_point<std::chrono::system_clock> start, end;
+  std::chrono::duration<double> elapsed_seconds;
+  std::ofstream out;
+  std::string data_dir = std::string(DATA_DIR);
+  out.open(data_dir + "gf2timing.dat" + "," + std::to_string(G.size1()) + "," + std::to_string(G.nt()) + "," + std::to_string(G.ntau()), std::ofstream::app);
+
+
+  start = std::chrono::system_clock::now();
   solve_les(tstp, Sigma, G);
+  end = std::chrono::system_clock::now();
+  elapsed_seconds = end-start;
+  out << elapsed_seconds.count() << " ";
+
+
+  start = std::chrono::system_clock::now();
   solve_tv(tstp, Sigma, G);
+  end = std::chrono::system_clock::now();
+  elapsed_seconds = end-start;
+  out << elapsed_seconds.count() << " ";
+
+
+  start = std::chrono::system_clock::now();
   solve_ret(tstp, Sigma, G);
+  end = std::chrono::system_clock::now();
+  elapsed_seconds = end-start;
+  out << elapsed_seconds.count() << std::endl;
 }
+  
+
+  
+
 
 void molGF2Solver::solve_loop(int tstp, GREEN &Sigma, GREEN &G) const {
   assert(G.sig() == G.sig());
@@ -3635,9 +3662,30 @@ void tti_molGF2Solver::solve(int tstp, TTI_GREEN &Sigma, TTI_GREEN &G) const {
   Sigma.set_tstp_zero(tstp);
   Sigma.set_tstp_zero(tstp);
   
+  std::chrono::time_point<std::chrono::system_clock> start, end;
+  std::chrono::duration<double> elapsed_seconds;
+  std::ofstream out;
+  std::string data_dir = std::string(DATA_DIR);
+  out.open(data_dir + "tti_gf2timing.dat" + "," + std::to_string(G.size1()) + "," + std::to_string(G.nt()) + "," + std::to_string(G.ntau()), std::ofstream::app);
+  
+  start = std::chrono::system_clock::now();
   solve_tv(tstp, Sigma, G);
+  end = std::chrono::system_clock::now();
+  elapsed_seconds = end-start;
+  out << elapsed_seconds.count() << " ";
+
+  start = std::chrono::system_clock::now();
   solve_les(tstp, Sigma, G);
+  end = std::chrono::system_clock::now();
+  elapsed_seconds = end-start;
+  out << elapsed_seconds.count() << " ";
+  
+
+  start = std::chrono::system_clock::now();
   solve_ret(tstp, Sigma, G);
+  end = std::chrono::system_clock::now();
+  elapsed_seconds = end-start;
+  out << elapsed_seconds.count() << std::endl;
 }
 
 void tti_molGF2Solver::solve_loop(int tstp, TTI_GREEN &Sigma, TTI_GREEN &G) const {

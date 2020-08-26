@@ -13,6 +13,7 @@ spectral::spectral(){
 	size1_=0;
 	es_=0;
 	wmax_=0;
+	wmin_=0;
 	dw_=0;
 	dt_=0;
 	A_=0;
@@ -22,13 +23,14 @@ spectral::~spectral(){
 	delete[] A_;
 }
 
-spectral::spectral(int nt, int nw, int size1, double wmax, double dt){
+spectral::spectral(int nt, int nw, int size1, double wmin, double wmax, double dt){
 	nt_ = nt;
 	nw_ = nw;
 	size1_ = size1;
 	es_ = size1*size1;
 	wmax_ = wmax;
-	dw_ = 2*wmax/(nw-1);
+	wmin_ = wmin;
+	dw_ = (wmax-wmin)/(nw-1);
 	dt_ = dt;
 	A_ = new double[(nt_+1)*nw_*es_];
 }
@@ -39,6 +41,7 @@ spectral::spectral(const spectral &A){
 	size1_ = A.size1_;
 	es_ = A.es_;
 	wmax_ = A.wmax_;
+	wmin_ = A.wmin_;
 	dw_ = A.dw_;
 	dt_ = A.dt_;
 	memcpy(A_,A.A_,sizeof(double)*(nt_+1)*nw_*es_);
@@ -47,6 +50,7 @@ spectral::spectral(const spectral &A){
 spectral& spectral::operator=(const spectral &A){
 	if(this == &A) return *this;
 	wmax_ = A.wmax_;
+	wmin_ = A.wmin_;
 	dw_ = A.dw_;
 	dt_=A.dt_;
 	if(nt_ != A.nt_ || nw_ != A.nw_ || es_ != A.es_){
@@ -76,7 +80,7 @@ void spectral::print_to_file(std::string file, int precision) const {
 	out.open(actfile);
 	out.precision(precision);
 	
-	out << nt_ << " " << nw_ << " " << size1_ << " " << wmax_ << " " << dw_ << " " << dt_ << std::endl;
+	out << nt_ << " " << nw_ << " " << size1_ << " " << wmin_ << wmax_ << " " << dw_ << " " << dt_ << std::endl;
 
 	for(i=0;i<=nt_;i++){
 		for(j=0;j<nw_;j++){
@@ -93,6 +97,7 @@ void spectral::print_to_file(h5e::File File, std::string path) const {
   h5e::dump(File,path+"/nw",nw_);
   h5e::dump(File,path+"/nao",size1_);
   h5e::dump(File,path+"/wmax",wmax_);
+  h5e::dump(File,path+"/wmin",wmin_);
   h5e::dump(File,path+"/dw",dw_);
   h5e::dump(File,path+"/dt",dt_);
   std::vector<size_t> dims(1);
@@ -114,6 +119,7 @@ void spectral::read_from_file(h5e::File File, std::string path) {
   nw_ = h5e::load<int>(File, path+"/nw");
   size1_ = h5e::load<int>(File, path+"/nao");
   wmax_ = h5e::load<double>(File, path+"/wmax");
+  wmin_ = h5e::load<double>(File, path+"/wmin");
   dw_ = h5e::load<double>(File, path+"/dw");
   dt_ = h5e::load<double>(File, path+"/dt");
 }
@@ -129,7 +135,7 @@ void spectral::read_from_file(const char *file){
 	actfile += "_A.dat";
 	in.open(actfile);
 
-	if(!(in >> nt_ >> nw_ >> size1_ >> wmax_ >> dw_ >> dt_)){
+	if(!(in >> nt_ >> nw_ >> size1_ >> wmin_ >> wmax_ >> dw_ >> dt_)){
 		std::cerr << "Error in reading spectral function from file " << actfile << std::endl;
 		abort();
 	}
@@ -159,6 +165,7 @@ void spectral::AfromG(const green_func &G, int nw, double wmax, double dt){
 	size1_ = G.size1();
 	es_ = size1_*size1_;
 	wmax_ = wmax;
+	wmin_ = -wmax;
 	dw_ = 2*wmax/(nw-1);
 	dt_ = dt;
 	delete[] A_;
@@ -180,6 +187,51 @@ void spectral::AfromG(const green_func &G, int nw, double wmax, double dt){
 
 			for(iw=0;iw<nw;iw++){
 				arg = (iw-(nw-1)/2)*dw_*itr*dt_*cplxi;
+				weight = std::exp(arg);
+        DMatrixMap(ptr(ita,iw), size1_, size1_) += (weight * GMap).imag();
+			}
+		}
+	}
+
+	double a = -2*dt_/PI;
+	for(ita=0;ita<=nt_;ita++){
+		for(iw=0;iw<nw;iw++){
+      DMatrixMap(ptr(ita,iw), size1_, size1_) *= a;
+		}
+	}
+
+}
+
+
+// See spectral notes
+void spectral::AfromG(const green_func &G, int nw, double wmin, double wmax, double dt){
+	nt_ = 2*G.nt();
+	nw_ = nw;
+	size1_ = G.size1();
+	es_ = size1_*size1_;
+	wmax_ = wmax;
+	wmin_ = wmin;
+	dw_ = (wmax-wmin)/(nw-1);
+	dt_ = dt;
+	delete[] A_;
+	A_ = new double[(nt_+1)*nw_*es_];
+	memset(A_,0,sizeof(double)*(nt_+1)*nw_*es_);
+
+	int ita, iw, itr;
+	cplx *tmp;
+	cplx weight;
+	cplx arg, cplxi = cplx(0.,1.);
+
+	for(ita=0; ita<=nt_; ita++) {
+		int max1 = ita;
+		int max2 = nt_-ita;	
+		int max = max1>=max2?max2:max1;
+
+		for(itr=ita%2; itr<=max; itr+=2) {
+      ZMatrixMap GMap = ZMatrixMap(G.retptr((ita+itr)/2,(ita-itr)/2), size1_, size1_);
+
+			for(iw=0;iw<nw;iw++){
+				arg = (iw*dw_+wmin)*itr*dt_*cplxi;
 				weight = std::exp(arg);
         DMatrixMap(ptr(ita,iw), size1_, size1_) += (weight * GMap).imag();
 			}
@@ -266,6 +318,7 @@ tti_spectral::tti_spectral(){
 	size1_=0;
 	es_=0;
 	wmax_=0;
+	wmin_=0;
 	dw_=0;
 	dt_=0;
 	A_=0;
@@ -275,13 +328,14 @@ tti_spectral::~tti_spectral(){
 	delete[] A_;
 }
 
-tti_spectral::tti_spectral(int nt, int nw, int size1, double wmax, double dt){
+tti_spectral::tti_spectral(int nt, int nw, int size1, double wmin, double wmax, double dt){
 	nt_ = nt;
 	nw_ = nw;
 	size1_ = size1;
 	es_ = size1*size1;
 	wmax_ = wmax;
-	dw_ = 2*wmax/(nw-1);
+	wmin_ = wmin;
+	dw_ = (wmax-wmin)/(nw-1);
 	dt_ = dt;
 	A_ = new double[nw_*es_];
 }
@@ -292,6 +346,7 @@ tti_spectral::tti_spectral(const tti_spectral &A){
 	size1_ = A.size1_;
 	es_ = A.es_;
 	wmax_ = A.wmax_;
+	wmin_ = A.wmin_;
 	dw_ = A.dw_;
 	dt_ = A.dt_;
 	memcpy(A_,A.A_,sizeof(double)*nw_*es_);
@@ -300,6 +355,7 @@ tti_spectral::tti_spectral(const tti_spectral &A){
 tti_spectral& tti_spectral::operator=(const tti_spectral &A){
 	if(this == &A) return *this;
 	wmax_ = A.wmax_;
+	wmin_ = A.wmin_;
 	dw_ = A.dw_;
 	dt_=A.dt_;
 	if(nt_ != A.nt_ || nw_ != A.nw_ || es_ != A.es_){
@@ -328,7 +384,7 @@ void tti_spectral::print_to_file(std::string file, int precision) const {
 	out.open(actfile);
 	out.precision(precision);
 	
-	out << nt_ << " " << nw_ << " " << size1_ << " " << wmax_ << " " << dw_ << " " << dt_ << std::endl;
+	out << nt_ << " " << nw_ << " " << size1_ << " " << wmin_ << " " << wmax_ << " " << dw_ << " " << dt_ << std::endl;
 
 	for(j=0;j<nw_;j++){
 		x = ptr(j);
@@ -343,6 +399,7 @@ void tti_spectral::print_to_file(h5e::File File, std::string path) const {
   h5e::dump(File,path+"/nw",nw_);
   h5e::dump(File,path+"/nao",size1_);
   h5e::dump(File,path+"/wmax",wmax_);
+  h5e::dump(File,path+"/wmin",wmin_);
   h5e::dump(File,path+"/dw",dw_);
   h5e::dump(File,path+"/dt",dt_);
   std::vector<size_t> dims(1);
@@ -364,6 +421,7 @@ void tti_spectral::read_from_file(h5e::File File, std::string path) {
   nw_ = h5e::load<int>(File, path+"/nw");
   size1_ = h5e::load<int>(File, path+"/nao");
   wmax_ = h5e::load<double>(File, path+"/wmax");
+  wmin_ = h5e::load<double>(File, path+"/wmin");
   dw_ = h5e::load<double>(File, path+"/dw");
   dt_ = h5e::load<double>(File, path+"/dt");
 }
@@ -379,7 +437,7 @@ void tti_spectral::read_from_file(const char *file){
 	actfile += "_A.dat";
 	in.open(actfile);
 
-	if(!(in >> nt_ >> nw_ >> size1_ >> wmax_ >> dw_ >> dt_)){
+	if(!(in >> nt_ >> nw_ >> size1_ >> wmin_ >> wmax_ >> dw_ >> dt_)){
 		std::cerr << "Error in reading spectral function from file " << actfile << std::endl;
 		abort();
 	}
@@ -407,6 +465,7 @@ void tti_spectral::AfromG(const tti_green_func &G, int nw, double wmax, double d
 	size1_ = G.size1();
 	es_ = size1_*size1_;
 	wmax_ = wmax;
+	wmin_ = -wmax;
 	dw_ = 2*wmax/(nw-1);
 	dt_ = dt;
 	delete[] A_;
@@ -425,6 +484,45 @@ void tti_spectral::AfromG(const tti_green_func &G, int nw, double wmax, double d
 
     for(iw = 0; iw < nw; iw++) {
       arg = (iw-(nw-1)/2)*dw_*it*dt_*cplxi;
+      weight = std::exp(arg);
+      DMatrixMap(ptr(iw), size1_, size1_) += (weight*GMap).imag();
+    }
+  }
+
+	double a = -dt_/PI;
+	for(iw = 0; iw < nw; iw++){
+    DMatrixMap(ptr(iw), size1_, size1_) *= a;
+	}
+
+}
+
+
+// See spectral notes
+void tti_spectral::AfromG(const tti_green_func &G, int nw, double wmin, double wmax, double dt){
+	nt_ = G.nt();
+	nw_ = nw;
+	size1_ = G.size1();
+	es_ = size1_*size1_;
+	wmax_ = wmax;
+  wmin_ = wmin;
+	dw_ = (wmax-wmin)/(nw-1);
+	dt_ = dt;
+	delete[] A_;
+	A_ = new double[nw_*es_];
+	memset(A_,0,sizeof(double)*nw_*es_);
+
+
+	int ita, iw, it;
+	cplx *tmp;
+	cplx weight;
+	
+	cplx arg, cplxi = cplx(0.,1.);
+
+  for(it = 0; it <= nt_; it++) {
+    ZMatrixMap GMap = ZMatrixMap(G.retptr(it), size1_, size1_);
+
+    for(iw = 0; iw < nw; iw++) {
+      arg = (iw*dw_+wmin)*it*dt_*cplxi;
       weight = std::exp(arg);
       DMatrixMap(ptr(iw), size1_, size1_) += (weight*GMap).imag();
     }

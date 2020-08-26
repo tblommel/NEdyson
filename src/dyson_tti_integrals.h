@@ -42,11 +42,11 @@ double dyson::energy_conv(int tstp, const TTI_GREEN &Sig, const TTI_GREEN &G, do
   res1 *= dt;
 
   // Sig^rm * G^lm
-  for(int i=0; i <= ntau_; i++) {
-    res2 += I.gregory_weights(ntau_, i) * ZMatrixConstMap(Sig.tvptr(tstp, i), nao_, nao_).cwiseProduct(ZMatrixConstMap(G.tvptr(tstp, ntau_-i), nao_, nao_).conjugate()).sum();
-  }
+  res2 = Conv.energy(ZTensorView<3>(Sig.tvptr(tstp,0), ntau_+1, nao_, nao_),
+                     ZTensorView<3>(G.tvptr(tstp,0), ntau_+1, nao_, nao_),
+                     beta, (double) G.sig());
 
-  res2 *= cplx(0., sig*dtau);
+  res2 *= cplx(0., -1.);
 
   return (cplx(0.,-0.5)*(res1+res2)).real();
 }

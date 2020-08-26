@@ -6,83 +6,32 @@
 #include <vector>
 #include <chrono>
 
-#include "NEdyson.h"
+#include "greens.h"
+#include "spectral.h"
+#include "utils.h"
 
 using namespace NEdyson;
 
-bool group_exists(h5e::File &File, std::string path){
-  try{
-    File.getDataSet(path);
-    return true;
-  }
-  catch(const h5::DataSetException &e){
-    return false;
-  }
-}
-
-bool is_file_exist(std::string fileName){
-	std::ifstream infile(fileName);
-	return infile.good();
-}
-
 int main(int argc, char *argv[]){
-  if(argc!=5) throw std::invalid_argument("please provide G input file, A input file, nw, and wmax");
-	int nw = strtol(argv[3],NULL,10);
-	double wmax = strtod(argv[4],NULL);
+  if(argc!=7) throw std::invalid_argument("please provide G input file, GRfilepath,  A output file, nw, wmin, wmax");
+	int nw = strtol(argv[4],NULL,10);
+	double wmin = strtod(argv[5],NULL);
+	double wmax = strtod(argv[6],NULL);
 
 	// Define the structures
 	GREEN G = GREEN();
 	SPECT A = SPECT();
-	double dt, dtau;
-	
+	double dt;
+
 	// Read in the Greens function
-	G.read_from_file_ret(argv[1],dt,dtau);
+	h5e::File File(argv[1], h5e::File::ReadWrite);
+	G.read_from_file_ret(File, argv[2]);
+  dt = h5e::load<double>(File, "/solve/params/dt");
 
-	// Check to see if there exists an extension file
-	std::string actfile = "";
-	actfile += argv[1];
-	actfile += "_GRExp.dat";
-	bool extexist = is_file_exist(actfile);
-
-	// If it does read it in
-	if(extexist){
-		std::ifstream in;
-		in.open(actfile);
-		int nfit,ntp;
-		if(!(in >> nfit >> ntp)){
-			std::cerr<<"expanded file broken"<<actfile<<std::endl;
-			abort();
-		}
-		
-		cplx *extdata = new cplx[G.nt()*(G.nt()-nfit-ntp)*G.size1()*G.size1()];
-		memset(extdata,0,G.nt()*(G.nt()-nfit-ntp)*G.size1()*G.size1());
-		
-		int tp, t, i, j, tpmax=G.nt()-nfit-ntp, tmax, size1=G.size1(), nt=G.nt(), es = size1*size1;
-		double real, imag;
-		for(tp=0;tp<tpmax;tp++){
-			for(t=0;t<nt-tp;t++){
-				for(i=0;i<size1;i++){
-					for(j=0;j<size1;j++){
-						if(!(in>>real>>imag)){
-							std::cout<<t<<" "<<tp<<" "<<i<<" "<<j<<" "<<real<<" "<<imag<<std::endl;
-							std::cerr<<"Error in reading extension data"<<std::endl;
-						}
-						extdata[tp*nt*es+t*es+i*size1+j] = cplx(real,imag);
-					}
-				}
-			}
-		}
-		A.AfromG(G, nw, wmax, dt, extdata, nfit, ntp);
-    std::cout<<"hello"<<std::endl;
-		delete[] extdata;
-	}
-	else{
-		A.AfromG(G, nw, wmax, dt);
-	}
-
-
+  // Calculate A
+	A.AfromG(G, nw, wmin, wmax, dt);
 
 	// Print A to file
-	h5e::File File("/home/thomas/Libraries/NEdyson/tests/data/spectral.h5",h5e::File::ReadWrite);
-	A.print_to_file(File,"Aext");
+	h5e::File File2(argv[3],h5e::File::ReadWrite);
+	A.print_to_file(File2,"/A");
 }		
