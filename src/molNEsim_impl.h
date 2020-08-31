@@ -139,7 +139,7 @@ void Simulation<Repr>::do_tstp(int tstp) {
     Dyson.dyson_step(tstp, G, Sigma, hmf, p_MatSim_->mu(), beta_, dt_);
     end = std::chrono::system_clock::now();
     elapsed_seconds = end-start;
-    out << elapsed_seconds.count() << " ";
+    out << elapsed_seconds.count() << std::endl;
   }
 }
 
@@ -165,9 +165,6 @@ void Simulation<Repr>::save(h5::File &file, const std::string &path) {
 
   std::string data_dir = std::string(DATA_DIR);
   std::ofstream ofile;
-  ofile.open(data_dir + "/timings.dat" + "," + std::to_string(nao_) + "," + std::to_string(nt_) + "," + std::to_string(ntau_), std::ofstream::out);
-  for(int t=0; t<=nt_; t++) ofile << t << " " << tot_time(t) << " " << dys_time(t) << " " << gf2_time(t) << std::endl;
-  ofile.close();
 
   ofile.open(data_dir + "/spectral.dat" + "," + std::to_string(nao_) + "," + std::to_string(nt_) + "," + std::to_string(ntau_), std::ofstream::out);
   double dw = 2*wmax_/(nw_-1);
@@ -390,9 +387,6 @@ void tti_Simulation<Repr>::save(h5::File &file, const std::string &path) {
 
   std::string data_dir = std::string(DATA_DIR);
   std::ofstream ofile;
-  ofile.open(data_dir + "/tti_timings.dat" + "," + std::to_string(nao_) + "," + std::to_string(nt_) + "," + std::to_string(ntau_), std::ofstream::out);
-  for(int t=0; t<=nt_; t++) ofile << t << " " << tot_time(t) << " " << dys_time(t) << " " << gf2_time(t) << std::endl;
-  ofile.close();
 
   ofile.open(data_dir + "/tti_spectral.dat" + "," + std::to_string(nao_) + "," + std::to_string(nt_) + "," + std::to_string(ntau_), std::ofstream::out);
   double dw = 2*wmax_/(nw_-1);
