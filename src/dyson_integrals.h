@@ -391,7 +391,7 @@ void dyson::Cles3_tstp(int j1, int j2, const GREEN &A, const GREEN &Acc, const G
     auto ZTVRES = ZTensorView<2>(res + (n-j1)*es_, nao_, nao_);
     Conv.lesser(ZTVRES,
                 ZTensorView<3>(A.tvptr(n,0), ntau_+1, nao_, nao_),
-                ZTensorView<3>(NTauTmp.data(), ntau_+1, nao_, nao_));
+                ZTensorView<3>(NTauTmp.data(), ntau_+1, nao_, nao_), beta);
   }
 
 /*
