@@ -20,4 +20,6 @@ target_link_libraries(libNEdyson PUBLIC
   Eigen3::Eigen
   HighFive
   libgfmol
+  cpsitop
+  OpenMP::OpenMP_CXX
 )

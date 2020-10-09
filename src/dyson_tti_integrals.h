@@ -42,11 +42,11 @@ double dyson::energy_conv(int tstp, const TTI_GREEN &Sig, const TTI_GREEN &G, do
   res1 *= dt;
 
   // Sig^rm * G^lm
-  for(int i=0; i <= ntau_; i++) {
-    res2 += I.gregory_weights(ntau_, i) * ZMatrixConstMap(Sig.tvptr(tstp, i), nao_, nao_).cwiseProduct(ZMatrixConstMap(G.tvptr(tstp, ntau_-i), nao_, nao_).conjugate()).sum();
-  }
+  res2 = Conv.energy(ZTensorView<3>(Sig.tvptr(tstp,0), ntau_+1, nao_, nao_),
+                     ZTensorView<3>(G.tvptr(tstp,0), ntau_+1, nao_, nao_),
+                     beta, (double) G.sig());
 
-  res2 *= cplx(0., sig*dtau);
+  res2 *= cplx(0., -1.);
 
   return (cplx(0.,-0.5)*(res1+res2)).real();
 }
@@ -262,11 +262,17 @@ void dyson::Ctv_tstp(int tstp, TTI_GREEN &C, const TTI_GREEN &A, const TTI_GREEN
   out.open(data_dir + "tti_dystiming.dat" + "," + std::to_string(A.size1()) + "," + std::to_string(A.nt()) + "," + std::to_string(A.ntau()), std::ofstream::app);
 
   start = std::chrono::system_clock::now();
-  for(int m=0; m<=ntau_; m++) {
-    CTV2(A, B, tstp, m, beta, NTauTmp.data() + m*es_);
-    CTV3(A, B, tstp, m, beta, tmp.data());
-    ZMatrixMap(NTauTmp.data() + m*es_, nao_, nao_).noalias() += tmpMap;
-  }
+//  for(int m=0; m<=ntau_; m++) {
+//    CTV2(A, B, tstp, m, beta, NTauTmp.data() + m*es_);
+//    CTV3(A, B, tstp, m, beta, tmp.data());
+//    ZMatrixMap(NTauTmp.data() + m*es_, nao_, nao_).noalias() += tmpMap;
+//  }
+  auto ZTVNTT = ZTensorView<3>(NTauTmp.data(), ntau_+1, nao_, nao_);
+  Conv.mixing(ZTVNTT,
+              ZTensorView<3>(A.tvptr(tstp, 0), ntau_+1, nao_, nao_),
+              ZTensorView<3>(B.matptr(0), ntau_+1, nao_, nao_),
+              beta, (double)A.sig());
+
   end = std::chrono::system_clock::now();
   elapsed_seconds = end-start;
   out << elapsed_seconds.count() << " " ;

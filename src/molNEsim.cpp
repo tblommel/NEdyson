@@ -13,9 +13,6 @@ SimulationBase::SimulationBase(const gfmol::HartreeFock &hf,
                                  nao_(hf.nao()), 
                                  eKin_(nt+1), 
                                  ePot_(nt+1),
-                                 tot_time(nt+1),
-                                 dys_time(nt+1),
-                                 gf2_time(nt+1),
                                  Dyson(nt, ntau, nao_, k) { 
   nw_ = nw;
   wmax_ = wmax;
@@ -30,10 +27,6 @@ SimulationBase::SimulationBase(const gfmol::HartreeFock &hf,
   BootMax_ = BootMax;
   BootTol_ = BootTol;
   CorrSteps_ = CorrSteps;
-
-  memset(tot_time.data(), 0, (nt+1)*sizeof(double));
-  memset(gf2_time.data(), 0, (nt+1)*sizeof(double));
-  memset(dys_time.data(), 0, (nt+1)*sizeof(double));
 }
 
 void SimulationBase::save_base(h5::File &file, const std::string &path) const {
@@ -83,11 +76,7 @@ void SimulationBase::run(){
   if (bootstrap_converged == true) {
     for(int tstp = k_+1; tstp <= nt_; tstp++){
       std::cout<<tstp<<std::endl;
-      start = std::chrono::system_clock::now();
       do_tstp(tstp);
-      end = std::chrono::system_clock::now();
-      elapsed_seconds = end-start;
-      tot_time(tstp) = elapsed_seconds.count();
     }
 
     // Calculate the spectral function

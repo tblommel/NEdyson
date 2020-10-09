@@ -1867,10 +1867,37 @@ void molGF2Solver::solve(int tstp, GREEN &Sigma, GREEN &G) const {
   Sigma.set_tstp_zero(tstp);
   Sigma.set_tstp_zero(tstp);
   
+  std::chrono::time_point<std::chrono::system_clock> start, end;
+  std::chrono::duration<double> elapsed_seconds;
+  std::ofstream out;
+  std::string data_dir = std::string(DATA_DIR);
+  out.open(data_dir + "gf2timing.dat" + "," + std::to_string(G.size1()) + "," + std::to_string(G.nt()) + "," + std::to_string(G.ntau()), std::ofstream::app);
+
+
+  start = std::chrono::system_clock::now();
   solve_les(tstp, Sigma, G);
+  end = std::chrono::system_clock::now();
+  elapsed_seconds = end-start;
+  out << elapsed_seconds.count() << " ";
+
+
+  start = std::chrono::system_clock::now();
   solve_tv(tstp, Sigma, G);
+  end = std::chrono::system_clock::now();
+  elapsed_seconds = end-start;
+  out << elapsed_seconds.count() << " ";
+
+
+  start = std::chrono::system_clock::now();
   solve_ret(tstp, Sigma, G);
+  end = std::chrono::system_clock::now();
+  elapsed_seconds = end-start;
+  out << elapsed_seconds.count() << std::endl;
 }
+  
+
+  
+
 
 void molGF2Solver::solve_loop(int tstp, GREEN &Sigma, GREEN &G) const {
   assert(G.sig() == G.sig());
@@ -3538,21 +3565,34 @@ void tti_molGF2Solver::solve_tv(int tstp, TTI_GREEN &Sigma, TTI_GREEN &G) const 
   int nao3 = nao2 * nao_;
   int sig = G.sig();
   int ntau = G.ntau();
-
+/*
   auto A1_aA = ZMatrixMap(A1_aaa.data(), nao_, nao2);
   auto A1_Aa = ZMatrixMap(A1_aaa.data(), nao2, nao_);
   auto A1_Q =  ZColVectorMap(A1_aaa.data(), nao3);
 
   auto B1_Aa = ZMatrixMap(B1_aaa.data(), nao2, nao_);
   auto B1_aA = ZMatrixMap(B1_aaa.data(), nao_, nao2);
-
+*/
   auto Uexch_j_qkm = DMatrixConstMap(Uijkl_exch_.data(), nao_, nao2*nao_);
 
-  for(int t=0; t<=ntau; ++t){
-    auto gtv = ZMatrixMap(G.tvptr(tstp,t), nao_, nao_);
-    auto gvt = ZMatrixMap(G.tvptr(tstp,ntau-t), nao_, nao_);
+#pragma omp parallel
+{
+  ZTensor<3> Aomp_aaa(nao_, nao_, nao_);
+  ZTensor<3> Bomp_aaa(nao_, nao_, nao_);
 
+  auto A1_aA = ZMatrixMap(Aomp_aaa.data(), nao_, nao2);
+  auto A1_Aa = ZMatrixMap(Aomp_aaa.data(), nao2, nao_);
+  auto A1_Q =  ZColVectorMap(Aomp_aaa.data(), nao3);
+
+  auto B1_Aa = ZMatrixMap(Bomp_aaa.data(), nao2, nao_);
+  auto B1_aA = ZMatrixMap(Bomp_aaa.data(), nao_, nao2);
+
+#pragma omp for collapse(2)
+  for(int t=0; t<=ntau; ++t){
     for(int i=0; i<nao_; ++i){
+      auto gtv = ZMatrixMap(G.tvptr(tstp,t), nao_, nao_);
+      auto gvt = ZMatrixMap(G.tvptr(tstp,ntau-t), nao_, nao_);
+
       // A^\rceil(t,t')knp = (G^\rceilT(t,t'))_kl Ui_lnp
       A1_aA = gtv.transpose() * DMatrixConstMap(Uijkl_.data() + i * nao3, nao_, nao2);
       
@@ -3567,6 +3607,8 @@ void tti_molGF2Solver::solve_tv(int tstp, TTI_GREEN &Sigma, TTI_GREEN &G) const 
       ZRowVectorMap(Sigma.tvptr(tstp,t) + i * nao_, nao_) += Uexch_j_qkm * A1_Q;
     }
   }
+}
+
 }
 
 
@@ -3635,9 +3677,32 @@ void tti_molGF2Solver::solve(int tstp, TTI_GREEN &Sigma, TTI_GREEN &G) const {
   Sigma.set_tstp_zero(tstp);
   Sigma.set_tstp_zero(tstp);
   
+  std::chrono::time_point<std::chrono::system_clock> start, end;
+  std::chrono::duration<double> elapsed_seconds;
+  std::ofstream out;
+  std::string data_dir = std::string(DATA_DIR);
+  out.open(data_dir + "tti_gf2timing.dat" + "," + std::to_string(G.size1()) + "," + std::to_string(G.nt()) + "," + std::to_string(G.ntau()), std::ofstream::app);
+  
+
+  start = std::chrono::system_clock::now();
   solve_tv(tstp, Sigma, G);
+  end = std::chrono::system_clock::now();
+  elapsed_seconds = end-start;
+  out << elapsed_seconds.count() << " ";
+
+
+  start = std::chrono::system_clock::now();
   solve_les(tstp, Sigma, G);
+  end = std::chrono::system_clock::now();
+  elapsed_seconds = end-start;
+  out << elapsed_seconds.count() << " ";
+  
+
+  start = std::chrono::system_clock::now();
   solve_ret(tstp, Sigma, G);
+  end = std::chrono::system_clock::now();
+  elapsed_seconds = end-start;
+  out << elapsed_seconds.count() << std::endl;
 }
 
 void tti_molGF2Solver::solve_loop(int tstp, TTI_GREEN &Sigma, TTI_GREEN &G) const {

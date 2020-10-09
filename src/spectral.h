@@ -18,6 +18,7 @@ class spectral{
 		int size1_;
 		int es_;
 		double wmax_;
+		double wmin_;
 		double dw_;
 		double dt_;
 		double *A_;
@@ -26,7 +27,7 @@ class spectral{
 		// Construct and Destruct
 		spectral();
 		~spectral();
-		spectral(int nt, int nw, int size1, double wmax, double dt);
+		spectral(int nt, int nw, int size1, double wmin, double wmax, double dt);
 		spectral(const spectral &A);
 		spectral &operator=(const spectral &A);
 		
@@ -36,6 +37,7 @@ class spectral{
 		int es(void) const {return es_;}
 		int size1(void) const {return size1_;}
 		double wmax(void) const {return wmax_;}
+		double wmin(void) const {return wmin_;}
 		double dw(void) const {return dw_;}
 		double dt(void) const {return dt_;}
 		
@@ -50,6 +52,7 @@ class spectral{
 		
 		// Actually Calculate
 		void AfromG(const green_func &G, int nw, double wmax, double dt);
+		void AfromG(const green_func &G, int nw, double wmin, double wmax, double dt);
 //		void AfromG(const green_func &G, int nw, double wmax, double dt, const cplx *extdata, int nfit, int ntp);
 };
 
@@ -61,6 +64,7 @@ class tti_spectral{
 		int size1_;
 		int es_;
 		double wmax_;
+		double wmin_;
 		double dw_;
 		double dt_;
 		double *A_;
@@ -69,7 +73,7 @@ class tti_spectral{
 		// Construct and Destruct
 		tti_spectral();
 		~tti_spectral();
-		tti_spectral(int nt, int nw, int size1, double wmax, double dt);
+		tti_spectral(int nt, int nw, int size1, double wmin, double wmax, double dt);
 		tti_spectral(const tti_spectral &A);
 		tti_spectral &operator=(const tti_spectral &A);
 		
@@ -79,6 +83,7 @@ class tti_spectral{
 		int es(void) const {return es_;}
 		int size1(void) const {return size1_;}
 		double wmax(void) const {return wmax_;}
+		double wmin(void) const {return wmin_;}
 		double dw(void) const {return dw_;}
 		double dt(void) const {return dt_;}
 		
@@ -93,6 +98,7 @@ class tti_spectral{
 		
 		// Actually Calculate
 		void AfromG(const tti_green_func &G, int nw, double wmax, double dt);
+		void AfromG(const tti_green_func &G, int nw, double wmin, double wmax, double dt);
 //		void AfromG(const green_func &G, int nw, double wmax, double dt, const cplx *extdata, int nfit, int ntp);
 };
 

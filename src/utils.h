@@ -80,12 +80,20 @@ using ZRowVector = RowVector<std::complex<double>>;
 
 using DMatrixMap = MatrixMap<double>;
 using ZMatrixMap = MatrixMap<std::complex<double>>;
+using ZFMatrixMap = MatrixMap<std::complex<float>>;
+using ZLMatrixMap = MatrixMap<std::complex<long double>>;
 using DColVectorMap = ColVectorMap<double>;
 using ZColVectorMap = ColVectorMap<std::complex<double>>;
+using ZFColVectorMap = ColVectorMap<std::complex<float>>;
+using ZLColVectorMap = ColVectorMap<std::complex<long double>>;
 using DRowVectorMap = RowVectorMap<double>;
 using ZRowVectorMap = RowVectorMap<std::complex<double>>;
+using ZFRowVectorMap = RowVectorMap<std::complex<float>>;
+using ZLRowVectorMap = RowVectorMap<std::complex<long double>>;
 
 using DMatrixConstMap = MatrixConstMap<double>;
+using FMatrixConstMap = MatrixConstMap<float>;
+using LMatrixConstMap = MatrixConstMap<long double>;
 using ZMatrixConstMap = MatrixConstMap<std::complex<double>>;
 using DColVectorConstMap = ColVectorConstMap<double>;
 using ZColVectorConstMap = ColVectorConstMap<std::complex<double>>;
@@ -100,19 +108,9 @@ using ZMatrixMap4 = Eigen::Map<Eigen::Matrix<cplx,4,4,Eigen::RowMajor> >;
 
 } // namespace NEdyson
 
-namespace Hubb{
- 
-  using cplx = std::complex<double>;
-
-template <typename T>
-using Matrix = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
-  using ZMatrix = Matrix<cplx>;
-
-} // namespace Hubb
-
 namespace Integration{
  
-  using cplx = std::complex<double>;
+using cplx = std::complex<double>;
 
 template <typename T>
 using Matrix = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;

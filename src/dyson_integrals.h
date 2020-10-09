@@ -42,11 +42,14 @@ double dyson::energy_conv(int tstp, const GREEN &Sig, const GREEN &G, double bet
   res1 *= dt;
 
   // Sig^rm * G^lm
-  for(int i=0; i <= ntau_; i++) {
-    res2 += I.gregory_weights(ntau_, i) * ZMatrixConstMap(Sig.tvptr(tstp, i), nao_, nao_).cwiseProduct(ZMatrixConstMap(G.tvptr(tstp, ntau_-i), nao_, nao_).conjugate()).sum();
-  }
+//  for(int i=0; i <= ntau_; i++) {
+//    res2 += I.gregory_weights(ntau_, i) * ZMatrixConstMap(Sig.tvptr(tstp, i), nao_, nao_).cwiseProduct(ZMatrixConstMap(G.tvptr(tstp, ntau_-i), nao_, nao_).conjugate()).sum();
+//  }
+  res2 = Conv.energy(ZTensorView<3>(Sig.tvptr(tstp,0), ntau_+1, nao_, nao_),
+                     ZTensorView<3>(G.tvptr(tstp,0), ntau_+1, nao_, nao_),
+                     beta, (double) G.sig());
 
-  res2 *= cplx(0., sig*dtau);
+  res2 *= cplx(0., -1.);
 
   return (cplx(0.,-0.5)*(res1+res2)).real();
 }
@@ -262,11 +265,16 @@ void dyson::Ctv_tstp(int tstp, GREEN &C, const GREEN &A, const GREEN &Acc, const
 
   // First do the A^TV B^M convolution.  This gets put into temporary storage since CTV1 may need access to C^TV(tstp, m)
   start = std::chrono::system_clock::now();
-  for(int m=0; m<=ntau_; m++) {
-    CTV2(A, B, tstp, m, beta, NTauTmp.data() + m*es_);
-    CTV3(A, B, tstp, m, beta, tmp.data());
-    ZMatrixMap(NTauTmp.data() + m*es_, nao_, nao_).noalias() += tmpMap;
-  }
+//  for(int m=0; m<=ntau_; m++) {
+//    CTV2(A, B, tstp, m, beta, NTauTmp.data() + m*es_);
+//    CTV3(A, B, tstp, m, beta, tmp.data());
+//    ZMatrixMap(NTauTmp.data() + m*es_, nao_, nao_).noalias() += tmpMap;
+//  }
+  auto ZTVNTT = ZTensorView<3>(NTauTmp.data(), ntau_+1, nao_, nao_);
+  Conv.mixing(ZTVNTT,
+              ZTensorView<3>(A.tvptr(tstp, 0), ntau_+1, nao_, nao_),
+              ZTensorView<3>(B.matptr(0), ntau_+1, nao_, nao_),
+              beta, (double)A.sig());
   end = std::chrono::system_clock::now();
   elapsed_seconds = end-start;
   out << elapsed_seconds.count() << " " ;
@@ -378,6 +386,15 @@ void dyson::Cles3_tstp(int j1, int j2, const GREEN &A, const GREEN &Acc, const G
   // Fill NTauTmp first
   for(j=0; j<=ntau_; j++) ZMatrixMap(NTauTmp.data() + j*es_, nao_, nao_).noalias() = (double)sig * cplxi * dtau * ZMatrixMap(Bcc.tvptr(m,ntau_-j), nao_, nao_).adjoint();
 
+  // Do the integral
+  for(n=j1; n<=j2; n++) {
+    auto ZTVRES = ZTensorView<2>(res + (n-j1)*es_, nao_, nao_);
+    Conv.lesser(ZTVRES,
+                ZTensorView<3>(A.tvptr(n,0), ntau_+1, nao_, nao_),
+                ZTensorView<3>(NTauTmp.data(), ntau_+1, nao_, nao_), beta);
+  }
+
+/*
   //do the integral
   if(ntau_ < 2*(k_+1)-1) {
     for(n=j1; n<=j2; n++) {
@@ -401,6 +418,7 @@ void dyson::Cles3_tstp(int j1, int j2, const GREEN &A, const GREEN &Acc, const G
       }
     }
   }
+*/
 }
 
 void dyson::Cles3_tstp(const GREEN &A, const GREEN &Acc, const GREEN &B, const GREEN &Bcc, int m, double beta, cplx *res) const {
