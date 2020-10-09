@@ -175,7 +175,7 @@ void spectral::AfromG(const green_func &G, int nw, double wmax, double dt){
 	int ita, iw, itr;
 	cplx *tmp;
 	cplx weight;
-	cplx arg, cplxi = cplx(0.,1.);
+	cplx arg, cplxi = cplx(0.,-1.);
 
 	for(ita=0; ita<=nt_; ita++) {
 		int max1 = ita;
@@ -220,7 +220,7 @@ void spectral::AfromG(const green_func &G, int nw, double wmin, double wmax, dou
 	int ita, iw, itr;
 	cplx *tmp;
 	cplx weight;
-	cplx arg, cplxi = cplx(0.,1.);
+	cplx arg, cplxi = cplx(0.,-1.);
 
 	for(ita=0; ita<=nt_; ita++) {
 		int max1 = ita;
@@ -477,7 +477,7 @@ void tti_spectral::AfromG(const tti_green_func &G, int nw, double wmax, double d
 	cplx *tmp;
 	cplx weight;
 	
-	cplx arg, cplxi = cplx(0.,1.);
+	cplx arg, cplxi = cplx(0.,-1.);
 
   for(it = 0; it <= nt_; it++) {
     ZMatrixMap GMap = ZMatrixMap(G.retptr(it), size1_, size1_);
@@ -516,7 +516,7 @@ void tti_spectral::AfromG(const tti_green_func &G, int nw, double wmin, double w
 	cplx *tmp;
 	cplx weight;
 	
-	cplx arg, cplxi = cplx(0.,1.);
+	cplx arg, cplxi = cplx(0.,-1.);
 
   for(it = 0; it <= nt_; it++) {
     ZMatrixMap GMap = ZMatrixMap(G.retptr(it), size1_, size1_);

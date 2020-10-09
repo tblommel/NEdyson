@@ -160,6 +160,8 @@ void Simulation<Repr>::save(h5::File &file, const std::string &path) {
   h5e::dump(file, path + "/params/filling", p_MatSim_->filling());
   h5e::dump(file, path + "/tti", 0);
   
+  h5e::dump(file, path + "/energy/EkinM", p_MatSim_->ehf() + p_MatSim_->ekin());
+  h5e::dump(file, path + "/energy/EpotM", p_MatSim_->epot());
   
   
 
@@ -374,7 +376,6 @@ void tti_Simulation<Repr>::save(h5::File &file, const std::string &path) {
 
   G.print_to_file(file, path + "/G");
   Sigma.print_to_file(file, path + "/Sigma");
-  A.print_to_file(file, path + "/A");
   
   h5e::dump(file, path + "/params/beta", beta_);
   h5e::dump(file, path + "/params/dtau", dtau_);
@@ -384,20 +385,11 @@ void tti_Simulation<Repr>::save(h5::File &file, const std::string &path) {
   h5e::dump(file, path + "/params/filling", p_MatSim_->filling());
   h5e::dump(file, path + "/tti", 1);
 
+  h5e::dump(file, path + "/energy/EkinM", p_MatSim_->ehf() + p_MatSim_->ekin());
+  h5e::dump(file, path + "/energy/EpotM", p_MatSim_->epot());
 
   std::string data_dir = std::string(DATA_DIR);
   std::ofstream ofile;
-
-  ofile.open(data_dir + "/tti_spectral.dat" + "," + std::to_string(nao_) + "," + std::to_string(nt_) + "," + std::to_string(ntau_), std::ofstream::out);
-  double dw = 2*wmax_/(nw_-1);
-  for(int w=0; w<nw_; w++) {
-    ofile << (w-(nw_-1)/2)*dw << " ";
-    for(int i=0; i<nao_; i++) {  
-      ofile << A.ptr(w)[i*nao_+i] << " ";
-    }
-    ofile << std::endl;
-  }
-  ofile.close();
 
   ofile.open(data_dir + "/tti_LegCoeff.dat" + "," + std::to_string(nao_) + "," + std::to_string(nt_) + "," + std::to_string(ntau_), std::ofstream::out);
   auto c = Dyson.Convolution().collocation();
@@ -419,14 +411,6 @@ void tti_Simulation<Repr>::save(h5::File &file, const std::string &path) {
   }
   ofile.close();
 
-  ofile.open(data_dir + "/tti_GR.dat" + "," + std::to_string(nao_) + "," + std::to_string(nt_) + "," + std::to_string(ntau_), std::ofstream::out);
-  ofile << nt_ << " " << nao_ << " " << dt_ << std::endl;
-  for(int i = 0; i<nao_*nao_; i++) {
-    for(int t = 0; t<=nt_; t++) {
-      ofile << G.retptr(t)[i].real() << "+" << G.retptr(t)[i].imag() << "j ";
-    }
-  }
-  ofile.close();
 }
 
 

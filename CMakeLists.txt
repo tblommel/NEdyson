@@ -12,6 +12,7 @@ message(STATUS ${Boost_INCLUDE_DIRS})
 find_package(Eigen3 REQUIRED)
 message(STATUS ${EIGEN3_INCLUDE_DIR})
 find_package(HDF5 REQUIRED COMPONENTS C)
+find_package(OpenMP REQUIRED)
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/deps/args)
 add_subdirectory(${PROJECT_SOURCE_DIR}/deps/LeksysINI)

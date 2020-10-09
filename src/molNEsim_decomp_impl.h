@@ -142,6 +142,8 @@ void DecompSimulation<Repr>::save(h5::File &file, const std::string &path) {
   h5e::dump(file, path + "/params/h0", h0);
   h5e::dump(file, path + "/params/filling", p_MatSim_->filling());
   h5e::dump(file, path + "/tti", 0);
+  h5e::dump(file, path + "/energy/EkinM", p_MatSim_->ehf() + p_MatSim_->ekin());
+  h5e::dump(file, path + "/energy/EpotM", p_MatSim_->epot());
 }
 
 
@@ -338,6 +340,8 @@ void tti_DecompSimulation<Repr>::save(h5::File &file, const std::string &path) {
   h5e::dump(file, path + "/params/h0", h0);
   h5e::dump(file, path + "/params/filling", p_MatSim_->filling());
   h5e::dump(file, path + "/tti", 1);
+  h5e::dump(file, path + "/energy/EkinM", p_MatSim_->ehf() + p_MatSim_->ekin());
+  h5e::dump(file, path + "/energy/EpotM", p_MatSim_->epot());
 }
 
 

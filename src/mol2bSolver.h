@@ -343,6 +343,21 @@ private:
   void solve_les(int tstp, TTI_GREEN &Sigma, TTI_GREEN &G) const;
   void solve_ret(int tstp, TTI_GREEN &Sigma, TTI_GREEN &G) const;
   void solve_tv(int tstp,  TTI_GREEN &Sigma, TTI_GREEN &G) const;
+  void solve_tv(Tensor<std::complex<float>, 3> &Sigma, 
+                Tensor<std::complex<float>, 3> &G, 
+                Tensor<float, 4> &U, 
+                Tensor<float, 4> &UExch, 
+                Tensor<std::complex<float>, 3> &A, 
+                Tensor<std::complex<float>, 3> &B, 
+                int sig) const ;
+  void solve_tv(Tensor<std::complex<long double>, 3> &Sigma, 
+                Tensor<std::complex<long double>, 3> &G, 
+                Tensor<long double, 4> &U, 
+                Tensor<long double, 4> &UExch, 
+                Tensor<std::complex<long double>, 3> &A, 
+                Tensor<std::complex<long double>, 3> &B, 
+                int sig) const ;
+
 
 public:
   tti_molGF2Solver(const DTensor<4> &U_int, const DTensor<4> &u_exch)

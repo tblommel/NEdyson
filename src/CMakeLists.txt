@@ -21,4 +21,5 @@ target_link_libraries(libNEdyson PUBLIC
   HighFive
   libgfmol
   cpsitop
+  OpenMP::OpenMP_CXX
 )

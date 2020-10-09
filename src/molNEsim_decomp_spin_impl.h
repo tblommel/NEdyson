@@ -166,6 +166,8 @@ void DecompSpinSimulation<Repr>::save(h5::File &file, const std::string &path) {
   h5e::dump(file, path + "/params/h0", h0);
   h5e::dump(file, path + "/params/filling", std::vector<double>{p_MatSim_->filling()[0], p_MatSim_->filling()[1]});
   h5e::dump(file, path + "/tti", 0);
+  h5e::dump(file, path + "/energy/EkinM", p_MatSim_->ehf() + p_MatSim_->ekin());
+  h5e::dump(file, path + "/energy/EpotM", p_MatSim_->epot());
 }
 
 template <typename Repr>
@@ -370,6 +372,8 @@ void tti_DecompSpinSimulation<Repr>::save(h5::File &file, const std::string &pat
   h5e::dump(file, path + "/params/h0", h0);
   h5e::dump(file, path + "/params/filling", std::vector<double>{p_MatSim_->filling()[0], p_MatSim_->filling()[1]});
   h5e::dump(file, path + "/tti", 1);
+  h5e::dump(file, path + "/energy/EkinM", p_MatSim_->ehf() + p_MatSim_->ekin());
+  h5e::dump(file, path + "/energy/EpotM", p_MatSim_->epot());
 }
 
 template <typename Repr>
