@@ -37,8 +37,6 @@ link_directories("~/Libraries/Install/lib/")
 
 add_subdirectory(src)
 add_subdirectory(programs)
-add_subdirectory(CalcA)
-
 
 enable_testing()
 add_subdirectory(${PROJECT_SOURCE_DIR}/deps/catch2)

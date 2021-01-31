@@ -1878,21 +1878,21 @@ void molGF2Solver::solve(int tstp, GREEN &Sigma, GREEN &G) const {
   solve_les(tstp, Sigma, G);
   end = std::chrono::system_clock::now();
   elapsed_seconds = end-start;
-  out << elapsed_seconds.count() << " ";
+  if(tstp > 5) out << elapsed_seconds.count() << " ";
 
 
   start = std::chrono::system_clock::now();
   solve_tv(tstp, Sigma, G);
   end = std::chrono::system_clock::now();
   elapsed_seconds = end-start;
-  out << elapsed_seconds.count() << " ";
+  if(tstp > 5) out << elapsed_seconds.count() << " ";
 
 
   start = std::chrono::system_clock::now();
   solve_ret(tstp, Sigma, G);
   end = std::chrono::system_clock::now();
   elapsed_seconds = end-start;
-  out << elapsed_seconds.count() << std::endl;
+  if(tstp > 5) out << elapsed_seconds.count() << std::endl;
 }
   
 

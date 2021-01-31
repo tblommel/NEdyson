@@ -14,12 +14,12 @@ template <typename Repr>
 DecompSimulation<Repr>::DecompSimulation(const gfmol::HartreeFock &hf,
                              const gfmol::RepresentationBase<Repr> &frepr,
                              const gfmol::RepresentationBase<Repr> &brepr,
-                             int nt, int ntau, int k, double dt, int nw, double wmax,
+                             int nt, int ntau, int k, double dt,
                              int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
                              gfmol::Mode mode,
                              double damping,
                              double decomp_prec) : 
-                                 SimulationBase(hf, nt, ntau, k, dt, nw, wmax, MatMax, MatTol, BootMax, BootTol, CorrSteps),
+                                 SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps),
                                  hmf(nt+1, nao_, nao_), 
                                  h0(hf.hcore()), 
                                  rho(nao_,nao_)
@@ -47,7 +47,6 @@ DecompSimulation<Repr>::DecompSimulation(const gfmol::HartreeFock &hf,
   mem += 2*(nt+1)*(nt+2)/2*nao_*nao_*sizeof(cplx);// G,S, R,<
   mem += 2*(ntau+1)*(nt+1)*nao_*nao_*sizeof(cplx);// G,S, tv
   mem += 2*(ntau+1)*nao_*nao_*sizeof(cplx);       // G,S, M
-  mem += nw*(nt+1)*nao_*nao_*sizeof(cplx);        // A
   // molNEgf2
   mem += nao_*nao_*nao_*sizeof(cplx);   // tmp
   mem += 5*nao_*nao_*4*nao_*sizeof(cplx); // X, Y
@@ -69,7 +68,6 @@ DecompSimulation<Repr>::DecompSimulation(const gfmol::HartreeFock &hf,
 
   Sigma = GREEN(nt, ntau, nao_, -1);
   G = GREEN(nt, ntau, nao_, -1);
-  A = SPECT();
 }
 
 
@@ -133,7 +131,6 @@ void DecompSimulation<Repr>::save(h5::File &file, const std::string &path) {
 
   G.print_to_file(file, path + "/G");
   Sigma.print_to_file(file, path + "/Sigma");
-  A.print_to_file(file, path + "/A");
   
   h5e::dump(file, path + "/params/beta", beta_);
   h5e::dump(file, path + "/params/dtau", dtau_);
@@ -152,11 +149,6 @@ void DecompSimulation<Repr>::load(const h5::File &file, const std::string &path)
   int a=0;
 }
 
-
-template <typename Repr>
-void DecompSimulation<Repr>::do_spectral() {
-  A.AfromG(G,nw_,wmax_,dt_);
-}
 
 template <typename Repr>
 void DecompSimulation<Repr>::do_energy() {
@@ -188,6 +180,9 @@ inline void DecompSimulation<gfmol::ChebyshevRepr>::L_to_Tau(){
   for(int i=0; i<nao2; i++){
     Eigen::Map<ZColVector, 0, Eigen::InnerStride<> >(G.matptr(0)+i, ntau_+1, Eigen::InnerStride<>(nao2)) = Trans *
       Eigen::Map<const DColVector, 0, Eigen::InnerStride<> >(p_MatSim_->gl().data()+i, nL, Eigen::InnerStride<>(nao2));
+
+    Eigen::Map<ZColVector, 0, Eigen::InnerStride<> >(Sigma.matptr(0)+i, ntau_+1, Eigen::InnerStride<>(nao2)) = Trans *
+      Eigen::Map<const DColVector, 0, Eigen::InnerStride<> >(p_MatSim_->sigmal().data()+i, nL, Eigen::InnerStride<>(nao2));
   }
 }
 
@@ -206,12 +201,12 @@ template <typename Repr>
 tti_DecompSimulation<Repr>::tti_DecompSimulation(const gfmol::HartreeFock &hf,
                              const gfmol::RepresentationBase<Repr> &frepr,
                              const gfmol::RepresentationBase<Repr> &brepr,
-                             int nt, int ntau, int k, double dt, int nw, double wmax,
+                             int nt, int ntau, int k, double dt,
                              int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
                              gfmol::Mode mode,
                              double damping,
                              double decomp_prec) : 
-                                 SimulationBase(hf, nt, ntau, k, dt, nw, wmax, MatMax, MatTol, BootMax, BootTol, CorrSteps),
+                                 SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps),
                                  h0(hf.hcore())
 {
   int nl = frepr.nl();
@@ -236,7 +231,6 @@ tti_DecompSimulation<Repr>::tti_DecompSimulation(const gfmol::HartreeFock &hf,
   mem += 2*(nt+1)*nao_*nao_*sizeof(cplx);// G,S, R,<
   mem += 2*(ntau+1)*(nt+1)*nao_*nao_*sizeof(cplx);// G,S, tv
   mem += 2*(ntau+1)*nao_*nao_*sizeof(cplx);       // G,S, M
-  mem += nw*(nt+1)*nao_*nao_*sizeof(cplx);        // A
   // molNEgf2
   mem += nao_*nao_*nao_*sizeof(cplx);   // tmp
   mem += 5*nao_*nao_*4*nao_*sizeof(cplx); // X, Y
@@ -258,7 +252,6 @@ tti_DecompSimulation<Repr>::tti_DecompSimulation(const gfmol::HartreeFock &hf,
 
   Sigma = TTI_GREEN(nt, ntau, nao_, -1);
   G = TTI_GREEN(nt, ntau, nao_, -1);
-  A = TTI_SPECT();
 }
 
 
@@ -331,7 +324,6 @@ void tti_DecompSimulation<Repr>::save(h5::File &file, const std::string &path) {
 
   G.print_to_file(file, path + "/G");
   Sigma.print_to_file(file, path + "/Sigma");
-  A.print_to_file(file, path + "/A");
   
   h5e::dump(file, path + "/params/beta", beta_);
   h5e::dump(file, path + "/params/dtau", dtau_);
@@ -351,12 +343,6 @@ void tti_DecompSimulation<Repr>::load(const h5::File &file, const std::string &p
 }
 
 
-template <typename Repr>
-void tti_DecompSimulation<Repr>::do_spectral() {
-  A.AfromG(G,nw_,wmax_,dt_);
-}
-
-
 template <>
 inline void tti_DecompSimulation<gfmol::ChebyshevRepr>::L_to_Tau(){
   int ntau = ntau_;
@@ -372,6 +358,9 @@ inline void tti_DecompSimulation<gfmol::ChebyshevRepr>::L_to_Tau(){
   for(int i=0; i<nao2; i++){
     Eigen::Map<ZColVector, 0, Eigen::InnerStride<> >(G.matptr(0)+i, ntau_+1, Eigen::InnerStride<>(nao2)) = Trans *
       Eigen::Map<const DColVector, 0, Eigen::InnerStride<> >(p_MatSim_->gl().data()+i, nL, Eigen::InnerStride<>(nao2));
+
+    Eigen::Map<ZColVector, 0, Eigen::InnerStride<> >(Sigma.matptr(0)+i, ntau_+1, Eigen::InnerStride<>(nao2)) = Trans *
+      Eigen::Map<const DColVector, 0, Eigen::InnerStride<> >(p_MatSim_->sigmal().data()+i, nL, Eigen::InnerStride<>(nao2));
   }
 }
 

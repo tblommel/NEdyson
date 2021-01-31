@@ -4,7 +4,6 @@ add_library(libNEdyson
   dyson.cpp dyson.h
   greens.cpp greens.h
   integration.cpp integration.h
-  spectral.cpp spectral.h
   utils.cpp utils.h
   molNEsim.cpp molNEsim.h molNEsim_impl.h molNEsim_decomp_impl.h molNEsim_spin_impl.h molNEsim_decomp_spin_impl.h
   params.cpp params.h

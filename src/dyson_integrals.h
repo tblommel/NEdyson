@@ -1,11 +1,12 @@
 #ifndef DYSON_INTEGRALS_IMPL
 #define DYSON_INTEGRALS_IMPL
 
-#include "dyson.h"
-
 namespace NEdyson{
 
-// returns (Sigma*G)^<(t,t)
+// returns E_{int}(t) = \pm \frac{i}{2} * (
+//                       \int_0^t du S^R(t,u) G^<(u,t)
+//                    +  \int_0^t du S^<(t,u) G^A(u,t)
+//                    -i \int_0^\beta d\tau S^\rciel(t,\tau) G^\lceil(\tau,t) )
 double dyson::energy_conv(int tstp, const GREEN &Sig, const GREEN &G, double beta, double dt) const {
   assert(tstp <= Sig.nt());
   assert(G.nt() == Sig.nt());  
@@ -51,13 +52,16 @@ double dyson::energy_conv(int tstp, const GREEN &Sig, const GREEN &G, double bet
 
   res2 *= cplx(0., -1.);
 
-  return (cplx(0.,-0.5)*(res1+res2)).real();
+  return (cplx(0., sig * 0.5)*(res1+res2)).real();
 }
 
 // This one does integral for every tau, and puts result into C by incrementing it!!!
-// For every \tau=m...
+// For every \tau \equiv m...
 //   C[n,m] += \int_0^n dt A^R(n,t) B^{TV}(t,m)
-//          += \sum_{j=0}^{n-1} dt w_{n,j} A^R(n,j) B^{TV}(j,m)
+//          += \sum_{j=0}^{n} dt w_{n,j} A^R(n,j) B^{TV}(j,m)
+// When time evolving the dyson eqn. We set B^{TV}(tstp, ...) = 0 in tstp_tv function 
+// because this is what we are solving for.  This missing term in the integral is accounted
+// for on the LHS of the matrix equation used to solve for B^{TV}(tstp, ...)
 void dyson::CTV1(cplx *ctv, const GREEN &A, const GREEN &Acc, const GREEN &B, int n, double dt) const {
   assert(A.nt() == Acc.nt());
   assert(A.nt() == B.nt());
@@ -96,6 +100,7 @@ void dyson::CTV1(cplx *ctv, const GREEN &A, const GREEN &Acc, const GREEN &B, in
   }
 }
 
+// DEPRECIATED. WE NOW USE LEGENDRE GRID
 // Does the integral C^{TV}_2[A,B](n,m) = \int_0^m d\tau A^{TV(n,\tau) B^M(tau-m)
 //           m<k                        = \sum_{j,l=0}^k d\tau R_{m,j,l} A^{TV}(n,l) s B^M(ntau-j)
 //           m>=k                       = \sum_{l=0}^m  d\tau w_{m,l} A^{TV}(n,m-l) s B^M(ntau-l)
@@ -158,7 +163,7 @@ void dyson::CTV2(const GREEN &A, const GREEN &B, int n, int m, double beta, cplx
   resMap *= B.sig()*(beta/ntau_);
 }
 
-
+// DEPRECIATED.  WE NOW USE LEGENDRE GRID
 // Does the integral C^{TV}_3[A,B](n,m) = \int_m^\beta d\tau A^{TV(n,\tau) B^M(tau-m)
 //           m>ntau-k                   = \sum_{j,l=0}^k d\tau R_{ntau-m,j,l} A^{TV}(n,ntau-l) s B^M(j)
 //           m<=k                       = \sum_{l=0}^{ntau-m}  d\tau w_{ntau-m,l} A^{TV}(n,m+l) s B^M(l)
@@ -265,16 +270,19 @@ void dyson::Ctv_tstp(int tstp, GREEN &C, const GREEN &A, const GREEN &Acc, const
 
   // First do the A^TV B^M convolution.  This gets put into temporary storage since CTV1 may need access to C^TV(tstp, m)
   start = std::chrono::system_clock::now();
+//  This is the old implementation with the equidistant grid
+//  Now use Xinyang Legendre convolutions
 //  for(int m=0; m<=ntau_; m++) {
 //    CTV2(A, B, tstp, m, beta, NTauTmp.data() + m*es_);
 //    CTV3(A, B, tstp, m, beta, tmp.data());
 //    ZMatrixMap(NTauTmp.data() + m*es_, nao_, nao_).noalias() += tmpMap;
 //  }
   auto ZTVNTT = ZTensorView<3>(NTauTmp.data(), ntau_+1, nao_, nao_);
+
   Conv.mixing(ZTVNTT,
               ZTensorView<3>(A.tvptr(tstp, 0), ntau_+1, nao_, nao_),
               ZTensorView<3>(B.matptr(0), ntau_+1, nao_, nao_),
-              beta, (double)A.sig());
+              beta, (double)B.sig());
   end = std::chrono::system_clock::now();
   elapsed_seconds = end-start;
   out << elapsed_seconds.count() << " " ;
@@ -299,7 +307,7 @@ void dyson::Ctv_tstp(int tstp, GREEN &C, const GREEN &A, const GREEN &Acc, const
 // for n=j1...j2
 //   computes the integral C_2^<[A,B](n,m) = \int_0^m dt A^<(n,t) B^A(t,m)
 //                                         = \sum_{j=0}^{max(k,m)} w_{m,j} A^<(n,j) B^A(j,m)
-// places into Q which should be size size1*size1*(j2-j1+1)
+// places into res which should be size size1*size1*(j2-j1+1)
 void dyson::Cles2_tstp(int j1, int j2, const GREEN &A, const GREEN &Acc, const GREEN &B, const GREEN &Bcc, int m, double dt, cplx *res) const {
   assert(j1 <= j2);
   assert(j1 >= 0);
@@ -320,7 +328,7 @@ void dyson::Cles2_tstp(int j1, int j2, const GREEN &A, const GREEN &Acc, const G
   int j, l, n, top = m>k_ ? m : k_;
 
   // First fill X with BA, since they are the same for each n
-  for(j=0; j<=top; j++) { // fill X from B.retptr.  BA_jm=(BR_mj)*
+  for(j=0; j<=top; j++) { // fill X from B.retptr.  BA_jm=(BccR_mj)*
     if(m >= j) { // We have BR
       ZMatrixMap(X.data() + j*es_, nao_, nao_).noalias() = dt*I.gregory_weights(m,j) * ZMatrixMap(Bcc.retptr(m,j), nao_, nao_).adjoint();
     }
@@ -384,7 +392,7 @@ void dyson::Cles3_tstp(int j1, int j2, const GREEN &A, const GREEN &Acc, const G
   cplx cplxi = cplx(0.,1.);
 
   // Fill NTauTmp first
-  for(j=0; j<=ntau_; j++) ZMatrixMap(NTauTmp.data() + j*es_, nao_, nao_).noalias() = (double)sig * cplxi * dtau * ZMatrixMap(Bcc.tvptr(m,ntau_-j), nao_, nao_).adjoint();
+  for(j=0; j<=ntau_; j++) ZMatrixMap(NTauTmp.data() + j*es_, nao_, nao_).noalias() = (double)sig * cplxi * (ZMatrixMap(Bcc.tvptr(m,ntau_-j), nao_, nao_).adjoint());
 
   // Do the integral
   for(n=j1; n<=j2; n++) {
@@ -395,6 +403,8 @@ void dyson::Cles3_tstp(int j1, int j2, const GREEN &A, const GREEN &Acc, const G
   }
 
 /*
+ * Old implementation with equidistant grid
+ * Now we use Xinyang Legendre convolution
   //do the integral
   if(ntau_ < 2*(k_+1)-1) {
     for(n=j1; n<=j2; n++) {

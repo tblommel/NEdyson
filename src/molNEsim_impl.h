@@ -14,11 +14,11 @@ template <typename Repr>
 Simulation<Repr>::Simulation(const gfmol::HartreeFock &hf,
                              const gfmol::RepresentationBase<Repr> &frepr,
                              const gfmol::RepresentationBase<Repr> &brepr,
-                             int nt, int ntau, int k, double dt, int nw, double wmax,
+                             int nt, int ntau, int k, double dt,
                              int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
                              gfmol::Mode mode,
                              double damping) : 
-                                 SimulationBase(hf, nt, ntau, k, dt, nw, wmax, MatMax, MatTol, BootMax, BootTol, CorrSteps),
+                                 SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps),
                                  hmf(nt+1, nao_, nao_), 
                                  h0(hf.hcore()), 
                                  rho(nao_, nao_)
@@ -45,7 +45,6 @@ Simulation<Repr>::Simulation(const gfmol::HartreeFock &hf,
   mem += 2*(nt+1)*(nt+2)/2*nao_*nao_*sizeof(cplx);
   mem += 2*(ntau+1)*(nt+1)*nao_*nao_*sizeof(cplx);
   mem += 2*(ntau+1)*nao_*nao_*sizeof(cplx);
-  mem += nw*(nt+1)*nao_*nao_*sizeof(cplx);
   // molNEgf2
   mem += 3*nao_*nao_*(nao_+1)*sizeof(double);
   // dyson
@@ -64,7 +63,6 @@ Simulation<Repr>::Simulation(const gfmol::HartreeFock &hf,
 
   Sigma = GREEN(nt, ntau, nao_, -1);
   G = GREEN(nt, ntau, nao_, -1);
-  A = SPECT();
 }
 
 
@@ -150,7 +148,6 @@ void Simulation<Repr>::save(h5::File &file, const std::string &path) {
 
   G.print_to_file(file, path + "/G");
   Sigma.print_to_file(file, path + "/Sigma");
-  A.print_to_file(file, path + "/A");
   
   h5e::dump(file, path + "/params/beta", beta_);
   h5e::dump(file, path + "/params/dtau", dtau_);
@@ -162,22 +159,6 @@ void Simulation<Repr>::save(h5::File &file, const std::string &path) {
   
   h5e::dump(file, path + "/energy/EkinM", p_MatSim_->ehf() + p_MatSim_->ekin());
   h5e::dump(file, path + "/energy/EpotM", p_MatSim_->epot());
-  
-  
-
-  std::string data_dir = std::string(DATA_DIR);
-  std::ofstream ofile;
-
-  ofile.open(data_dir + "/spectral.dat" + "," + std::to_string(nao_) + "," + std::to_string(nt_) + "," + std::to_string(ntau_), std::ofstream::out);
-  double dw = 2*wmax_/(nw_-1);
-  for(int w=0; w<nw_; w++) {
-    ofile << (w-(nw_-1)/2)*dw << " ";
-    for(int i=0; i<nao_; i++) {  
-      ofile << A.ptr(nt_, w)[i*nao_+i] << " ";
-    }
-    ofile << std::endl;
-  }
-  ofile.close();
 }
 
 
@@ -186,11 +167,6 @@ void Simulation<Repr>::load(const h5::File &file, const std::string &path) {
   int a=0;
 }
 
-
-template <typename Repr>
-void Simulation<Repr>::do_spectral() {
-  A.AfromG(G,nw_,wmax_,dt_);
-}
 
 template <typename Repr>
 void Simulation<Repr>::do_energy() {
@@ -223,6 +199,8 @@ inline void Simulation<gfmol::ChebyshevRepr>::L_to_Tau(){
   for(int i=0; i<nao2; i++){
     Eigen::Map<ZColVector, 0, Eigen::InnerStride<> >(G.matptr(0)+i, ntau_+1, Eigen::InnerStride<>(nao2)) = Trans *
       Eigen::Map<const DColVector, 0, Eigen::InnerStride<> >(p_MatSim_->gl().data()+i, nL, Eigen::InnerStride<>(nao2));
+    Eigen::Map<ZColVector, 0, Eigen::InnerStride<> >(Sigma.matptr(0)+i, ntau_+1, Eigen::InnerStride<>(nao2)) = Trans *
+      Eigen::Map<const DColVector, 0, Eigen::InnerStride<> >(p_MatSim_->sigmal().data()+i, nL, Eigen::InnerStride<>(nao2));
   }
 }
 
@@ -248,42 +226,13 @@ template <typename Repr>
 tti_Simulation<Repr>::tti_Simulation(const gfmol::HartreeFock &hf,
                              const gfmol::RepresentationBase<Repr> &frepr,
                              const gfmol::RepresentationBase<Repr> &brepr,
-                             int nt, int ntau, int k, double dt, int nw, double wmax,
+                             int nt, int ntau, int k, double dt,
                              int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
                              gfmol::Mode mode,
                              double damping) : 
-                                 SimulationBase(hf, nt, ntau, k, dt, nw, wmax, MatMax, MatTol, BootMax, BootTol, CorrSteps),
+                                 SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps),
                                  h0(hf.hcore()) 
 {
-  int nl = frepr.nl();
-  const size_t size_MB = 1024*1024;
-  size_t mem = 0;
-  // Members of gfmol::sim
-  mem += 5*nao_*nao_*sizeof(double);
-  mem += 5*nao_*nao_*nl*sizeof(double);
-  mem += 3*nao_*nao_*nl*sizeof(cplx);
-  // gfmol::SESolver
-  mem += 2*nao_*nao_*nao_*nao_*sizeof(double);
-  mem += 2*nao_*nao_*nao_*sizeof(double);
-  mem += 2*nao_*nao_*sizeof(double);
-  // gfmol::repn
-  mem += 2*2*nl*sizeof(double);
-  mem += 2*2*nl*sizeof(int);
-  mem += 2*3*nl*nl*sizeof(double);
-  mem += 2*2*nl*nl*sizeof(cplx);
-  // Members of NEdyson::sim
-  mem += (nt+1)*2*sizeof(double); // energy
-  mem += 2*(nt+1)*nao_*nao_*sizeof(cplx); // G, Sig, ret les
-  mem += 2*(ntau+1)*(nt+1)*nao_*nao_*sizeof(cplx); // G, Sig tv
-  mem += 2*(ntau+1)*nao_*nao_*sizeof(cplx); // G, Sig M
-  mem += nw*(nt+1)*nao_*nao_*sizeof(cplx); // A
-  // molNEgf2
-  mem += 3*nao_*nao_*(nao_+1)*sizeof(double); // tmp stuff
-  // dyson
-  mem += k*nao_*nao_*(k+2)*sizeof(cplx); // start up matricies
-  mem += (ntau+1)*nao_*nao_*sizeof(cplx); // temporary integral storage
-  
-  std::cout<< " Approximate memory needed for simulation : " << std::ceil(mem / (double)size_MB) << " MB"<<std::endl;
   switch (mode) {
     case gfmol::Mode::GF2:
       p_MatSim_ = std::unique_ptr<gfmol::Simulation<Repr> >(new gfmol::Simulation<Repr>(hf, frepr, brepr, mode, 0.));
@@ -294,7 +243,6 @@ tti_Simulation<Repr>::tti_Simulation(const gfmol::HartreeFock &hf,
 
   Sigma = TTI_GREEN(nt, ntau, nao_, -1);
   G = TTI_GREEN(nt, ntau, nao_, -1);
-  A = TTI_SPECT();
 }
 
 
@@ -405,10 +353,11 @@ void tti_Simulation<Repr>::save(h5::File &file, const std::string &path) {
 
   for(int tau = 0; tau <= ntau_; tau++) {
     for(int t = 0; t <= nt_; t++) {
-      ofile << Sigma.tvptr(t,tau)[0].real() << " ";
+      ofile << Sigma.tvptr(t, tau)[0].real() << " ";
     }
     ofile << std::endl;
   }
+
   ofile.close();
 
 }
@@ -436,12 +385,6 @@ void tti_Simulation<Repr>::do_energy() {
   }
 }
 
-template <typename Repr>
-void tti_Simulation<Repr>::do_spectral() {
-  A.AfromG(G,nw_,wmax_,dt_);
-}
-
-
 template <>
 inline void tti_Simulation<gfmol::ChebyshevRepr>::L_to_Tau(){
   int ntau = ntau_;
@@ -457,6 +400,8 @@ inline void tti_Simulation<gfmol::ChebyshevRepr>::L_to_Tau(){
   for(int i=0; i<nao2; i++){
     Eigen::Map<ZColVector, 0, Eigen::InnerStride<> >(G.matptr(0)+i, ntau_+1, Eigen::InnerStride<>(nao2)) = Trans *
       Eigen::Map<const DColVector, 0, Eigen::InnerStride<> >(p_MatSim_->gl().data()+i, nL, Eigen::InnerStride<>(nao2));
+    Eigen::Map<ZColVector, 0, Eigen::InnerStride<> >(Sigma.matptr(0)+i, ntau_+1, Eigen::InnerStride<>(nao2)) = Trans *
+      Eigen::Map<const DColVector, 0, Eigen::InnerStride<> >(p_MatSim_->sigmal().data()+i, nL, Eigen::InnerStride<>(nao2));
   }
 }
 

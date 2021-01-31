@@ -14,11 +14,11 @@ template <typename Repr>
 SpinSimulation<Repr>::SpinSimulation(const gfmol::HartreeFock &hf,
                              const gfmol::RepresentationBase<Repr> &frepr,
                              const gfmol::RepresentationBase<Repr> &brepr,
-                             int nt, int ntau, int k, double dt, int nw, double wmax,
+                             int nt, int ntau, int k, double dt,
                              int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
                              gfmol::Mode mode,
                              double damping) : 
-                                 SimulationBase(hf, nt, ntau, k, dt, nw, wmax, MatMax, MatTol, BootMax, BootTol, CorrSteps),
+                                 SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps),
                                  hmf(2, nt+1, nao_, nao_), 
                                  h0(hf.hcore()), 
                                  rho(2,nao_,nao_)
@@ -44,7 +44,6 @@ SpinSimulation<Repr>::SpinSimulation(const gfmol::HartreeFock &hf,
   mem += 4*(nt+1)*(nt+2)/2*nao_*nao_*sizeof(cplx); // G,S, R,<
   mem += 4*(ntau+1)*(nt+1)*nao_*nao_*sizeof(cplx); // G,S, tv
   mem += 4*(ntau+1)*nao_*nao_*sizeof(cplx);        // G,S, M
-  mem += nw*(nt+1)*nao_*nao_*sizeof(cplx);         // A
   // molNEgf2
   mem += 5*nao_*nao_*(nao_+1)*sizeof(double);      // temp objects
   // dyson
@@ -68,8 +67,6 @@ SpinSimulation<Repr>::SpinSimulation(const gfmol::HartreeFock &hf,
 
   G = {Gup, Gdown};
   Sigma = {Sup, Sdown};
-
-  A = SPECT();
 }
 
 
@@ -167,9 +164,6 @@ void SpinSimulation<Repr>::save(h5::File &file, const std::string &path) {
   Sup.print_to_file(file, path + "/Sigma/up");
   Gdown.print_to_file(file, path + "/G/down");
   Sdown.print_to_file(file, path + "/Sigma/down");
-  A.print_to_file(file, path + "/A/up");
-  A.AfromG(Gdown,nw_,wmax_,dt_);
-  A.print_to_file(file, path + "/A/down");
   
   h5e::dump(file, path + "/params/beta", beta_);
   h5e::dump(file, path + "/params/dtau", dtau_);
@@ -186,12 +180,6 @@ void SpinSimulation<Repr>::save(h5::File &file, const std::string &path) {
 template <typename Repr>
 void SpinSimulation<Repr>::load(const h5::File &file, const std::string &path) {
   int a=0;
-}
-
-
-template <typename Repr>
-void SpinSimulation<Repr>::do_spectral() {
-  A.AfromG(Gup,nw_,wmax_,dt_);
 }
 
 
@@ -213,6 +201,12 @@ inline void SpinSimulation<gfmol::ChebyshevRepr>::L_to_Tau(){
 
     Eigen::Map<ZColVector, 0, Eigen::InnerStride<> >(Gdown.matptr(0)+i, ntau_+1, Eigen::InnerStride<>(nao2)) = Trans *
       Eigen::Map<const DColVector, 0, Eigen::InnerStride<> >(p_MatSim_->gl().data() + nL*nao_*nao_ + i, nL, Eigen::InnerStride<>(nao2));
+
+    Eigen::Map<ZColVector, 0, Eigen::InnerStride<> >(Sup.matptr(0)+i, ntau_+1, Eigen::InnerStride<>(nao2)) = Trans *
+      Eigen::Map<const DColVector, 0, Eigen::InnerStride<> >(p_MatSim_->sigmal().data()+i, nL, Eigen::InnerStride<>(nao2));
+
+    Eigen::Map<ZColVector, 0, Eigen::InnerStride<> >(Sdown.matptr(0)+i, ntau_+1, Eigen::InnerStride<>(nao2)) = Trans *
+      Eigen::Map<const DColVector, 0, Eigen::InnerStride<> >(p_MatSim_->sigmal().data() + nL*nao_*nao_ + i, nL, Eigen::InnerStride<>(nao2));
   }
 }
 
@@ -233,11 +227,11 @@ template <typename Repr>
 tti_SpinSimulation<Repr>::tti_SpinSimulation(const gfmol::HartreeFock &hf,
                              const gfmol::RepresentationBase<Repr> &frepr,
                              const gfmol::RepresentationBase<Repr> &brepr,
-                             int nt, int ntau, int k, double dt, int nw, double wmax,
+                             int nt, int ntau, int k, double dt,
                              int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
                              gfmol::Mode mode,
                              double damping) : 
-                                 SimulationBase(hf, nt, ntau, k, dt, nw, wmax, MatMax, MatTol, BootMax, BootTol, CorrSteps),
+                                 SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps),
                                  h0(hf.hcore())
 {
   int nl = frepr.nl();
@@ -261,7 +255,6 @@ tti_SpinSimulation<Repr>::tti_SpinSimulation(const gfmol::HartreeFock &hf,
   mem += 4*(nt+1)*nao_*nao_*sizeof(cplx); // G,S, R,<
   mem += 4*(ntau+1)*(nt+1)*nao_*nao_*sizeof(cplx); // G,S, tv
   mem += 4*(ntau+1)*nao_*nao_*sizeof(cplx);        // G,S, M
-  mem += nw*(nt+1)*nao_*nao_*sizeof(cplx);         // A
   // molNEgf2
   mem += 5*nao_*nao_*(nao_+1)*sizeof(double);      // temp objects
   // dyson
@@ -285,8 +278,6 @@ tti_SpinSimulation<Repr>::tti_SpinSimulation(const gfmol::HartreeFock &hf,
 
   G = {Gup, Gdown};
   Sigma = {Sup, Sdown};
-
-  A = TTI_SPECT();
 }
 
 
@@ -372,9 +363,6 @@ void tti_SpinSimulation<Repr>::save(h5::File &file, const std::string &path) {
   Sup.print_to_file(file, path + "/Sigma/up");
   Gdown.print_to_file(file, path + "/G/down");
   Sdown.print_to_file(file, path + "/Sigma/down");
-  A.print_to_file(file, path + "/A/up");
-  A.AfromG(Gdown,nw_,wmax_,dt_);
-  A.print_to_file(file, path + "/A/down");
   
   h5e::dump(file, path + "/params/beta", beta_);
   h5e::dump(file, path + "/params/dtau", dtau_);
@@ -391,12 +379,6 @@ void tti_SpinSimulation<Repr>::save(h5::File &file, const std::string &path) {
 template <typename Repr>
 void tti_SpinSimulation<Repr>::load(const h5::File &file, const std::string &path) {
   int a=0;
-}
-
-
-template <typename Repr>
-void tti_SpinSimulation<Repr>::do_spectral() {
-  A.AfromG(Gup,nw_,wmax_,dt_);
 }
 
 
@@ -418,6 +400,12 @@ inline void tti_SpinSimulation<gfmol::ChebyshevRepr>::L_to_Tau(){
 
     Eigen::Map<ZColVector, 0, Eigen::InnerStride<> >(Gdown.matptr(0)+i, ntau_+1, Eigen::InnerStride<>(nao2)) = Trans *
       Eigen::Map<const DColVector, 0, Eigen::InnerStride<> >(p_MatSim_->gl().data() + nL*nao_*nao_ + i, nL, Eigen::InnerStride<>(nao2));
+
+    Eigen::Map<ZColVector, 0, Eigen::InnerStride<> >(Sup.matptr(0)+i, ntau_+1, Eigen::InnerStride<>(nao2)) = Trans *
+      Eigen::Map<const DColVector, 0, Eigen::InnerStride<> >(p_MatSim_->sigmal().data()+i, nL, Eigen::InnerStride<>(nao2));
+
+    Eigen::Map<ZColVector, 0, Eigen::InnerStride<> >(Sdown.matptr(0)+i, ntau_+1, Eigen::InnerStride<>(nao2)) = Trans *
+      Eigen::Map<const DColVector, 0, Eigen::InnerStride<> >(p_MatSim_->sigmal().data() + nL*nao_*nao_ + i, nL, Eigen::InnerStride<>(nao2));
   }
 }
 

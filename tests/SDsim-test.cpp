@@ -7,9 +7,9 @@
 using namespace NEdyson;
 
 TEST_CASE("SDsim Tests") {
-  int nt = 100, ntau = 100, k = 5, nw = 401, BootMaxIter = 70, MatMaxIter = 10, CorrSteps = 5;
+  int nt = 100, ntau = 100, k = 5, BootMaxIter = 70, MatMaxIter = 10, CorrSteps = 5;
   gfmol::Mode mode = gfmol::Mode::GF2;
-  double dt = 0.01, wmax = 2, MatMaxErr = 1e-8, BootMaxErr = 1e-10, beta = 50;
+  double dt = 0.01, MatMaxErr = 1e-8, BootMaxErr = 1e-10, beta = 50;
   int es = 4;
 
   std::streambuf* cout_sbuf = std::cout.rdbuf(); // save original sbuf
@@ -20,9 +20,7 @@ TEST_CASE("SDsim Tests") {
   h5e::File check_file(std::string(TEST_DATA_DIR) + "/SDsim.h5");
   GREEN Gdowncheck;
   GREEN Gupcheck;
-  SPECT Acheck;
   Gupcheck.read_from_file(check_file, "/Gup");
-  Acheck.read_from_file(check_file, "/Aup");
   Gdowncheck.read_from_file(check_file, "/Gdown");
 
   // Read in hf
@@ -35,7 +33,7 @@ TEST_CASE("SDsim Tests") {
   gfmol::ChebyshevRepr brepr(repr_f, "/bose", gfmol::Stats::Bose, beta);
   
   // Make the sim
-  std::unique_ptr<DecompSpinSimulation<gfmol::ChebyshevRepr>> p_sim = std::unique_ptr<DecompSpinSimulation<gfmol::ChebyshevRepr>>(new DecompSpinSimulation<gfmol::ChebyshevRepr>(hf, frepr, brepr, nt, ntau, k, dt, nw, wmax, MatMaxIter, MatMaxErr, BootMaxIter, BootMaxErr, CorrSteps, mode, 0));
+  std::unique_ptr<DecompSpinSimulation<gfmol::ChebyshevRepr>> p_sim = std::unique_ptr<DecompSpinSimulation<gfmol::ChebyshevRepr>>(new DecompSpinSimulation<gfmol::ChebyshevRepr>(hf, frepr, brepr, nt, ntau, k, dt, MatMaxIter, MatMaxErr, BootMaxIter, BootMaxErr, CorrSteps, mode, 0));
 
   // Run the sim
   p_sim->run();
@@ -58,10 +56,6 @@ TEST_CASE("SDsim Tests") {
   ZColVectorMap GuTVcVec = ZColVectorMap(Gupcheck.tvptr(0,0), (nt+1)*(ntau+1)*es);
   REQUIRE((GuTVVec-GuTVcVec).norm() < 1e-12);
   
-  DColVectorMap AuVec = DColVectorMap(p_sim->A.ptr(0,0), (Acheck.nt()+1)*Acheck.nw()*es);
-  DColVectorMap AucVec = DColVectorMap(Acheck.ptr(0,0), (Acheck.nt()+1)*Acheck.nw()*es);
-  REQUIRE((AuVec-AucVec).norm() < 1e-12);
- 
   // Check the results
   ZColVectorMap GdMVec = ZColVectorMap(p_sim->G[1].get().matptr(0), (ntau+1)*es);
   ZColVectorMap GdMcVec = ZColVectorMap(Gdowncheck.matptr(0), (ntau+1)*es);

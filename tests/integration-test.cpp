@@ -29,7 +29,7 @@ TEST_CASE("Polynomial Calculus Coefficients")
       PolyDiff(i*6+j)-=I.poly_diff(i,j);
     }
   }
-  REQUIRE(PolyDiff.norm()<1e-13);
+  REQUIRE(PolyDiff.norm()<1e-12);
   
   for(int i=0;i<=5;i++){
     for(int j=0;j<=5;j++){
@@ -38,19 +38,19 @@ TEST_CASE("Polynomial Calculus Coefficients")
       }
     }
   }
-  REQUIRE(PolyInteg.norm()<1e-13);
+  REQUIRE(PolyInteg.norm()<1e-12);
 
   for(int i=0;i<=6;i++){
     BackDiff(i)-=I.bd_weights(i);
   }
-  REQUIRE(BackDiff.norm()<1e-13);
+  REQUIRE(BackDiff.norm()<1e-12);
 
   for(int i=0;i<=5;i++){
     for(int j=0;j<=5;j++){
       Start(i*6+j)-=I.gregory_weights(i,j);
     }
   }
-  REQUIRE(Start.norm()<1e-13);
+  REQUIRE(Start.norm()<1e-12);
 
   int count=0;
   for(int i=6;i<=11;i++){
@@ -59,7 +59,7 @@ TEST_CASE("Polynomial Calculus Coefficients")
       count++;
     }
   }
-  REQUIRE(Sigma.norm()<1e-13);
+  REQUIRE(Sigma.norm()<1e-12);
 
   for(int i=1;i<5;i++){
     for(int j=0;j<=5;j++){
@@ -68,11 +68,11 @@ TEST_CASE("Polynomial Calculus Coefficients")
       }
     }
   }
-  REQUIRE(Rcorr.norm()<1e-12);
+  REQUIRE(Rcorr.norm()<1e-10);
 
   for(int i=0;i<=5;i++){
     omega(i)-=I.omega(i);
   }
-  REQUIRE(omega.norm()<1e-13);
+  REQUIRE(omega.norm()<1e-12);
 
 }

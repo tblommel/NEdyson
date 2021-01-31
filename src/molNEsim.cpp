@@ -7,15 +7,13 @@
 namespace NEdyson {
 
 SimulationBase::SimulationBase(const gfmol::HartreeFock &hf, 
-                               int nt, int ntau, int k, double dt, int nw, double wmax,
+                               int nt, int ntau, int k, double dt,
                                int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps) 
                                : enuc_(hf.enuc()), 
                                  nao_(hf.nao()), 
                                  eKin_(nt+1), 
                                  ePot_(nt+1),
                                  Dyson(nt, ntau, nao_, k) { 
-  nw_ = nw;
-  wmax_ = wmax;
   nt_ = nt;
   ntau_ = ntau;
   dt_ = dt;
@@ -39,8 +37,6 @@ void SimulationBase::save_base(h5::File &file, const std::string &path) const {
   h5e::dump(file, path + "/solve/params/nt", nt_);
   h5e::dump(file, path + "/solve/params/ntau", ntau_);
   h5e::dump(file, path + "/solve/params/k", k_);
-  h5e::dump(file, path + "/solve/params/nw", nw_);
-  h5e::dump(file, path + "/solve/params/wmax", wmax_);
 
   h5e::dump(file, path + "/solve/params/MatMax", MatMax_);
   h5e::dump(file, path + "/solve/params/MatTol", MatTol_);
@@ -79,8 +75,6 @@ void SimulationBase::run(){
       do_tstp(tstp);
     }
 
-    // Calculate the spectral function
-    do_spectral();
     do_energy();
   }
   else {

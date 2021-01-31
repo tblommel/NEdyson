@@ -69,6 +69,12 @@ public:
   void dyson_step_tv(int tstp, GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double beta, double dt) const ;
   void dyson_step_ret(int tstp, GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double dt) const ;
 
+  void dyson_step_omp(int omp_threads, int n, GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double beta, double dt) const ;
+  void dyson_step_omp(int omp_threads, int n, GREEN &G, const GREEN &Sig, const ZTensor<3> &hmf, double mu, double beta, double dt) const ;
+  void dyson_step_omp_ret(int threads, int tstp, GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double dt) const ;
+  void dyson_step_omp_tv(int threads, int tstp, GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double beta, double dt) const ;
+  void dyson_step_omp_les(int threads, int tstp, GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double beta, double dt) const ;
+
   void dyson_step(int n, TTI_GREEN &G, const TTI_GREEN &Sig, const double *hmf, double mu, double beta, double dt) const ;
   void dyson_step(int n, TTI_GREEN &G, const TTI_GREEN &Sig, const DTensor<2> &hmf, double mu, double beta, double dt) const ;
   void dyson_step_les(int n, TTI_GREEN &G, const TTI_GREEN &Sig, const double *hmf, double mu, double beta, double dt) const ;

@@ -42,22 +42,12 @@ def save(path):
 
 if __name__ == '__main__':
     mol = gto.M(
-        atom = [['H', (0, 0, 0)], ['H', (0, 0, 1.4)]],
+        atom = [['He', (0, 0, 0)]],
         basis = 'cc-pvtz',
-        unit = 'B',
+        unit = 'A',
         verbose = 1,
         )
     mol.build()
-    '''
-    if you need dimer, use something like
-    mol = gto.M(
-        atom = [['Ne', (0, 0, 0)], ['Ne', (r0, 0, 0)]],
-        basis = 'sto-6g',
-        unit = 'B',
-        verbose = 1,
-        )
-    mol.build()
-    '''
 
     restricted = 1
     transformed = 1
@@ -102,5 +92,5 @@ if __name__ == '__main__':
     u = np.einsum('Ll,ikjL->ikjl', xinv.conj().T, u)
     uchem = umatrix_symmetrize(u)
 
-    save("./H2pvtz.h5")
+    save("./Hepvtz.h5")
 

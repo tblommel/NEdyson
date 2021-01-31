@@ -1,8 +1,6 @@
 #ifndef FREE_DYSON_IMPL
 #define FREE_DYSON_IMPL
 
-#include "dyson.h"
-
 namespace NEdyson{
 
 #define EXPMAX 100

@@ -7,9 +7,9 @@
 using namespace NEdyson;
 
 TEST_CASE("Nsim Tests") {
-  int nt = 100, ntau = 100, k = 5, nw = 401, BootMaxIter = 70, MatMaxIter = 10, CorrSteps = 5;
+  int nt = 100, ntau = 100, k = 5, BootMaxIter = 70, MatMaxIter = 10, CorrSteps = 5;
   gfmol::Mode mode = gfmol::Mode::GF2;
-  double dt = 0.01, wmax = 2, MatMaxErr = 1e-8, BootMaxErr = 1e-10, beta = 50;
+  double dt = 0.01, MatMaxErr = 1e-8, BootMaxErr = 1e-10, beta = 50;
 
   std::streambuf* cout_sbuf = std::cout.rdbuf(); // save original sbuf
   std::ofstream   stream("/dev/null");
@@ -18,9 +18,7 @@ TEST_CASE("Nsim Tests") {
   // Read in actual values
   h5e::File check_file(std::string(TEST_DATA_DIR) + "/Nsim.h5");
   GREEN Gcheck;
-  SPECT Acheck;
   Gcheck.read_from_file(check_file, "/G");
-  Acheck.read_from_file(check_file, "/A");
 
   // Read in hf
   h5e::File input_f(std::string(TEST_DATA_DIR) + "/hf.hdf5");
@@ -32,7 +30,7 @@ TEST_CASE("Nsim Tests") {
   gfmol::ChebyshevRepr brepr(repr_f, "/bose", gfmol::Stats::Bose, beta);
   
   // Make the sim
-  std::unique_ptr<Simulation<gfmol::ChebyshevRepr>> p_sim = std::unique_ptr<Simulation<gfmol::ChebyshevRepr>>(new Simulation<gfmol::ChebyshevRepr>(hf, frepr, brepr, nt, ntau, k, dt, nw, wmax, MatMaxIter, MatMaxErr, BootMaxIter, BootMaxErr, CorrSteps, mode, 0));
+  std::unique_ptr<Simulation<gfmol::ChebyshevRepr>> p_sim = std::unique_ptr<Simulation<gfmol::ChebyshevRepr>>(new Simulation<gfmol::ChebyshevRepr>(hf, frepr, brepr, nt, ntau, k, dt, MatMaxIter, MatMaxErr, BootMaxIter, BootMaxErr, CorrSteps, mode, 0));
 
   // Run the sim
   p_sim->run();
@@ -55,9 +53,5 @@ TEST_CASE("Nsim Tests") {
   ZColVectorMap GTVcVec = ZColVectorMap(Gcheck.tvptr(0,0), (nt+1)*(ntau+1)*Gcheck.element_size());
   REQUIRE((GTVVec-GTVcVec).norm() < 1e-12);
   
-  DColVectorMap AVec = DColVectorMap(p_sim->A.ptr(0,0), (Acheck.nt()+1)*Acheck.nw()*Acheck.es());
-  DColVectorMap AcVec = DColVectorMap(Acheck.ptr(0,0), (Acheck.nt()+1)*Acheck.nw()*Acheck.es());
-  REQUIRE((AVec-AcVec).norm() < 1e-12);
- 
   std::cout.rdbuf(cout_sbuf); // restore the original stream buffer
 }

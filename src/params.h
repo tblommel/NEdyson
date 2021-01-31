@@ -37,9 +37,6 @@ struct Params {
   double BootMaxErr;
   int CorrSteps;
 
-  int nw;
-  double wmax;
-
   void validate() const
   {
     if (mode != "GW" && mode != "GF2")
@@ -80,12 +77,6 @@ struct Params {
 
     if (CorrSteps <= 0)
       throw std::runtime_error("parameter CorrSteps: invalid value " + std::to_string(CorrSteps));
-
-    if (nw <= 0 || nw%2 ==0)
-      throw std::runtime_error("parameter nw: invalid value " + std::to_string(nw));
-
-    if (wmax <= 0) 
-      throw std::runtime_error("parameter wmax: invalid value " + std::to_string(wmax));
   }
 };
 
@@ -116,8 +107,6 @@ inline std::ostream &operator<<(std::ostream &os, const Params &p)
   os << "    BootMaxIter:     " << p.BootMaxIter << std::endl;
   os << "    BootMaxErr:      " << p.BootMaxErr << std::endl;
   os << "    CorrSteps:       " << p.CorrSteps << std::endl;
-  os << "    nw:              " << p.nw << std::endl;
-  os << "    wmax:            " << p.wmax << std::endl;
   os << std::noboolalpha;
   return os;
 }
@@ -167,8 +156,6 @@ inline Params parse_args(const int argc, char *const *const argv)
   args::ValueFlag<int> BootMaxIter(parser, "BootMaxIter", "Maximum number of bootstrap iterations", {"BootMaxIter"});
   args::ValueFlag<double> BootMaxErr(parser, "BootMaxErr", "Maximum bootstrap error", {"BootMaxErr"});
   args::ValueFlag<int> CorrSteps(parser, "CorrSteps", "Number of predictor-corrector iterations in timestepping", {"CorrSteps"});
-  args::ValueFlag<int> nw(parser, "nw", "Number of frequencies sampled in spectral function", {"nw"});
-  args::ValueFlag<double> wmax(parser, "wmax", "absolute value of the bounds of the sampled frequency space", {"wmax"});
 
   args::HelpFlag help(parser, "help", "Display this help menu", {'h', "help"});
   try {
@@ -203,9 +190,7 @@ inline Params parse_args(const int argc, char *const *const argv)
            extract_value(param_file, dt),
            extract_value(param_file, BootMaxIter),
            extract_value(param_file, BootMaxErr),
-           extract_value(param_file, CorrSteps),
-           extract_value(param_file, nw),
-           extract_value(param_file, wmax) };
+           extract_value(param_file, CorrSteps)};
   try {
     p.validate();
   } catch (const std::runtime_error &e) {

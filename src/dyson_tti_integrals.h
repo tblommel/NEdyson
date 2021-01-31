@@ -1,8 +1,6 @@
 #ifndef TTI_DYSON_INTEGRALS_IMPL
 #define TTI_DYSON_INTEGRALS_IMPL
 
-#include "dyson.h"
-
 namespace NEdyson{
 
 // returns (Sigma*G)^<(t,t)
@@ -94,7 +92,7 @@ void dyson::CTV1(cplx *ctv, const TTI_GREEN &A, const TTI_GREEN &Acc, const TTI_
   }
 }
 
-
+//DEPRECIATED
 // Does the integral C^{TV}_2[A,B](n,m) = \int_0^m d\tau A^{TV(n,\tau) B^M(tau-m)
 //           m<k                        = \sum_{j,l=0}^k d\tau R_{m,j,l} A^{TV}(n,l) s B^M(ntau-j)
 //           m>=k                       = \sum_{l=0}^m  d\tau w_{m,l} A^{TV}(n,m-l) s B^M(ntau-l)
@@ -157,6 +155,7 @@ void dyson::CTV2(const TTI_GREEN &A, const TTI_GREEN &B, int n, int m, double be
   resMap *= B.sig()*(beta/ntau_);
 }
 
+//DEPRECIATED
 // Does the integral C^{TV}_3[A,B](n,m) = \int_m^\beta d\tau A^{TV(n,\tau) B^M(tau-m)
 //           m>ntau-k                   = \sum_{j,l=0}^k d\tau R_{ntau-m,j,l} A^{TV}(n,ntau-l) s B^M(j)
 //           m<=k                       = \sum_{l=0}^{ntau-m}  d\tau w_{ntau-m,l} A^{TV}(n,m+l) s B^M(l)
@@ -271,7 +270,7 @@ void dyson::Ctv_tstp(int tstp, TTI_GREEN &C, const TTI_GREEN &A, const TTI_GREEN
   Conv.mixing(ZTVNTT,
               ZTensorView<3>(A.tvptr(tstp, 0), ntau_+1, nao_, nao_),
               ZTensorView<3>(B.matptr(0), ntau_+1, nao_, nao_),
-              beta, (double)A.sig());
+              beta, (double)B.sig());
 
   end = std::chrono::system_clock::now();
   elapsed_seconds = end-start;

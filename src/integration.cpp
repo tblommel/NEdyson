@@ -124,6 +124,7 @@ void make_start(int k, double *P, double *s){
 			s[n*k1+l]=x;
 		}
 	}
+  delete [] PP;
 }
 
 int fact(int n){
