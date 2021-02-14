@@ -8,17 +8,18 @@ namespace NEdyson {
 
 SimulationBase::SimulationBase(const gfmol::HartreeFock &hf, 
                                int nt, int ntau, int k, double dt,
-                               int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps) 
+                               int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,bool hfbool) 
                                : enuc_(hf.enuc()), 
                                  nao_(hf.nao()), 
                                  eKin_(nt+1), 
                                  ePot_(nt+1),
-                                 Dyson(nt, ntau, nao_, k) { 
+                                 Dyson(nt, ntau, nao_, k, hfbool) { 
   nt_ = nt;
   ntau_ = ntau;
   dt_ = dt;
   k_ = k;
   bootstrap_converged = false;
+  hfbool_ = hfbool;
 
   MatMax_ = MatMax;
   MatTol_ = MatTol;
@@ -45,6 +46,7 @@ void SimulationBase::save_base(h5::File &file, const std::string &path) const {
   h5e::dump(file, path + "/solve/params/CorrSteps", CorrSteps_);
   
   h5e::dump(file, path + "/solve/params/boot_conv", bootstrap_converged);
+  h5e::dump(file, path + "/solve/params/hf", hfbool_);
 }
 
 

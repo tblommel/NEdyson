@@ -2,25 +2,30 @@
 #define DYSON_IMPL
 
 #include "dyson.h"
+
 #include "dyson_free.h"
+
 #include "dyson_integrals.h"
 #include "dyson_tti_integrals.h"
-//#include "dyson_parallel_integrals.h"
 
 #include "dyson_step.h"
 #include "dyson_tti_step.h"
+#include "dyson_step_hf.h"
+#include "dyson_tti_step_hf.h"
+
 #include "dyson_boot.h"
 #include "dyson_tti_boot.h"
-
-//#include "dyson_step_parallel.h"
+#include "dyson_boot_hf.h"
+#include "dyson_tti_boot_hf.h"
 
 namespace NEdyson{
 
-dyson::dyson(int nt, int ntau, int nao, int k) : nt_(nt),
+dyson::dyson(int nt, int ntau, int nao, int k, bool hfbool) : nt_(nt),
                                                  ntau_(ntau),
                                                  nao_(nao),
                                                  es_(nao*nao),
                                                  k_(k),
+                                                 hfbool_(hfbool),
                                                  ex_weights(k+1),
                                                  tmp(es_),
                                                  tmp2(es_),

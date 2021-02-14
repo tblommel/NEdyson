@@ -3,7 +3,7 @@
 
 namespace NEdyson {
 
-double dyson_hf::dyson_start_ret(GREEN &G, const cplx *hmf, double mu, double dt) const {
+double dyson::dyson_start_ret_hf(GREEN &G, const cplx *hmf, double mu, double dt) const {
   // Counters
   int m, l, n, i;
 
@@ -60,7 +60,7 @@ double dyson_hf::dyson_start_ret(GREEN &G, const cplx *hmf, double mu, double dt
   return err;
 }
 
-double dyson_hf::dyson_start_tv(GREEN &G, const cplx *hmf, double mu, double beta, double dt) const {
+double dyson::dyson_start_tv_hf(GREEN &G, const cplx *hmf, double mu, double beta, double dt) const {
   // Counters and sizes
   int m, l, n, i;
   double err=0;
@@ -118,33 +118,10 @@ double dyson_hf::dyson_start_tv(GREEN &G, const cplx *hmf, double mu, double bet
   return err;
 }
 
-double dyson_hf::dyson_start_les(GREEN &G, const cplx *hmf, double mu, double beta, double dt) const {
+double dyson::dyson_start_les_hf(GREEN &G, const cplx *hmf, double mu, double beta, double dt) const {
   double err=0;
-  for(int n=0; n<=k_; n++) err += dyson_step_les(n,G,hmf,mu,beta,dt);
+  for(int n=0; n<=k_; n++) err += dyson_step_les_hf(n,G,hmf,mu,beta,dt);
   return err;
-}
-
-
-double dyson_hf::dyson_start(GREEN &G, const cplx *hmf, double mu, double beta, double dt) const {
-  assert(G.size1() == nao_);
-  assert(G.nt() == nt_);
-  assert(G.nt() >= k_);
-  assert(G.ntau() == ntau_);
-
-  double err=0;
-  err += dyson_start_ret(G, hmf, mu, dt);
-  err += dyson_start_tv(G, hmf, mu, beta, dt);
-  err += dyson_start_les(G, hmf, mu, beta, dt);
-  return err;
-}
-
-
-double dyson_hf::dyson_start(GREEN &G, const ZTensor<3> &hmf, double mu, double beta, double dt) const {
-  assert(G.size1() == hmf.shape()[2]);
-  assert(G.size1() == hmf.shape()[1]);
-  assert(G.nt() == hmf.shape()[0]-1);
-
-  return dyson_start(G, hmf.data(), mu, beta, dt);
 }
 
 } // namespace NEdyson

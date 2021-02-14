@@ -17,44 +17,15 @@ SpinSimulation<Repr>::SpinSimulation(const gfmol::HartreeFock &hf,
                              int nt, int ntau, int k, double dt,
                              int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
                              gfmol::Mode mode,
-                             double damping) : 
-                                 SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps),
+                             double damping, bool hfbool) : 
+                                 SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, hfbool),
                                  hmf(2, nt+1, nao_, nao_), 
                                  h0(hf.hcore()), 
                                  rho(2,nao_,nao_)
 {
-  int nl = frepr.nl();
-  const size_t size_MB = 1024*1024;
-  size_t mem = 0;
-  // Members of gfmol::sim
-  mem += 5*2*nao_*nao_*sizeof(double); 
-  mem += 5*2*nao_*nao_*nl*sizeof(double);
-  mem += 3*2*nao_*nao_*nl*sizeof(cplx);
-  // gfmol::SESolver
-  mem += 2*nao_*nao_*nao_*nao_*sizeof(double); // interaction tensor
-  mem += 3*nao_*nao_*nao_*sizeof(double); // temp objects
-  mem += 2*nao_*nao_*sizeof(double); // rho
-  // gfmol::repn
-  mem += 2*2*nl*sizeof(double);
-  mem += 2*2*nl*sizeof(int);
-  mem += 2*3*nl*nl*sizeof(double);
-  mem += 2*2*nl*nl*sizeof(cplx);
-  // Members of NEdyson::sim
-  mem += 2*(nt+1)*(nao_*nao_+2)*sizeof(double); // hmf, rho
-  mem += 4*(nt+1)*(nt+2)/2*nao_*nao_*sizeof(cplx); // G,S, R,<
-  mem += 4*(ntau+1)*(nt+1)*nao_*nao_*sizeof(cplx); // G,S, tv
-  mem += 4*(ntau+1)*nao_*nao_*sizeof(cplx);        // G,S, M
-  // molNEgf2
-  mem += 5*nao_*nao_*(nao_+1)*sizeof(double);      // temp objects
-  // dyson
-  mem += k*nao_*nao_*(k+2)*sizeof(cplx);
-  mem += (2*nt+ntau)*nao_*nao_*sizeof(cplx); // temporary integral storage
-  
-  std::cout<< " Approximate memory needed for simulation : " << std::ceil(mem / (double)size_MB) << " MB"<<std::endl;
-
   switch (mode) {
     case gfmol::Mode::GF2:
-      p_MatSim_ = std::unique_ptr<gfmol::SpinSimulation<Repr> >(new gfmol::SpinSimulation<Repr>(hf, frepr, brepr, mode, 0.));
+      p_MatSim_ = std::unique_ptr<gfmol::SpinSimulation<Repr> >(new gfmol::SpinSimulation<Repr>(hf, frepr, brepr, mode, 0., hfbool));
       beta_ = p_MatSim_->frepr().beta();
       dtau_ = beta_/ntau;
       p_NEgf2_ = std::unique_ptr<molGF2SolverSpin>(new molGF2SolverSpin(hf.uchem(), p_MatSim_->u_exch()));
@@ -98,7 +69,7 @@ void SpinSimulation<Repr>::do_boot() {
       ZMatrixMap(hmf.data() + (nt_+1)*nao2 + tstp*nao2, nao_, nao_) = DMatrixConstMap(h0.data(),nao_,nao_);
 
       p_NEgf2_->solve_HF(tstp, hmf, rho);
-      p_NEgf2_->solve(tstp, Sigma, G);
+      if(!hfbool_)  p_NEgf2_->solve(tstp, Sigma, G);
     }
 
     // Solve G Equation of Motion
@@ -148,7 +119,7 @@ void SpinSimulation<Repr>::do_tstp(int tstp) {
     ZMatrixMap(hmf.data() + (nt_+1)*nao2 + tstp*nao2, nao_, nao_) = DMatrixConstMap(h0.data(),nao_,nao_);
 
     p_NEgf2_->solve_HF(tstp, hmf, rho);
-    p_NEgf2_->solve(tstp, Sigma, G);
+    if(!hfbool_) p_NEgf2_->solve(tstp, Sigma, G);
 
     Dyson.dyson_step(tstp, Gup, Sup, hmf.data(), p_MatSim_->mu()[0], beta_, dt_);
     Dyson.dyson_step(tstp, Gdown, Sdown, hmf.data() + (nt_+1)*nao2, p_MatSim_->mu()[1], beta_, dt_);
@@ -230,42 +201,13 @@ tti_SpinSimulation<Repr>::tti_SpinSimulation(const gfmol::HartreeFock &hf,
                              int nt, int ntau, int k, double dt,
                              int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
                              gfmol::Mode mode,
-                             double damping) : 
-                                 SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps),
+                             double damping, bool hfbool) : 
+                                 SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, hfbool),
                                  h0(hf.hcore())
 {
-  int nl = frepr.nl();
-  const size_t size_MB = 1024*1024;
-  size_t mem = 0;
-  // Members of gfmol::sim
-  mem += 5*2*nao_*nao_*sizeof(double); 
-  mem += 5*2*nao_*nao_*nl*sizeof(double);
-  mem += 3*2*nao_*nao_*nl*sizeof(cplx);
-  // gfmol::SESolver
-  mem += 2*nao_*nao_*nao_*nao_*sizeof(double); // interaction tensor
-  mem += 3*nao_*nao_*nao_*sizeof(double); // temp objects
-  mem += 2*nao_*nao_*sizeof(double); // rho
-  // gfmol::repn
-  mem += 2*2*nl*sizeof(double);
-  mem += 2*2*nl*sizeof(int);
-  mem += 2*3*nl*nl*sizeof(double);
-  mem += 2*2*nl*nl*sizeof(cplx);
-  // Members of NEdyson::sim
-  mem += 2*(nao_*nao_)*sizeof(double); // rho
-  mem += 4*(nt+1)*nao_*nao_*sizeof(cplx); // G,S, R,<
-  mem += 4*(ntau+1)*(nt+1)*nao_*nao_*sizeof(cplx); // G,S, tv
-  mem += 4*(ntau+1)*nao_*nao_*sizeof(cplx);        // G,S, M
-  // molNEgf2
-  mem += 5*nao_*nao_*(nao_+1)*sizeof(double);      // temp objects
-  // dyson
-  mem += k*nao_*nao_*(k+2)*sizeof(cplx);
-  mem += (2*nt+ntau)*nao_*nao_*sizeof(cplx); // temporary integral storage
-  
-  std::cout<< " Approximate memory needed for simulation : " << std::ceil(mem / (double)size_MB) << " MB"<<std::endl;
-
   switch (mode) {
     case gfmol::Mode::GF2:
-      p_MatSim_ = std::unique_ptr<gfmol::SpinSimulation<Repr> >(new gfmol::SpinSimulation<Repr>(hf, frepr, brepr, mode, 0.));
+      p_MatSim_ = std::unique_ptr<gfmol::SpinSimulation<Repr> >(new gfmol::SpinSimulation<Repr>(hf, frepr, brepr, mode, 0., hfbool));
       beta_ = p_MatSim_->frepr().beta();
       dtau_ = beta_/ntau;
       p_NEgf2_ = std::unique_ptr<tti_molGF2SolverSpin>(new tti_molGF2SolverSpin(hf.uchem(), p_MatSim_->u_exch()));
@@ -322,7 +264,7 @@ void tti_SpinSimulation<Repr>::do_boot() {
 
     // Update mean field & self energy
     for(int tstp = 0; tstp <= k_; tstp++){
-      p_NEgf2_->solve(tstp, Sigma, G);
+      if(!hfbool_) p_NEgf2_->solve(tstp, Sigma, G);
     }
 
     // Solve G Equation of Motion
@@ -347,7 +289,7 @@ void tti_SpinSimulation<Repr>::do_tstp(int tstp) {
 
   // Corrector
   for(int iter = 0; iter < CorrSteps_; iter++) {
-    p_NEgf2_->solve(tstp, Sigma, G);
+    if(!hfbool_) p_NEgf2_->solve(tstp, Sigma, G);
 
     Dyson.dyson_step(tstp, Gup, Sup, p_MatSim_->fock().data(), p_MatSim_->mu()[0], beta_, dt_);
     Dyson.dyson_step(tstp, Gdown, Sdown, p_MatSim_->fock().data() + nao2, p_MatSim_->mu()[1], beta_, dt_);

@@ -34,6 +34,7 @@ protected:
   int CorrSteps_;
 
   bool bootstrap_converged;
+  bool hfbool_;
 
   DTensor<1> eKin_;
   DTensor<1> ePot_;
@@ -47,7 +48,7 @@ protected:
   
 public:
   // Base class constructor
-  explicit SimulationBase(const gfmol::HartreeFock &hf, int nt, int ntau, int k, double dt, int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps);
+  explicit SimulationBase(const gfmol::HartreeFock &hf, int nt, int ntau, int k, double dt, int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps, bool hfbool);
   
   // Calculate free GF
   virtual void free_gf() = 0;
@@ -101,7 +102,7 @@ public:
              int nt, int ntau, int k, double dt,
              int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
              gfmol::Mode mode = gfmol::Mode::GF2,
-             double damping = 0);
+             double damping = 0, bool hfbool = false);
 
   void free_gf() override;
 
@@ -145,7 +146,7 @@ public:
              int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
              gfmol::Mode mode = gfmol::Mode::GF2,
              double damping = 0,
-             double decomp_prec = 1e-8);
+             double decomp_prec = 1e-8, bool hfbool = false);
 
   void free_gf() override;
 
@@ -193,7 +194,7 @@ public:
              int nt, int ntau, int k, double dt,
              int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
              gfmol::Mode mode = gfmol::Mode::GF2,
-             double damping = 0);
+             double damping = 0, bool hfbool = false);
 
   void free_gf() override;
 
@@ -242,7 +243,7 @@ public:
              int nt, int ntau, int k, double dt,
              int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
              gfmol::Mode mode = gfmol::Mode::GF2,
-             double damping = 0, double decomp_prec = 1e-8);
+             double damping = 0, double decomp_prec = 1e-8, bool hfbool = false);
 
   void free_gf() override;
 
@@ -287,7 +288,7 @@ public:
              int nt, int ntau, int k, double dt,
              int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
              gfmol::Mode mode = gfmol::Mode::GF2,
-             double damping = 0);
+             double damping = 0, bool hfbool = false);
 
   void free_gf() override;
 
@@ -328,7 +329,7 @@ public:
              int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
              gfmol::Mode mode = gfmol::Mode::GF2,
              double damping = 0,
-             double decomp_prec = 1e-8);
+             double decomp_prec = 1e-8, bool hfbool = false);
 
   void free_gf() override;
 
@@ -374,7 +375,7 @@ public:
              int nt, int ntau, int k, double dt,
              int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
              gfmol::Mode mode = gfmol::Mode::GF2,
-             double damping = 0);
+             double damping = 0, bool hfbool = false);
 
   void free_gf() override;
 
@@ -421,7 +422,7 @@ public:
              int nt, int ntau, int k, double dt,
              int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
              gfmol::Mode mode = gfmol::Mode::GF2,
-             double damping = 0, double decomp_prec = 1e-8);
+             double damping = 0, double decomp_prec = 1e-8, bool hfbool = false);
 
   void free_gf() override;
 
@@ -457,27 +458,27 @@ std::unique_ptr<SimulationBase> make_simulation(bool tti,
                                                 gfmol::Mode mode,
                                                 int nt, int ntau, int k, double dt,                                                       int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
                                                 double damping = 0, 
-                                                double decomp_prec = 1e-7)
+                                                double decomp_prec = 1e-7, bool hfbool = false)
 {
   if(tti) {
     if(unrestricted) {
       if(decomposed) {
         return std::unique_ptr<tti_DecompSpinSimulation<Repr>>(
-          new tti_DecompSpinSimulation<Repr>(hf, frepr, brepr, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, mode, damping, decomp_prec));
+          new tti_DecompSpinSimulation<Repr>(hf, frepr, brepr, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, mode, damping, decomp_prec, hfbool));
       }
       else{
         return std::unique_ptr<tti_SpinSimulation<Repr>>(
-          new tti_SpinSimulation<Repr>(hf, frepr, brepr, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, mode, damping));
+          new tti_SpinSimulation<Repr>(hf, frepr, brepr, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, mode, damping, hfbool));
       }
     }
     else {
       if(decomposed) {
         return std::unique_ptr<tti_DecompSimulation<Repr>>(
-          new tti_DecompSimulation<Repr>(hf, frepr, brepr, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, mode, damping, decomp_prec));
+          new tti_DecompSimulation<Repr>(hf, frepr, brepr, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, mode, damping, decomp_prec, hfbool));
       }
       else {
         return std::unique_ptr<tti_Simulation<Repr>>(
-          new tti_Simulation<Repr>(hf, frepr, brepr, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, mode, damping));
+          new tti_Simulation<Repr>(hf, frepr, brepr, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, mode, damping, hfbool));
       }
     }
   }
@@ -485,21 +486,21 @@ std::unique_ptr<SimulationBase> make_simulation(bool tti,
     if(unrestricted) {
       if(decomposed) {
         return std::unique_ptr<DecompSpinSimulation<Repr>>(
-          new DecompSpinSimulation<Repr>(hf, frepr, brepr, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, mode, damping, decomp_prec));
+          new DecompSpinSimulation<Repr>(hf, frepr, brepr, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, mode, damping, decomp_prec, hfbool));
       }
       else{
         return std::unique_ptr<SpinSimulation<Repr>>(
-          new SpinSimulation<Repr>(hf, frepr, brepr, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, mode, damping));
+          new SpinSimulation<Repr>(hf, frepr, brepr, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, mode, damping, hfbool));
       }
     }
     else {
       if(decomposed) {
         return std::unique_ptr<DecompSimulation<Repr>>(
-          new DecompSimulation<Repr>(hf, frepr, brepr, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, mode, damping, decomp_prec));
+          new DecompSimulation<Repr>(hf, frepr, brepr, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, mode, damping, decomp_prec, hfbool));
       }
       else {
         return std::unique_ptr<Simulation<Repr>>(
-          new Simulation<Repr>(hf, frepr, brepr, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, mode, damping));
+          new Simulation<Repr>(hf, frepr, brepr, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, mode, damping, hfbool));
       }
     }
   }
