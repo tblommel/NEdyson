@@ -17,45 +17,15 @@ Simulation<Repr>::Simulation(const gfmol::HartreeFock &hf,
                              int nt, int ntau, int k, double dt,
                              int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
                              gfmol::Mode mode,
-                             double damping) : 
-                                 SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps),
+                             double damping, bool hfbool) : 
+                                 SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, hfbool),
                                  hmf(nt+1, nao_, nao_), 
                                  h0(hf.hcore()), 
                                  rho(nao_, nao_)
 {
-  int nl = frepr.nl();
-  const size_t size_MB = 1024*1024;
-  size_t mem = 0;
-  // Members of gfmol::sim
-  mem += 5*nao_*nao_*sizeof(double);
-  mem += 5*nao_*nao_*nl*sizeof(double);
-  mem += 3*nao_*nao_*nl*sizeof(cplx);
-  // gfmol::SESolver
-  mem += 2*nao_*nao_*nao_*nao_*sizeof(double);
-  mem += 2*nao_*nao_*nao_*sizeof(double);
-  mem += 2*nao_*nao_*sizeof(double);
-  // gfmol::repn
-  mem += 2*2*nl*sizeof(double);
-  mem += 2*2*nl*sizeof(int);
-  mem += 2*3*nl*nl*sizeof(double);
-  mem += 2*2*nl*nl*sizeof(cplx);
-  // Members of NEdyson::sim
-  mem += (nt+1)*(nao_*nao_+2)*sizeof(double);
-  mem += nao_*nao_*sizeof(double);
-  mem += 2*(nt+1)*(nt+2)/2*nao_*nao_*sizeof(cplx);
-  mem += 2*(ntau+1)*(nt+1)*nao_*nao_*sizeof(cplx);
-  mem += 2*(ntau+1)*nao_*nao_*sizeof(cplx);
-  // molNEgf2
-  mem += 3*nao_*nao_*(nao_+1)*sizeof(double);
-  // dyson
-  mem += k*nao_*nao_*(k+2)*sizeof(cplx);
-  mem += (2*nt+ntau)*nao_*nao_*sizeof(cplx); // temporary integral storage
-  
-  std::cout<< " Approximate memory needed for simulation : " << std::ceil(mem / (double)size_MB) << " MB"<<std::endl;
-
   switch (mode) {
     case gfmol::Mode::GF2:
-      p_MatSim_ = std::unique_ptr<gfmol::Simulation<Repr> >(new gfmol::Simulation<Repr>(hf, frepr, brepr, mode, 0.));
+      p_MatSim_ = std::unique_ptr<gfmol::Simulation<Repr> >(new gfmol::Simulation<Repr>(hf, frepr, brepr, mode, 0., hfbool));
       beta_ = p_MatSim_->frepr().beta();
       dtau_ = beta_/ntau;
       p_NEgf2_ = std::unique_ptr<molGF2Solver>(new molGF2Solver(hf.uchem(), p_MatSim_->u_exch()));
@@ -88,7 +58,7 @@ void Simulation<Repr>::do_boot() {
       G.get_dm(tstp, rho);
       ZMatrixMap(hmf.data() + tstp*nao_*nao_, nao_, nao_) = DMatrixConstMap(h0.data(),nao_,nao_);
       p_NEgf2_->solve_HF(tstp, hmf, rho);
-      p_NEgf2_->solve(tstp, Sigma, G);
+      if(!hfbool_)  p_NEgf2_->solve(tstp, Sigma, G);
     }
 
     // Solve G Equation of Motion
@@ -127,7 +97,7 @@ void Simulation<Repr>::do_tstp(int tstp) {
 
 
     start = std::chrono::system_clock::now();
-    p_NEgf2_->solve(tstp, Sigma, G);
+    if(!hfbool_) p_NEgf2_->solve(tstp, Sigma, G);
     end = std::chrono::system_clock::now();
     elapsed_seconds = end-start;
     out << elapsed_seconds.count() << " ";
@@ -229,13 +199,13 @@ tti_Simulation<Repr>::tti_Simulation(const gfmol::HartreeFock &hf,
                              int nt, int ntau, int k, double dt,
                              int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
                              gfmol::Mode mode,
-                             double damping) : 
-                                 SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps),
+                             double damping, bool hfbool) : 
+                                 SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, hfbool),
                                  h0(hf.hcore()) 
 {
   switch (mode) {
     case gfmol::Mode::GF2:
-      p_MatSim_ = std::unique_ptr<gfmol::Simulation<Repr> >(new gfmol::Simulation<Repr>(hf, frepr, brepr, mode, 0.));
+      p_MatSim_ = std::unique_ptr<gfmol::Simulation<Repr> >(new gfmol::Simulation<Repr>(hf, frepr, brepr, mode, 0., hfbool));
       beta_ = p_MatSim_->frepr().beta();
       dtau_ = beta_/ntau;
       p_NEgf2_ = std::unique_ptr<tti_molGF2Solver>(new tti_molGF2Solver(hf.uchem(), p_MatSim_->u_exch()));
@@ -265,7 +235,7 @@ void tti_Simulation<Repr>::do_boot() {
 
     // Update mean field & self energy
     for(int tstp = 0; tstp <= k_; tstp++){
-      p_NEgf2_->solve(tstp, Sigma, G);
+      if(!hfbool_) p_NEgf2_->solve(tstp, Sigma, G);
     }
 
     // Solve G Equation of Motion
@@ -295,7 +265,7 @@ void tti_Simulation<Repr>::do_tstp(int tstp) {
   for(int iter = 0; iter < CorrSteps_; iter++) {
 
     start = std::chrono::system_clock::now();
-    p_NEgf2_->solve(tstp, Sigma, G);
+    if(!hfbool_) p_NEgf2_->solve(tstp, Sigma, G);
     end = std::chrono::system_clock::now();
     elapsed_seconds = end-start;
     out << elapsed_seconds.count() << " ";

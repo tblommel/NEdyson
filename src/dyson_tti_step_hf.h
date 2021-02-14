@@ -1,9 +1,9 @@
-#ifndef DYSON_TTI_STEP_IMPL
-#define DYSON_TTI_STEP_IMPL
+#ifndef DYSON_TTI_STEP_HF_IMPL
+#define DYSON_TTI_STEP_HF_IMPL
 
 namespace NEdyson {
 
-void dyson::dyson_step_ret(int tstp, TTI_GREEN &G, const TTI_GREEN &Sig, const double *hmf, double mu, double dt) const {
+void dyson::dyson_step_ret_hf(int tstp, TTI_GREEN &G, const double *hmf, double mu, double dt) const {
   int l;
 
   std::chrono::time_point<std::chrono::system_clock> start, end;
@@ -20,21 +20,8 @@ void dyson::dyson_step_ret(int tstp, TTI_GREEN &G, const TTI_GREEN &Sig, const d
 
   start = std::chrono::system_clock::now();
 
-  // doing the integral
-  // Q = \sum_{l=0}^{n-1} w_{nl} GR(t,t-l) SR(t-l,t-n) for n=k+1...tstp
-  for(l=0; l<tstp; l++) {
-    QMap.noalias() += I.gregory_weights(tstp,l) * (ZMatrixMap(G.retptr(l), nao_, nao_)
-                                        * ZMatrixMap(Sig.retptr(tstp-l), nao_, nao_)).transpose();
-  }
-
-  QMap *= dt;
-  for(l=1; l<=k_+1; l++){
-    QMap.noalias() += I.bd_weights(l)*ncplxi/dt * ZMatrixMap(G.retptr(tstp-l), nao_, nao_).transpose();
-  }
-
   // Set up mm
   MMap.noalias() = -DMatrixConstMap(hmf, nao_, nao_).transpose();
-  MMap.noalias() -= dt*I.omega(0) * ZMatrixMap(Sig.retptr(0), nao_, nao_).transpose();
   MMap.noalias() += (mu - I.bd_weights(0)*ncplxi/dt) * IMap;
 
   // Solve XM=Q for X
@@ -52,7 +39,7 @@ void dyson::dyson_step_ret(int tstp, TTI_GREEN &G, const TTI_GREEN &Sig, const d
 }
 
 
-void dyson::dyson_step_tv(int tstp, TTI_GREEN &G, const TTI_GREEN &Sig, const double *hmf, double mu, double beta, double dt) const {
+void dyson::dyson_step_tv_hf(int tstp, TTI_GREEN &G, const double *hmf, double mu, double beta, double dt) const {
   // Counters and sizes
   int m, l, n, i;
 
@@ -69,8 +56,6 @@ void dyson::dyson_step_tv(int tstp, TTI_GREEN &G, const TTI_GREEN &Sig, const do
 
   start = std::chrono::system_clock::now();
 
-  // Do integrals
-  Ctv_tstp(tstp, G, Sig, Sig, G, G, beta, dt);
 
   // Put derivatives into GRM(tstp,m)
   for(l=1; l<=k_+1; l++) {
@@ -80,8 +65,8 @@ void dyson::dyson_step_tv(int tstp, TTI_GREEN &G, const TTI_GREEN &Sig, const do
 
   // Make M
   MMap.noalias() = (cplxi/dt*I.bd_weights(0) + mu) * IMap
-                                             - DMatrixConstMap(hmf, nao_, nao_)
-                                             - dt*I.omega(0) * ZMatrixMap(Sig.retptr(0), nao_, nao_);
+                                             - DMatrixConstMap(hmf, nao_, nao_);
+
   // Solve MX=Q
   Eigen::FullPivLU<ZMatrix> lu(MMap);
   for(m=0; m<=ntau_; m++) {
@@ -98,41 +83,8 @@ void dyson::dyson_step_tv(int tstp, TTI_GREEN &G, const TTI_GREEN &Sig, const do
   out<<runtime<<std::endl;
 }
 
-void dyson::dyson_step_les(int n, TTI_GREEN &G, const TTI_GREEN &Sig, const double *hmf, double mu, double beta, double dt) const {
+void dyson::dyson_step_les_hf(int n, TTI_GREEN &G, const double *hmf, double mu, double beta, double dt) const {
   ZMatrixMap(G.lesptr(-n), nao_, nao_).noalias() = -ZMatrixMap(G.tvptr(n,0), nao_, nao_).adjoint();
-}
-
-void dyson::dyson_step(int n, TTI_GREEN &G, const TTI_GREEN &Sig, const double *hmf, double mu, double beta, double dt) const {
-  assert(G.size1() == Sig.size1());
-  assert(G.size1() == nao_);
-  assert(G.nt() == Sig.nt());
-  assert(G.nt() == nt_);
-  assert(G.ntau() == Sig.ntau());
-  assert(G.ntau() == ntau_);
-  assert(G.nt() > k_);
-  assert(G.sig() == Sig.sig());
-  assert(n > k_);
-  assert(n <= G.nt());
-
-  if(!hfbool_) {
-    dyson_step_ret(n, G, Sig, hmf, mu, dt);
-    dyson_step_tv(n, G, Sig, hmf, mu, beta, dt);
-    dyson_step_les(n, G, Sig, hmf, mu, beta, dt);
-  }
-  else {
-    dyson_step_ret_hf(n, G, hmf, mu, dt);
-    dyson_step_tv_hf(n, G, hmf, mu, beta, dt);
-    dyson_step_les_hf(n, G, hmf, mu, beta, dt); 
-  }
-}
-
-void dyson::dyson_step(int n, TTI_GREEN &G, const TTI_GREEN &Sig, const DTensor<2> &hmf, double mu, double beta, double dt) const {
-  assert(G.size1() == hmf.shape()[0]);
-  assert(G.size1() == hmf.shape()[1]);
-
-  dyson_step_ret(n, G, Sig, hmf.data(), mu, dt);
-  dyson_step_tv(n, G, Sig, hmf.data(), mu, beta, dt);
-  dyson_step_les(n, G, Sig, hmf.data(), mu, beta, dt);
 }
 
 } // namespace NEdyson

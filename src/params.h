@@ -13,6 +13,7 @@ namespace NEdyson {
 
 struct Params {
   std::string mode;
+  bool hf;
   bool tti;
   bool unrestricted;
   bool decomposed;
@@ -84,6 +85,7 @@ inline std::ostream &operator<<(std::ostream &os, const Params &p)
 {
   os << std::boolalpha;
   os << "Parameters:" << std::endl;
+  os << "    hf:              " << p.hf <<std::endl;
   os << "    tti:             " << p.tti <<std::endl;
   os << "    mode:            " << p.mode << std::endl;
   os << "    unrestricted:    " << p.unrestricted << std::endl;
@@ -130,6 +132,7 @@ inline Params parse_args(const int argc, char *const *const argv)
 
   // Argument list
   args::ValueFlag<std::string> mode(parser, "mode", "GF2 or GW", {"mode"}, "GF2");
+  args::Flag hf(parser, "hf", "just do hartree fock calculation", {"hf"});
   args::Flag tti(parser, "tti", "use time translationally invariant functions if set", {"tti"});
   args::Flag unrestricted(parser, "unrestricted", "use unrestricted spin if set", {"unrestricted"});
   args::Flag decomposed(parser, "decomposed", "use unrestricted spin if set", {"decomposed"});
@@ -169,6 +172,7 @@ inline Params parse_args(const int argc, char *const *const argv)
   param_file.Load(inifile.Get(), true);
 
   Params p{extract_value(param_file, mode),
+           extract_value(param_file, hf),
            extract_value(param_file, tti),
            extract_value(param_file, unrestricted),
            extract_value(param_file, decomposed),

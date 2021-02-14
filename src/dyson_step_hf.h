@@ -4,7 +4,7 @@
 namespace NEdyson{
 
 // i dt' GR(t,t-t') - GR(t-t')hmf(t-t') - \int_0^t' GR(t,t-s) SR(t-s,t-t') = 0
-void dyson_hf::dyson_step_ret(int tstp, GREEN &G, const cplx *hmf, double mu, double dt) const {
+void dyson::dyson_step_ret_hf(int tstp, GREEN &G, const cplx *hmf, double mu, double dt) const {
   int m, l, n, i;
 
   std::chrono::time_point<std::chrono::system_clock> intstart, intend, start, end;
@@ -88,7 +88,7 @@ void dyson_hf::dyson_step_ret(int tstp, GREEN &G, const cplx *hmf, double mu, do
 }
 
 // idt GRM(tstp,m) - hmf(tstp) GRM(t,m) - \int_0^t dT SR(t,T) GRM(T,m) = \int_0^{beta} dT SRM(t,T) GM(T-m)
-void dyson_hf::dyson_step_tv(int tstp, GREEN &G, const cplx *hmf, double mu, double beta, double dt) const {
+void dyson::dyson_step_tv_hf(int tstp, GREEN &G, const cplx *hmf, double mu, double beta, double dt) const {
   int m, l, n, i;
 
   std::chrono::time_point<std::chrono::system_clock> start, end;
@@ -131,7 +131,7 @@ void dyson_hf::dyson_step_tv(int tstp, GREEN &G, const cplx *hmf, double mu, dou
   out<<runtime<<" ";
 }
 
-double dyson_hf::dyson_step_les(int n, GREEN &G, const cplx *hmf, double mu, double beta, double dt) const {
+double dyson::dyson_step_les_hf(int n, GREEN &G, const cplx *hmf, double mu, double beta, double dt) const {
   // iterators
   int m, l, i;
   int num = n>=k_ ? n : k_;
@@ -218,31 +218,6 @@ double dyson_hf::dyson_step_les(int n, GREEN &G, const cplx *hmf, double mu, dou
   }
   return err;
 }
-
-
-void dyson_hf::dyson_step(int n, GREEN &G, const cplx *hmf, double mu, double beta, double dt) const {
-  assert(G.size1() == nao_);
-  assert(G.nt() == nt_);
-  assert(G.ntau() == ntau_);
-  assert(G.nt() > k_);
-  assert(n > k_);
-  assert(n <= G.nt());
-
-  dyson_step_ret(n, G, hmf, mu, dt);
-  dyson_step_tv(n, G, hmf, mu, beta, dt);
-  dyson_step_les(n, G, hmf, mu, beta, dt);
-}
-
-
-
-void dyson::dyson_step(int n, GREEN &G, const ZTensor<3> &hmf, double mu, double beta, double dt) const {
-  assert(G.size1() == hmf.shape()[2]);
-  assert(G.size1() == hmf.shape()[1]);
-  assert(G.nt() == (hmf.shape()[0]-1));
-
-  dyson_step(n, G, hmf.data(), mu, beta, dt);
-}
-
 
 } // namespace
 #endif // DYSON_STEP_IMPL

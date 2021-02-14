@@ -170,9 +170,16 @@ double dyson::dyson_start(GREEN &G, const GREEN &Sig, const cplx *hmf, double mu
   assert(G.sig() == Sig.sig());
 
   double err=0;
-  err += dyson_start_ret(G, Sig, hmf, mu, dt);
-  err += dyson_start_tv(G, Sig, hmf, mu, beta, dt);
-  err += dyson_start_les(G, Sig, hmf, mu, beta, dt);
+  if(!hfbool_) {
+    err += dyson_start_ret(G, Sig, hmf, mu, dt);
+    err += dyson_start_tv(G, Sig, hmf, mu, beta, dt);
+    err += dyson_start_les(G, Sig, hmf, mu, beta, dt);
+  }
+  else {
+    err += dyson_start_ret_hf(G, hmf, mu, dt);
+    err += dyson_start_tv_hf(G, hmf, mu, beta, dt);
+    err += dyson_start_les_hf(G, hmf, mu, beta, dt);
+  }
   return err;
 }
 

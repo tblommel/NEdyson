@@ -305,9 +305,16 @@ void dyson::dyson_step(int n, GREEN &G, const GREEN &Sig, const cplx *hmf, doubl
   assert(n > k_);
   assert(n <= G.nt());
 
-  dyson_step_ret(n, G, Sig, hmf, mu, dt);
-  dyson_step_tv(n, G, Sig, hmf, mu, beta, dt);
-  dyson_step_les(n, G, Sig, hmf, mu, beta, dt);
+  if(!hfbool_) {
+    dyson_step_ret(n, G, Sig, hmf, mu, dt);
+    dyson_step_tv(n, G, Sig, hmf, mu, beta, dt);
+    dyson_step_les(n, G, Sig, hmf, mu, beta, dt);
+  }
+  else {
+    dyson_step_ret_hf(n, G, hmf, mu, dt);
+    dyson_step_tv_hf(n, G, hmf, mu, beta, dt);
+    dyson_step_les_hf(n, G, hmf, mu, beta, dt);
+  }
 }
 
 
