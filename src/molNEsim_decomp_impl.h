@@ -18,11 +18,14 @@ DecompSimulation<Repr>::DecompSimulation(const gfmol::HartreeFock &hf,
                              int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
                              gfmol::Mode mode,
                              double damping,
-                             double decomp_prec, bool hfbool) : 
-                                 SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, hfbool),
+                             double decomp_prec, bool hfbool, bool boolPumpProbe, 
+                             std::string PumpProbeInp, std::string MolInp,
+                             double lPumpProbe, double nPumpProbe) : 
+                                 SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, hfbool, boolPumpProbe, PumpProbeInp, MolInp, lPumpProbe, nPumpProbe),
                                  hmf(nt+1, nao_, nao_), 
                                  h0(hf.hcore()), 
-                                 rho(nao_,nao_)
+                                 rho(nao_,nao_),
+                                 dfield_(3, nt+1)
 {
   switch (mode) {
     case gfmol::Mode::GF2:
@@ -48,6 +51,13 @@ void DecompSimulation<Repr>::do_mat() {
   p_MatSim_->run(MatMax_, MatTol_, nullptr);
 }
 
+template <typename Repr>
+void DecompSimulation<Repr>::Ed_contractions(int tstp) {
+  int nao = hmf.shape()[2];
+  for(int d = 0; d < 3; d++) {
+    ZMatrixMap(hmf.data() + tstp*nao*nao, nao, nao) += (Efield_(d, tstp) + efield_(d, tstp) + dfield_(d, tstp)) * DMatrixMap(dipole_.data() + d*nao*nao, nao, nao);
+  }
+}
 
 template <typename Repr>
 void DecompSimulation<Repr>::do_boot() {
@@ -60,6 +70,10 @@ void DecompSimulation<Repr>::do_boot() {
       ZMatrixMap(hmf.data() + tstp*nao_*nao_, nao_, nao_) = DMatrixConstMap(h0.data(),nao_,nao_);
       p_NEgf2_->solve_HF(tstp, hmf, rho);
       if (!hfbool_) p_NEgf2_->solve(tstp, Sigma, G);
+      if(boolPumpProbe_) {
+        Dyson.dipole_field(tstp, dfield_, G, dipole_, lPumpProbe_, nPumpProbe_, dt_);
+        Ed_contractions(tstp);
+      }
     }
 
     // Solve G Equation of Motion
@@ -85,6 +99,11 @@ void DecompSimulation<Repr>::do_tstp(int tstp) {
     ZMatrixMap(hmf.data() + tstp*nao_*nao_, nao_, nao_) = DMatrixConstMap(h0.data(),nao_,nao_);
     p_NEgf2_->solve_HF(tstp, hmf, rho);
     if(!hfbool_) p_NEgf2_->solve(tstp, Sigma, G);
+
+    if(boolPumpProbe_) {
+      Dyson.dipole_field(tstp, dfield_, G, dipole_, lPumpProbe_, nPumpProbe_, dt_);
+      Ed_contractions(tstp);
+    }
 
     Dyson.dyson_step(tstp, G, Sigma, hmf, p_MatSim_->mu(), beta_, dt_);
   }
@@ -172,7 +191,7 @@ tti_DecompSimulation<Repr>::tti_DecompSimulation(const gfmol::HartreeFock &hf,
                              gfmol::Mode mode,
                              double damping,
                              double decomp_prec, bool hfbool) : 
-                                 SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, hfbool),
+                                 SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, hfbool, false, "", "", 0, 0),
                                  h0(hf.hcore())
 {
   switch (mode) {
@@ -198,6 +217,12 @@ template <typename Repr>
 void tti_DecompSimulation<Repr>::do_mat() {
   p_MatSim_->run(MatMax_, MatTol_, nullptr);
 }
+
+template <typename Repr>
+void tti_DecompSimulation<Repr>::Ed_contractions(int tstp) {
+  int a = 0;
+}
+
 
 
 template <typename Repr>

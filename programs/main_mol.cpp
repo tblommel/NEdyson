@@ -34,7 +34,7 @@ int main(const int argc, char *const *const argv)
 
     // Make the sim
     std::unique_ptr<SimulationBase> p_sim =
-        make_simulation(p.tti, p.unrestricted, p.decomposed, hf, frepr, brepr, mode, p.nt, p.ntau, p.k, p.dt, p.maxiter, p.etol, p.BootMaxIter, p.BootMaxErr, p.CorrSteps, p.damping, p.decomp_prec, p.hf);
+        make_simulation(p.tti, p.unrestricted, p.decomposed, hf, frepr, brepr, mode, p.nt, p.ntau, p.k, p.dt, p.maxiter, p.etol, p.BootMaxIter, p.BootMaxErr, p.CorrSteps, p.damping, p.decomp_prec, p.hf, p.boolPumpProbe, p.PumpProbe_file, p.hf_input, p.lPumpProbe, p.nPumpProbe);
 
     // Run the sim
     p_sim->run();

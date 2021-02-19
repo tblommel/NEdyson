@@ -38,6 +38,11 @@ struct Params {
   double BootMaxErr;
   int CorrSteps;
 
+  bool boolPumpProbe;
+  std::string PumpProbe_file;
+  double lPumpProbe;
+  double nPumpProbe;
+
   void validate() const
   {
     if (mode != "GW" && mode != "GF2")
@@ -78,6 +83,9 @@ struct Params {
 
     if (CorrSteps <= 0)
       throw std::runtime_error("parameter CorrSteps: invalid value " + std::to_string(CorrSteps));
+
+    if (boolPumpProbe && tti)
+      throw std::runtime_error("Pump Probe calculation requires full time-dependant calculation (tti == false)");
   }
 };
 
@@ -109,6 +117,10 @@ inline std::ostream &operator<<(std::ostream &os, const Params &p)
   os << "    BootMaxIter:     " << p.BootMaxIter << std::endl;
   os << "    BootMaxErr:      " << p.BootMaxErr << std::endl;
   os << "    CorrSteps:       " << p.CorrSteps << std::endl;
+  os << "    boolPumpProbe:   " << p.boolPumpProbe << std::endl;
+  os << "    PumpProbe_file:  " << p.PumpProbe_file << std::endl;
+  os << "    lPumpProbe:      " << p.lPumpProbe << std::endl;
+  os << "    nPumpProbe:      " << p.nPumpProbe << std::endl;
   os << std::noboolalpha;
   return os;
 }
@@ -159,6 +171,10 @@ inline Params parse_args(const int argc, char *const *const argv)
   args::ValueFlag<int> BootMaxIter(parser, "BootMaxIter", "Maximum number of bootstrap iterations", {"BootMaxIter"});
   args::ValueFlag<double> BootMaxErr(parser, "BootMaxErr", "Maximum bootstrap error", {"BootMaxErr"});
   args::ValueFlag<int> CorrSteps(parser, "CorrSteps", "Number of predictor-corrector iterations in timestepping", {"CorrSteps"});
+  args::Flag boolPumpProbe(parser, "boolPumpProbe", "do fully self-consistent molecular pump-probe calculation", {"boolPumpProbe"});
+  args::ValueFlag<std::string> PumpProbe_file(parser, "PumpProbe-file", "The file that contains the pump and probe fields", {"PumpProbe-file"});
+  args::ValueFlag<double> lPumpProbe(parser, "lPumpProbe", "length of system that appears in the PumpProbe induced field equation", {"lPumpProbe"});
+  args::ValueFlag<double> nPumpProbe(parser, "nPumpProbe", "density of system that appears in the PumpProbe induced field equation", {"nPumpProbe"});
 
   args::HelpFlag help(parser, "help", "Display this help menu", {'h', "help"});
   try {
@@ -194,7 +210,11 @@ inline Params parse_args(const int argc, char *const *const argv)
            extract_value(param_file, dt),
            extract_value(param_file, BootMaxIter),
            extract_value(param_file, BootMaxErr),
-           extract_value(param_file, CorrSteps)};
+           extract_value(param_file, CorrSteps),
+           extract_value(param_file, boolPumpProbe),
+           extract_value(param_file, PumpProbe_file),
+           extract_value(param_file, lPumpProbe),
+           extract_value(param_file, nPumpProbe)};
   try {
     p.validate();
   } catch (const std::runtime_error &e) {

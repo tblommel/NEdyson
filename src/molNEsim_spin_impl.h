@@ -17,11 +17,15 @@ SpinSimulation<Repr>::SpinSimulation(const gfmol::HartreeFock &hf,
                              int nt, int ntau, int k, double dt,
                              int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
                              gfmol::Mode mode,
-                             double damping, bool hfbool) : 
-                                 SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, hfbool),
+                             double damping, bool hfbool, bool boolPumpProbe, 
+                             std::string PumpProbeInp, std::string MolInp,
+                             double lPumpProbe, double nPumpProbe) : 
+                                 SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, hfbool, boolPumpProbe, PumpProbeInp, MolInp, lPumpProbe, nPumpProbe),
                                  hmf(2, nt+1, nao_, nao_), 
                                  h0(hf.hcore()), 
-                                 rho(2,nao_,nao_)
+                                 rho(2,nao_,nao_),
+                                 dfieldu_(3, nt+1),
+                                 dfieldd_(3, nt+1)
 {
   switch (mode) {
     case gfmol::Mode::GF2:
@@ -53,6 +57,14 @@ void SpinSimulation<Repr>::do_mat() {
   p_MatSim_->run(MatMax_, MatTol_, nullptr);
 }
 
+template <typename Repr>
+void SpinSimulation<Repr>::Ed_contractions(int tstp) {
+  int nao = hmf.shape()[3];
+  for(int d = 0; d < 3; d++) {
+    ZMatrixMap(hmf.data() + tstp*nao*nao, nao, nao) += (Efield_(d, tstp) + efield_(d, tstp) + dfieldu_(d, tstp)) * DMatrixMap(dipole_.data() + d*nao*nao, nao, nao);
+    ZMatrixMap(hmf.data() + (nt_+1)*nao_*nao_ + tstp*nao*nao, nao, nao) += (Efield_(d, tstp) + efield_(d, tstp) + dfieldd_(d, tstp)) * DMatrixMap(dipole_.data() + d*nao*nao, nao, nao);
+  }
+}
 
 template <typename Repr>
 void SpinSimulation<Repr>::do_boot() {
@@ -70,6 +82,11 @@ void SpinSimulation<Repr>::do_boot() {
 
       p_NEgf2_->solve_HF(tstp, hmf, rho);
       if(!hfbool_)  p_NEgf2_->solve(tstp, Sigma, G);
+      if(boolPumpProbe_) {
+        Dyson.dipole_field(tstp, dfieldu_, Gup, dipole_, lPumpProbe_, nPumpProbe_, dt_);
+        Dyson.dipole_field(tstp, dfieldd_, Gdown, dipole_, lPumpProbe_, nPumpProbe_, dt_);
+        Ed_contractions(tstp);
+      }
     }
 
     // Solve G Equation of Motion
@@ -103,6 +120,7 @@ void SpinSimulation<Repr>::do_energy() {
   }
 }
 
+
 template <typename Repr>
 void SpinSimulation<Repr>::do_tstp(int tstp) {
   int nao2 = nao_ * nao_;
@@ -120,6 +138,12 @@ void SpinSimulation<Repr>::do_tstp(int tstp) {
 
     p_NEgf2_->solve_HF(tstp, hmf, rho);
     if(!hfbool_) p_NEgf2_->solve(tstp, Sigma, G);
+
+    if(boolPumpProbe_) {
+      Dyson.dipole_field(tstp, dfieldu_, Gup, dipole_, lPumpProbe_, nPumpProbe_, dt_);
+      Dyson.dipole_field(tstp, dfieldd_, Gdown, dipole_, lPumpProbe_, nPumpProbe_, dt_);
+      Ed_contractions(tstp);
+    }
 
     Dyson.dyson_step(tstp, Gup, Sup, hmf.data(), p_MatSim_->mu()[0], beta_, dt_);
     Dyson.dyson_step(tstp, Gdown, Sdown, hmf.data() + (nt_+1)*nao2, p_MatSim_->mu()[1], beta_, dt_);
@@ -202,7 +226,7 @@ tti_SpinSimulation<Repr>::tti_SpinSimulation(const gfmol::HartreeFock &hf,
                              int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
                              gfmol::Mode mode,
                              double damping, bool hfbool) : 
-                                 SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, hfbool),
+                                 SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, hfbool, false, "", "", 0, 0),
                                  h0(hf.hcore())
 {
   switch (mode) {
@@ -255,6 +279,13 @@ void tti_SpinSimulation<Repr>::do_energy() {
     }
   }
 }
+
+
+template <typename Repr>
+void tti_SpinSimulation<Repr>::Ed_contractions(int tstp) {
+  int a = 0;
+}
+
 
 template <typename Repr>
 void tti_SpinSimulation<Repr>::do_boot() {

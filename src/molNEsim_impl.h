@@ -17,11 +17,14 @@ Simulation<Repr>::Simulation(const gfmol::HartreeFock &hf,
                              int nt, int ntau, int k, double dt,
                              int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
                              gfmol::Mode mode,
-                             double damping, bool hfbool) : 
-                                 SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, hfbool),
+                             double damping, bool hfbool, bool boolPumpProbe, 
+                             std::string PumpProbeInp, std::string MolInp,
+                             double lPumpProbe, double nPumpProbe) : 
+                                 SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, hfbool, boolPumpProbe, PumpProbeInp, MolInp, lPumpProbe, nPumpProbe),
                                  hmf(nt+1, nao_, nao_), 
                                  h0(hf.hcore()), 
-                                 rho(nao_, nao_)
+                                 rho(nao_, nao_),
+                                 dfield_(3, nt+1)
 {
   switch (mode) {
     case gfmol::Mode::GF2:
@@ -47,6 +50,14 @@ void Simulation<Repr>::do_mat() {
   p_MatSim_->run(MatMax_, MatTol_, nullptr);
 }
 
+template <typename Repr>
+void Simulation<Repr>::Ed_contractions(int tstp) {
+  int nao = hmf.shape()[2];
+  for(int d = 0; d < 3; d++) {
+    ZMatrixMap(hmf.data() + tstp*nao*nao, nao, nao) += (Efield_(d, tstp) + efield_(d, tstp) + dfield_(d, tstp)) * DMatrixMap(dipole_.data() + d*nao*nao, nao, nao);
+  }
+}
+
 
 template <typename Repr>
 void Simulation<Repr>::do_boot() {
@@ -59,6 +70,10 @@ void Simulation<Repr>::do_boot() {
       ZMatrixMap(hmf.data() + tstp*nao_*nao_, nao_, nao_) = DMatrixConstMap(h0.data(),nao_,nao_);
       p_NEgf2_->solve_HF(tstp, hmf, rho);
       if(!hfbool_)  p_NEgf2_->solve(tstp, Sigma, G);
+      if(boolPumpProbe_) {
+        Dyson.dipole_field(tstp, dfield_, G, dipole_, lPumpProbe_, nPumpProbe_, dt_);
+        Ed_contractions(tstp);
+      }
     }
 
     // Solve G Equation of Motion
@@ -71,6 +86,7 @@ void Simulation<Repr>::do_boot() {
     }
   }
 }
+
 
 
 template <typename Repr>
@@ -89,19 +105,26 @@ void Simulation<Repr>::do_tstp(int tstp) {
     G.get_dm(tstp, rho);
     ZMatrixMap(hmf.data() + tstp*nao_*nao_, nao_, nao_) = DMatrixConstMap(h0.data(),nao_,nao_);
 
+    // HF Contractions
     start = std::chrono::system_clock::now();
     p_NEgf2_->solve_HF(tstp, hmf, rho);
     end = std::chrono::system_clock::now();
     elapsed_seconds = end-start;
     out << elapsed_seconds.count() << " ";
 
-
+    // 2B Contractions
     start = std::chrono::system_clock::now();
     if(!hfbool_) p_NEgf2_->solve(tstp, Sigma, G);
     end = std::chrono::system_clock::now();
     elapsed_seconds = end-start;
     out << elapsed_seconds.count() << " ";
 
+    // Efield contractions
+    if(boolPumpProbe_) {
+      std::cout << "working, I think" << std::endl;
+      Dyson.dipole_field(tstp, dfield_, G, dipole_, lPumpProbe_, nPumpProbe_, dt_);
+      Ed_contractions(tstp);
+    }
 
     start = std::chrono::system_clock::now();
     Dyson.dyson_step(tstp, G, Sigma, hmf, p_MatSim_->mu(), beta_, dt_);
@@ -200,7 +223,7 @@ tti_Simulation<Repr>::tti_Simulation(const gfmol::HartreeFock &hf,
                              int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
                              gfmol::Mode mode,
                              double damping, bool hfbool) : 
-                                 SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, hfbool),
+                                 SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, hfbool, false, "", "", 0, 0),
                                  h0(hf.hcore()) 
 {
   switch (mode) {
@@ -227,6 +250,10 @@ void tti_Simulation<Repr>::do_mat() {
   p_MatSim_->run(MatMax_, MatTol_, nullptr);
 }
 
+template <typename Repr>
+void tti_Simulation<Repr>::Ed_contractions(int tstp) {
+  int a = 0;
+}
 
 template <typename Repr>
 void tti_Simulation<Repr>::do_boot() {

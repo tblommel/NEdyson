@@ -132,6 +132,9 @@ public:
   double energy_conv(int tstp, const GREEN &Sig, const GREEN &G, double beta, double dt) const ;
   double energy_conv(int tstp, const TTI_GREEN &Sig, const TTI_GREEN &G, double beta, double dt) const ;
 
+  // Calculate dipole field =========================================
+  void dipole_field(int tstp, ZTensor<2> &dfield, const GREEN &G, const DTensor<3> &dipole, double l, double n, double dt) const ;
+
 }; // class dyson
 
 
