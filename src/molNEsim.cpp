@@ -18,6 +18,7 @@ SimulationBase::SimulationBase(const gfmol::HartreeFock &hf,
                                  Dyson(nt, ntau, nao_, k, hfbool),
                                  efield_(3, nt+1),
                                  Efield_(3, nt+1),
+                                 dfield_(3, nt+1),
                                  dipole_(3, nao_, nao_) {
   nt_ = nt;
   ntau_ = ntau;

@@ -42,6 +42,7 @@ protected:
   DTensor<3> dipole_;
   DTensor<2> Efield_;
   DTensor<2> efield_;
+  ZTensor<2> dfield_;
 
   DTensor<1> eKin_;
   DTensor<1> ePot_;
@@ -104,7 +105,6 @@ public:
   ZTensor<2> rho;
   GREEN Sigma;
   GREEN G; 
-  ZTensor<2> dfield_;
 
   // Construct sim
   Simulation(const gfmol::HartreeFock &hf,
@@ -152,7 +152,6 @@ public:
   ZTensor<2> rho;
   GREEN Sigma;
   GREEN G; 
-  ZTensor<2> dfield_;
 
   // Construct sim
   DecompSimulation(const gfmol::HartreeFock &hf,
@@ -202,8 +201,6 @@ public:
   GREEN Sdown;
   GREEN Gup;
   GREEN Gdown;
-  ZTensor<2> dfieldu_;
-  ZTensor<2> dfieldd_;
   
   std::vector<std::reference_wrapper<GREEN>> G;
   std::vector<std::reference_wrapper<GREEN>> Sigma;
@@ -256,8 +253,6 @@ public:
   GREEN Sdown;
   GREEN Gup;
   GREEN Gdown;
-  ZTensor<2> dfieldu_;
-  ZTensor<2> dfieldd_;
   
   std::vector<std::reference_wrapper<GREEN>> G;
   std::vector<std::reference_wrapper<GREEN>> Sigma;

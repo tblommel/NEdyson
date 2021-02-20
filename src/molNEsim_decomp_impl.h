@@ -24,8 +24,7 @@ DecompSimulation<Repr>::DecompSimulation(const gfmol::HartreeFock &hf,
                                  SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, hfbool, boolPumpProbe, PumpProbeInp, MolInp, lPumpProbe, nPumpProbe),
                                  hmf(nt+1, nao_, nao_), 
                                  h0(hf.hcore()), 
-                                 rho(nao_,nao_),
-                                 dfield_(3, nt+1)
+                                 rho(nao_,nao_)
 {
   switch (mode) {
     case gfmol::Mode::GF2:
@@ -71,7 +70,7 @@ void DecompSimulation<Repr>::do_boot() {
       p_NEgf2_->solve_HF(tstp, hmf, rho);
       if (!hfbool_) p_NEgf2_->solve(tstp, Sigma, G);
       if(boolPumpProbe_) {
-        Dyson.dipole_field(tstp, dfield_, G, dipole_, lPumpProbe_, nPumpProbe_, dt_);
+        Dyson.dipole_field(tstp, dfield_, G, G, dipole_, lPumpProbe_, nPumpProbe_, dt_);
         Ed_contractions(tstp);
       }
     }
@@ -101,7 +100,7 @@ void DecompSimulation<Repr>::do_tstp(int tstp) {
     if(!hfbool_) p_NEgf2_->solve(tstp, Sigma, G);
 
     if(boolPumpProbe_) {
-      Dyson.dipole_field(tstp, dfield_, G, dipole_, lPumpProbe_, nPumpProbe_, dt_);
+      Dyson.dipole_field(tstp, dfield_, G, G, dipole_, lPumpProbe_, nPumpProbe_, dt_);
       Ed_contractions(tstp);
     }
 

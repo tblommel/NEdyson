@@ -24,9 +24,7 @@ DecompSpinSimulation<Repr>::DecompSpinSimulation(const gfmol::HartreeFock &hf,
                                  SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, hfbool, boolPumpProbe, PumpProbeInp, MolInp, lPumpProbe, nPumpProbe),
                                  hmf(2, nt+1, nao_, nao_), 
                                  h0(hf.hcore()), 
-                                 rho(2,nao_,nao_),
-                                 dfieldu_(3, nt+1),
-                                 dfieldd_(3, nt+1)
+                                 rho(2,nao_,nao_)
 {
   switch (mode) {
     case gfmol::Mode::GF2:
@@ -62,8 +60,8 @@ template <typename Repr>
 void DecompSpinSimulation<Repr>::Ed_contractions(int tstp) {
   int nao = hmf.shape()[3];
   for(int d = 0; d < 3; d++) {
-    ZMatrixMap(hmf.data() + tstp*nao*nao, nao, nao) += (Efield_(d, tstp) + efield_(d, tstp) + dfieldu_(d, tstp)) * DMatrixMap(dipole_.data() + d*nao*nao, nao, nao);
-    ZMatrixMap(hmf.data() + (nt_+1)*nao_*nao_ + tstp*nao*nao, nao, nao) += (Efield_(d, tstp) + efield_(d, tstp) + dfieldd_(d, tstp)) * DMatrixMap(dipole_.data() + d*nao*nao, nao, nao);
+    ZMatrixMap(hmf.data() + tstp*nao*nao, nao, nao) += (Efield_(d, tstp) + efield_(d, tstp) + dfield_(d, tstp)) * DMatrixMap(dipole_.data() + d*nao*nao, nao, nao);
+    ZMatrixMap(hmf.data() + (nt_+1)*nao_*nao_ + tstp*nao*nao, nao, nao) += (Efield_(d, tstp) + efield_(d, tstp) + dfield_(d, tstp)) * DMatrixMap(dipole_.data() + d*nao*nao, nao, nao);
   }
 }
 
@@ -85,8 +83,7 @@ void DecompSpinSimulation<Repr>::do_boot() {
 
       if(!hfbool_) p_NEgf2_->solve(tstp, Sigma, G);
       if(boolPumpProbe_) {
-        Dyson.dipole_field(tstp, dfieldu_, Gup, dipole_, lPumpProbe_, nPumpProbe_, dt_);
-        Dyson.dipole_field(tstp, dfieldd_, Gdown, dipole_, lPumpProbe_, nPumpProbe_, dt_);
+        Dyson.dipole_field(tstp, dfield_, Gup, Gdown, dipole_, lPumpProbe_, nPumpProbe_, dt_);
         Ed_contractions(tstp);
       }
     }
@@ -122,8 +119,7 @@ void DecompSpinSimulation<Repr>::do_tstp(int tstp) {
     p_NEgf2_->solve_HF(tstp, hmf, rho);
     if(!hfbool_) p_NEgf2_->solve(tstp, Sigma, G);
     if(boolPumpProbe_) {
-      Dyson.dipole_field(tstp, dfieldu_, Gup, dipole_, lPumpProbe_, nPumpProbe_, dt_);
-      Dyson.dipole_field(tstp, dfieldd_, Gdown, dipole_, lPumpProbe_, nPumpProbe_, dt_);
+      Dyson.dipole_field(tstp, dfield_, Gup, Gdown, dipole_, lPumpProbe_, nPumpProbe_, dt_);
       Ed_contractions(tstp);
     }
 
