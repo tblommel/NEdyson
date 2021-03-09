@@ -2,7 +2,6 @@ build/
 .vscode/
 cmake.sh
 *.lyx~
-build.sh
 *.dat*
 *.eps
 *.out
