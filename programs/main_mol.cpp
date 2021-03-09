@@ -41,8 +41,12 @@ int main(const int argc, char *const *const argv)
 
     // Save the simulation
     if(p.boolOutput) {
-      h5e::File fout(p.output, h5e::File::Create);
+      h5e::File fout(p.output, h5e::File::Overwrite | h5e::File::ReadWrite | h5e::File::Create);
       p_sim->save(fout, "");
+    }
+    if(p.boolPumpProbe && p.boolOutputPP) {
+      h5e::File fout(p.outputPP, h5e::File::Overwrite | h5e::File::ReadWrite | h5e::File::Create);
+      p_sim->save_PP(fout, "");
     }
   } 
   else if(p.repr == "ir") {

@@ -84,13 +84,13 @@ public:
 
   // Step functions individual components ============================
   double dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double beta, double dt) const ;
-  void dyson_step_tv(int tstp, GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double beta, double dt) const ;
-  void dyson_step_ret(int tstp, GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double dt) const ;
+  double dyson_step_tv(int tstp, GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double beta, double dt) const ;
+  double dyson_step_ret(int tstp, GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double dt) const ;
 
   // Step functions HF individual components ==========================
   double dyson_step_les_hf(int n, GREEN &G, const cplx *hmf, double mu, double beta, double dt) const ;
-  void dyson_step_tv_hf(int tstp, GREEN &G, const cplx *hmf, double mu, double beta, double dt) const ;
-  void dyson_step_ret_hf(int tstp, GREEN &G, const cplx *hmf, double mu, double dt) const ;
+  double dyson_step_tv_hf(int tstp, GREEN &G, const cplx *hmf, double mu, double beta, double dt) const ;
+  double dyson_step_ret_hf(int tstp, GREEN &G, const cplx *hmf, double mu, double dt) const ;
 
   // TTI step functions ==============================================
   void dyson_step(int n, TTI_GREEN &G, const TTI_GREEN &Sig, const double *hmf, double mu, double beta, double dt) const ;

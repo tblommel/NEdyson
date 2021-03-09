@@ -67,11 +67,17 @@ void SimulationBase::save_base(h5::File &file, const std::string &path) const {
   h5e::dump(file, path + "/solve/params/hf", hfbool_);
 }
 
+void SimulationBase::save_PP(h5::File &file, const std::string &path) const {
+  h5e::dump(file, path + "/l", lPumpProbe_);
+  h5e::dump(file, path + "/n", nPumpProbe_);
+  h5e::dump(file, path + "/dfield", dfield_);
+  h5e::dump(file, path + "/efield", efield_);
+}
+
 
 void SimulationBase::run(){
   std::chrono::time_point<std::chrono::system_clock> start, end;
   std::chrono::duration<double> elapsed_seconds;
-  
   // Run the gfmol Matsubara solver
   do_mat();
 

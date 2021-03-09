@@ -55,6 +55,7 @@ protected:
   void save_base(h5::File &file, const std::string &path) const;
   
 public:
+  void save_PP(h5::File &file, const std::string &path) const;
   // Base class constructor
   explicit SimulationBase(const gfmol::HartreeFock &hf, int nt, int ntau, int k, double dt, int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps, bool hfbool, bool boolPumpProbe, std::string PumpProbeInput, std::string MolInput, double lPumpProbe, double nPumpProbe);
   

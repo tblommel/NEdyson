@@ -42,6 +42,9 @@ struct Params {
   std::string PumpProbe_file;
   double lPumpProbe;
   double nPumpProbe;
+  std::string outputPP;
+  bool boolOutputPP;
+
 
   void validate() const
   {
@@ -121,6 +124,8 @@ inline std::ostream &operator<<(std::ostream &os, const Params &p)
   os << "    PumpProbe_file:  " << p.PumpProbe_file << std::endl;
   os << "    lPumpProbe:      " << p.lPumpProbe << std::endl;
   os << "    nPumpProbe:      " << p.nPumpProbe << std::endl;
+  os << "    outputPP:        " << p.outputPP << std::endl;
+  os << "    boolOutputPP:    " << p.boolOutputPP << std::endl;
   os << std::noboolalpha;
   return os;
 }
@@ -175,6 +180,8 @@ inline Params parse_args(const int argc, char *const *const argv)
   args::ValueFlag<std::string> PumpProbe_file(parser, "PumpProbe-file", "The file that contains the pump and probe fields", {"PumpProbe-file"});
   args::ValueFlag<double> lPumpProbe(parser, "lPumpProbe", "length of system that appears in the PumpProbe induced field equation", {"lPumpProbe"});
   args::ValueFlag<double> nPumpProbe(parser, "nPumpProbe", "density of system that appears in the PumpProbe induced field equation", {"nPumpProbe"});
+  args::Flag boolOutputPP(parser, "boolOutputPP", "output PumpProbe results", {"boolOutputPP"});
+  args::ValueFlag<std::string> outputPP(parser, "outputPP", "The file that contains the pump and probe fields output", {"outputPP"});
 
   args::HelpFlag help(parser, "help", "Display this help menu", {'h', "help"});
   try {
@@ -214,7 +221,9 @@ inline Params parse_args(const int argc, char *const *const argv)
            extract_value(param_file, boolPumpProbe),
            extract_value(param_file, PumpProbe_file),
            extract_value(param_file, lPumpProbe),
-           extract_value(param_file, nPumpProbe)};
+           extract_value(param_file, nPumpProbe),
+           extract_value(param_file, outputPP),
+           extract_value(param_file, boolOutputPP)};
   try {
     p.validate();
   } catch (const std::runtime_error &e) {

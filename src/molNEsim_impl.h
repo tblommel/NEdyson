@@ -171,6 +171,12 @@ void Simulation<Repr>::do_energy() {
     auto h0mat = DMatrixConstMap(h0.data(),nao_,nao_);
 
     eKin_(t) = rhomat.cwiseProduct((hmfmat+h0mat).transpose()).sum().real();
+    if(boolPumpProbe_) {
+      for(int i=0; i<3; i++) {
+        eKin_(t) += rhomat.cwiseProduct((Efield_(i,t) + efield_(i,t) + dfield_(i,t))
+                                        * DMatrixMap(dipole_.data() + i*nao2, nao_, nao_).transpose()).sum().real();
+      }
+    }
     ePot_(t) = 2*Dyson.energy_conv(t, Sigma, G, beta_, dt_);
   }
 }
