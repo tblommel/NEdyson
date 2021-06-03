@@ -23,8 +23,6 @@ int main(const int argc, char *const *const argv)
   else if (p.mode == "GW")
     throw std::runtime_error("GW solver not implemented");
 
-  h5e::File fout(p.output, h5e::File::Overwrite | h5e::File::ReadWrite | h5e::File::Create);
-
   if (p.repr == "cheb") {
     // load repr
     std::cout << "Loading Chebyshev repr at " << p.repr_file << std::endl;

@@ -38,6 +38,8 @@ private:
 public:
   dyson(int nt, int ntau, int nao, int k, bool hfbool_);
 
+  const INTEG &II() { return I; }
+
   // return convolution class
   const cpsitop::nonequilibrium::convolution Convolution() const { return Conv; }
   

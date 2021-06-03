@@ -30,7 +30,6 @@ DecompSimulation<Repr>::DecompSimulation(const gfmol::HartreeFock &hf,
     case gfmol::Mode::GF2:
       p_MatSim_ = std::unique_ptr<gfmol::DecompSimulation<Repr> >(new gfmol::DecompSimulation<Repr>(hf, frepr, brepr, mode, 0., decomp_prec, hfbool));
       beta_ = p_MatSim_->frepr().beta();
-      dtau_ = beta_/ntau;
       p_NEgf2_ = std::unique_ptr<molGF2SolverDecomp>(new molGF2SolverDecomp(p_MatSim_->Vija(), p_MatSim_->Viaj()));
   }
 
@@ -117,7 +116,6 @@ void DecompSimulation<Repr>::save(h5::File &file, const std::string &path) {
   Sigma.print_to_file(file, path + "/Sigma");
   
   h5e::dump(file, path + "/params/beta", beta_);
-  h5e::dump(file, path + "/params/dtau", dtau_);
   h5e::dump(file, path + "/mu", p_MatSim_->mu());
   h5e::dump(file, path + "/hmf", hmf);
   h5e::dump(file, path + "/params/h0", h0);
@@ -197,7 +195,6 @@ tti_DecompSimulation<Repr>::tti_DecompSimulation(const gfmol::HartreeFock &hf,
     case gfmol::Mode::GF2:
       p_MatSim_ = std::unique_ptr<gfmol::DecompSimulation<Repr> >(new gfmol::DecompSimulation<Repr>(hf, frepr, brepr, mode, 0., decomp_prec, hfbool));
       beta_ = p_MatSim_->frepr().beta();
-      dtau_ = beta_/ntau;
       p_NEgf2_ = std::unique_ptr<tti_molGF2SolverDecomp>(new tti_molGF2SolverDecomp(p_MatSim_->Vija(), p_MatSim_->Viaj()));
   }
 
@@ -283,7 +280,6 @@ void tti_DecompSimulation<Repr>::save(h5::File &file, const std::string &path) {
   Sigma.print_to_file(file, path + "/Sigma");
   
   h5e::dump(file, path + "/params/beta", beta_);
-  h5e::dump(file, path + "/params/dtau", dtau_);
   h5e::dump(file, path + "/mu", p_MatSim_->mu());
   h5e::dump(file, path + "/hmf", p_MatSim_->fock());
   h5e::dump(file, path + "/params/h0", h0);

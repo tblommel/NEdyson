@@ -20,7 +20,6 @@ double dyson::energy_conv(int tstp, const GREEN &Sig, const GREEN &G, double bet
   assert(G.ntau == ntau_);
 
   int top = tstp >= k_ ? tstp : k_, sig = G.sig();
-  double dtau = beta/ntau_;
   cplx res1 = 0;
   cplx res2 = 0;
 
@@ -313,6 +312,8 @@ void dyson::Cles2_tstp(int j1, int j2, const GREEN &A, const GREEN &Acc, const G
   assert(j1 >= 0);
   assert(j2 <= A.nt());
   assert(m <= A.nt());
+  assert(j1 <= m);
+  assert(j2 <= m);
   assert(A.nt() == Acc.nt());
   assert(A.nt() == B.nt());
   assert(A.nt() == Bcc.nt());
@@ -388,7 +389,6 @@ void dyson::Cles3_tstp(int j1, int j2, const GREEN &A, const GREEN &Acc, const G
 
   int sig=B.sig(), j, l, n;
   int top = m>=k_ ? m : k_;
-  double dtau=beta/ntau_;
   cplx cplxi = cplx(0.,1.);
 
   // Fill NTauTmp first
@@ -432,7 +432,7 @@ void dyson::Cles3_tstp(int j1, int j2, const GREEN &A, const GREEN &Acc, const G
 }
 
 void dyson::Cles3_tstp(const GREEN &A, const GREEN &Acc, const GREEN &B, const GREEN &Bcc, int m, double beta, cplx *res) const {
-  int top = m < k_ ? k_ : m;
+  int top = m <= k_ ? k_ : m;
   return Cles3_tstp(0, top, A, Acc, B, Bcc, m, beta, res);
 }
 

@@ -130,9 +130,7 @@ void dyson::dyson_step(int n, TTI_GREEN &G, const TTI_GREEN &Sig, const DTensor<
   assert(G.size1() == hmf.shape()[0]);
   assert(G.size1() == hmf.shape()[1]);
 
-  dyson_step_ret(n, G, Sig, hmf.data(), mu, dt);
-  dyson_step_tv(n, G, Sig, hmf.data(), mu, beta, dt);
-  dyson_step_les(n, G, Sig, hmf.data(), mu, beta, dt);
+  dyson_step(n, G, Sig, hmf.data(), mu, beta, dt);
 }
 
 } // namespace NEdyson

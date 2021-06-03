@@ -104,7 +104,7 @@ double dyson::dyson_start_tv_hf(GREEN &G, const cplx *hmf, double mu, double bet
         }
       }
     }
-
+    
     // Solve MX=Q
     Eigen::FullPivLU<ZMatrix> lu(MMap);
     ZMatrixMap(X.data(), k_*nao_, nao_) = lu.solve(QMap);

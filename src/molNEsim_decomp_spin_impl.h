@@ -30,7 +30,6 @@ DecompSpinSimulation<Repr>::DecompSpinSimulation(const gfmol::HartreeFock &hf,
     case gfmol::Mode::GF2:
       p_MatSim_ = std::unique_ptr<gfmol::DecompSpinSimulation<Repr> >(new gfmol::DecompSpinSimulation<Repr>(hf, frepr, brepr, mode, 0., hfbool));
       beta_ = p_MatSim_->frepr().beta();
-      dtau_ = beta_/ntau;
       p_NEgf2_ = std::unique_ptr<molGF2SolverSpinDecomp>(new molGF2SolverSpinDecomp(p_MatSim_->Vija(), p_MatSim_->Viaj()));
   }
 
@@ -139,7 +138,6 @@ void DecompSpinSimulation<Repr>::save(h5::File &file, const std::string &path) {
   Sdown.print_to_file(file, path + "/Sigma/down");
   
   h5e::dump(file, path + "/params/beta", beta_);
-  h5e::dump(file, path + "/params/dtau", dtau_);
   h5e::dump(file, path + "/mu", std::vector<double>{p_MatSim_->mu()[0], p_MatSim_->mu()[1]});
   h5e::dump(file, path + "/hmf", hmf);
   h5e::dump(file, path + "/params/h0", h0);
@@ -228,7 +226,6 @@ tti_DecompSpinSimulation<Repr>::tti_DecompSpinSimulation(const gfmol::HartreeFoc
     case gfmol::Mode::GF2:
       p_MatSim_ = std::unique_ptr<gfmol::DecompSpinSimulation<Repr> >(new gfmol::DecompSpinSimulation<Repr>(hf, frepr, brepr, mode, 0., hfbool));
       beta_ = p_MatSim_->frepr().beta();
-      dtau_ = beta_/ntau;
       p_NEgf2_ = std::unique_ptr<tti_molGF2SolverSpinDecomp>(new tti_molGF2SolverSpinDecomp(p_MatSim_->Vija(), p_MatSim_->Viaj()));
   }
 
@@ -313,7 +310,6 @@ void tti_DecompSpinSimulation<Repr>::save(h5::File &file, const std::string &pat
   Sdown.print_to_file(file, path + "/Sigma/down");
   
   h5e::dump(file, path + "/params/beta", beta_);
-  h5e::dump(file, path + "/params/dtau", dtau_);
   h5e::dump(file, path + "/mu", std::vector<double>{p_MatSim_->mu()[0], p_MatSim_->mu()[1]});
   h5e::dump(file, path + "/hmf", p_MatSim_->fock());
   h5e::dump(file, path + "/params/h0", h0);

@@ -147,11 +147,12 @@ double dyson::dyson_step_tv(int tstp, GREEN &G, const GREEN &Sig, const cplx *hm
   auto MMap = ZMatrixMap(M.data(), nao_, nao_);
   auto XMap = ZMatrixMap(X.data(), nao_, nao_);
 
+  std::memcpy(NTauTmp.data() + (ntau_+1)*es_, G.tvptr(tstp,0), (ntau_+1)*es_*sizeof(cplx));
   memset(G.tvptr(tstp,0),0,(ntau_+1)*es_*sizeof(cplx));
 
   start = std::chrono::system_clock::now();
 
-  // Do integrals
+  // Do integrals, results go into G.tv(tstp,:), not by increment
   Ctv_tstp(tstp, G, Sig, Sig, G, G, beta, dt);
 
   // Put derivatives into GRM(tstp,m)
@@ -170,7 +171,7 @@ double dyson::dyson_step_tv(int tstp, GREEN &G, const GREEN &Sig, const cplx *hm
   for(m=0; m<=ntau_; m++) {
     QMap.noalias() = ZMatrixMap(G.tvptr(tstp, m), nao_, nao_);
     XMap = lu.solve(QMap);
-    err += (ZMatrixMap(G.tvptr(tstp,m), nao_, nao_) - XMap).norm();
+    err += (ZMatrixMap(NTauTmp.data() + (ntau_+1+m)*es_, nao_, nao_) - XMap).norm();
     ZMatrixMap(G.tvptr(tstp,m), nao_, nao_).noalias() = XMap;
   }
 
@@ -207,18 +208,20 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
   err += (ZMatrixMap(G.lesptr(0,n), nao_, nao_) + ZMatrixMap(G.tvptr(n,0), nao_, nao_).adjoint()).lpNorm<2>();
   ZMatrixMap(G.lesptr(0,n), nao_, nao_).noalias() = -ZMatrixMap(G.tvptr(n,0), nao_, nao_).adjoint();
 
-  // Integrals go into Q
+  // Integrals go into Q via increment.  Q must be 0.
   memset(Q.data(),0,sizeof(cplx)*(num+1)*es_);
   memset(M.data(),0,sizeof(cplx)*k_*k_*es_);
-  intstart = std::chrono::system_clock::now();
-  Cles2_tstp(Sig,Sig,G,G,n,dt,Q.data());
-  intend = std::chrono::system_clock::now();
-  int1 = intend-intstart;
 
   intstart = std::chrono::system_clock::now();
   Cles3_tstp(Sig,Sig,G,G,n,beta,Q.data());
   intend = std::chrono::system_clock::now();
   int2 = intend-intstart;
+
+  intstart = std::chrono::system_clock::now();
+  Cles2_tstp(Sig,Sig,G,G,n,dt,Q.data());
+  intend = std::chrono::system_clock::now();
+  int1 = intend-intstart;
+
 
   // Set up the kxk linear problem MX=Q
   for(m=1; m<=k_; m++) {
@@ -259,7 +262,7 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
   Eigen::FullPivLU<ZMatrix> lu(MMap);
   ZMatrixMap(X.data() + es_, k_*nao_, nao_).noalias() = lu.solve(ZMatrixMap(Q.data()+es_, k_*nao_, nao_));
 
-  ZMatrixMap(X.data(), nao_, nao_).noalias() = ZMatrixMap(G.lesptr(0,n), nao_, nao_);
+  ZMatrixMap(X.data(), nao_, nao_).noalias() = -ZMatrixMap(G.tvptr(n,0), nao_, nao_).adjoint();
 
   // Timestepping
   ZMatrixMap MMapSmall = ZMatrixMap(M.data(), nao_, nao_);
@@ -289,7 +292,7 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
   }
 
   // Write elements into G
-  for(l=1; l<=n; l++) {
+  for(l=0; l<=n; l++) {
     err += (ZColVectorMap(G.lesptr(l,n), es_) - ZColVectorMap(X.data() + l*es_, es_)).norm();
     ZMatrixMap(G.lesptr(l,n), nao_, nao_).noalias() = ZMatrixMap(X.data() + l*es_, nao_, nao_);
   }

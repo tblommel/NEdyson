@@ -98,7 +98,6 @@ class Simulation : public SimulationBase {
 public:
   std::unique_ptr<gfmol::Simulation<Repr>> p_MatSim_;
   double beta_;
-  double dtau_;
   std::unique_ptr<molGF2Solver> p_NEgf2_;
 
   ZTensor<3> hmf;
@@ -145,7 +144,6 @@ class DecompSimulation : public SimulationBase {
 public:
   std::unique_ptr<gfmol::DecompSimulation<Repr>> p_MatSim_;
   double beta_;
-  double dtau_;
   std::unique_ptr<molGF2SolverDecomp> p_NEgf2_;
 
   ZTensor<3> hmf;
@@ -191,7 +189,6 @@ class SpinSimulation : public SimulationBase {
 public:
   std::unique_ptr<gfmol::SpinSimulation<Repr>> p_MatSim_;
   double beta_;
-  double dtau_;
   std::unique_ptr<molGF2SolverSpin> p_NEgf2_;
 
   ZTensor<4> hmf;
@@ -243,7 +240,6 @@ class DecompSpinSimulation : public SimulationBase {
 public:
   std::unique_ptr<gfmol::DecompSpinSimulation<Repr>> p_MatSim_;
   double beta_;
-  double dtau_;
   std::unique_ptr<molGF2SolverSpinDecomp> p_NEgf2_;
 
   ZTensor<4> hmf;
@@ -301,7 +297,6 @@ class tti_Simulation : public SimulationBase {
 public:
   std::unique_ptr<gfmol::Simulation<Repr>> p_MatSim_;
   double beta_;
-  double dtau_;
   std::unique_ptr<tti_molGF2Solver> p_NEgf2_;
 
   const DTensor<2> &h0;
@@ -341,7 +336,6 @@ class tti_DecompSimulation : public SimulationBase {
 public:
   std::unique_ptr<gfmol::DecompSimulation<Repr>> p_MatSim_;
   double beta_;
-  double dtau_;
   std::unique_ptr<tti_molGF2SolverDecomp> p_NEgf2_;
 
   const DTensor<2> &h0;
@@ -383,7 +377,6 @@ class tti_SpinSimulation : public SimulationBase {
 public:
   std::unique_ptr<gfmol::SpinSimulation<Repr>> p_MatSim_;
   double beta_;
-  double dtau_;
   std::unique_ptr<tti_molGF2SolverSpin> p_NEgf2_;
 
   const DTensor<2> &h0;
@@ -431,7 +424,6 @@ class tti_DecompSpinSimulation : public SimulationBase {
 public:
   std::unique_ptr<gfmol::DecompSpinSimulation<Repr>> p_MatSim_;
   double beta_;
-  double dtau_;
   std::unique_ptr<tti_molGF2SolverSpinDecomp> p_NEgf2_;
 
   const DTensor<2> &h0;

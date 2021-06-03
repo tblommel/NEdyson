@@ -58,7 +58,7 @@ double dyson::dyson_start_ret(GREEN &G, const GREEN &Sig, const cplx *hmf, doubl
     //solve MX=Q for X
     Eigen::FullPivLU<ZMatrix> lu(ZMatrixMap(M.data(), (k_-m)*nao_, (k_-m)*nao_));
     ZMatrixMap(X.data(), (k_-m)*nao_, nao_) = lu.solve(ZMatrixMap(Q.data(), (k_-m)*nao_, nao_));
-
+    
     //put X into G
     for(l=0; l<k_-m; l++){
       err += (ZColVectorMap(G.retptr(l+m+1,m), es_) - ZColVectorMap(X.data() + l*es_, es_)).norm();
@@ -86,6 +86,8 @@ double dyson::dyson_start_tv(GREEN &G, const GREEN &Sig, const cplx *hmf, double
     err += (tvmap - (double)G.sig()*cplxi*matmap).norm();
     tvmap.noalias() = (double)G.sig()*cplxi*matmap;
   }
+
+  memset(NTauTmp.data(),0,k_*(ntau_+1)*es_*sizeof(cplx));
 
   // Do the integrals
   for(n=1; n<=k_; n++) {
@@ -177,8 +179,11 @@ double dyson::dyson_start(GREEN &G, const GREEN &Sig, const cplx *hmf, double mu
   }
   else {
     err += dyson_start_ret_hf(G, hmf, mu, dt);
+    std::cout<<"ret err: "<<err<<std::endl;
     err += dyson_start_tv_hf(G, hmf, mu, beta, dt);
+    std::cout<<"tv err: "<<err<<std::endl;
     err += dyson_start_les_hf(G, hmf, mu, beta, dt);
+    std::cout<<"les err: "<<err<<std::endl;
   }
   return err;
 }

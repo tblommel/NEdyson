@@ -72,6 +72,7 @@ void SimulationBase::save_PP(h5::File &file, const std::string &path) const {
   h5e::dump(file, path + "/n", nPumpProbe_);
   h5e::dump(file, path + "/dfield", dfield_);
   h5e::dump(file, path + "/efield", efield_);
+  h5e::dump(file, path + "/dt", dt_);
 }
 
 
