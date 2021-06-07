@@ -161,36 +161,32 @@ cplx *green_func::matptr(int i) const {
 //======================
 void green_func::print_to_file_mat(h5e::File &File, std::string path) const {
   std::vector<size_t> dims(1);
-  dims[0]=(ntau_+1)*element_size_;
-  h5e::detail::createGroupsToDataSet(File, path+"/GM");
-  h5::DataSet dataset = File.createDataSet<cplx>(path+"/GM",h5::DataSpace(dims));
+  dims[0] = (ntau_+1) * element_size_;
+  h5::DataSet dataset = File.createDataSet<cplx>(path + "/GM", h5::DataSpace(dims));
   dataset.write(mat_);
   File.flush();
 }
 
 void green_func::print_to_file_ret(h5e::File &File, std::string path) const {
   std::vector<size_t> dims(1);
-  dims[0]=((nt_+1)*(nt_+2))/2*element_size_;
-  h5e::detail::createGroupsToDataSet(File, path+"/GR");
-  h5::DataSet dataset = File.createDataSet<cplx>(path+"/GR",h5::DataSpace(dims));
+  dims[0] = ((nt_+1)*(nt_+2))/2 * element_size_;
+  h5::DataSet dataset = File.createDataSet<cplx>(path + "/GR", h5::DataSpace(dims));
   dataset.write(ret_);
   File.flush();
 }
 
 void green_func::print_to_file_les(h5e::File &File, std::string path) const {
   std::vector<size_t> dims(1);
-  dims[0]=((nt_+1)*(nt_+2))/2*element_size_;
-  h5e::detail::createGroupsToDataSet(File, path+"/GL");
-  h5::DataSet dataset = File.createDataSet<cplx>(path+"/GL",h5::DataSpace(dims));
+  dims[0] = ((nt_+1)*(nt_+2))/2 * element_size_;
+  h5::DataSet dataset = File.createDataSet<cplx>(path + "/GL", h5::DataSpace(dims));
   dataset.write(les_);
   File.flush();
 }
 
 void green_func::print_to_file_tv(h5e::File &File, std::string path) const {
   std::vector<size_t> dims(1);
-  dims[0]=((nt_+1)*(ntau_+1))*element_size_;
-  h5e::detail::createGroupsToDataSet(File, path+"/GTV");
-  h5::DataSet dataset = File.createDataSet<cplx>(path+"/GTV",h5::DataSpace(dims));
+  dims[0] = (nt_+1)*(ntau_+1) * element_size_;
+  h5::DataSet dataset = File.createDataSet<cplx>(path + "/GTV", h5::DataSpace(dims));
   dataset.write(tv_);
   File.flush();
 }
@@ -430,36 +426,32 @@ cplx *tti_green_func::matptr(int i) const {
 //======================
 void tti_green_func::print_to_file_mat(h5e::File &File, std::string path) const {
   std::vector<size_t> dims(1);
-  dims[0]=(ntau_+1)*element_size_;
-  h5e::detail::createGroupsToDataSet(File, path+"/GM");
-  h5::DataSet dataset = File.createDataSet<cplx>(path+"/GM",h5::DataSpace(dims));
-  dataset.write(mat_);
+  dims[0] = (ntau_+1) * element_size_;
+  h5::DataSet dataset = File.createDataSet<cplx>(path + "/GM", h5::DataSpace(dims));
+  dataset.write(ret_);
   File.flush();
 }
 
 void tti_green_func::print_to_file_ret(h5e::File &File, std::string path) const {
   std::vector<size_t> dims(1);
-  dims[0]=(nt_+1)*element_size_;
-  h5e::detail::createGroupsToDataSet(File, path+"/GR");
-  h5::DataSet dataset = File.createDataSet<cplx>(path+"/GR",h5::DataSpace(dims));
+  dims[0] = (nt_+1) * element_size_;
+  h5::DataSet dataset = File.createDataSet<cplx>(path + "/GR", h5::DataSpace(dims));
   dataset.write(ret_);
   File.flush();
 }
 
 void tti_green_func::print_to_file_les(h5e::File &File, std::string path) const {
   std::vector<size_t> dims(1);
-  dims[0]=(nt_+1)*element_size_;
-  h5e::detail::createGroupsToDataSet(File, path+"/GL");
-  h5::DataSet dataset = File.createDataSet<cplx>(path+"/GL",h5::DataSpace(dims));
+  dims[0] = (nt_+1) * element_size_;
+  h5::DataSet dataset = File.createDataSet<cplx>(path + "/GL", h5::DataSpace(dims));
   dataset.write(les_);
   File.flush();
 }
 
 void tti_green_func::print_to_file_tv(h5e::File &File, std::string path) const {
   std::vector<size_t> dims(1);
-  dims[0]=((nt_+1)*(ntau_+1))*element_size_;
-  h5e::detail::createGroupsToDataSet(File, path+"/GTV");
-  h5::DataSet dataset = File.createDataSet<cplx>(path+"/GTV",h5::DataSpace(dims));
+  dims[0] = (nt_+1)*(ntau_+1) * element_size_;
+  h5::DataSet dataset = File.createDataSet<cplx>(path + "/GTV", h5::DataSpace(dims));
   dataset.write(tv_);
   File.flush();
 }
