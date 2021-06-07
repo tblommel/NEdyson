@@ -64,14 +64,8 @@ void Simulation<Repr>::do_boot() {
 
     // Update mean field & self energy
     for(int tstp = 0; tstp <= k_; tstp++){
-      G.get_dm(tstp, rho);
-      ZMatrixMap(hmf.data() + tstp*nao_*nao_, nao_, nao_) = DMatrixConstMap(h0.data(),nao_,nao_);
-      p_NEgf2_->solve_HF(tstp, hmf, rho);
+      ZMatrixMap(hmf.data() + tstp*nao_*nao_, nao_, nao_) = DMatrixConstMap(p_MatSim_->fock().data(),nao_,nao_);
       if(!hfbool_)  p_NEgf2_->solve(tstp, Sigma, G);
-      if(boolPumpProbe_) {
-        Dyson.dipole_field(tstp, dfield_, G, G, dipole_, lPumpProbe_, nPumpProbe_, dt_);
-        Ed_contractions(tstp);
-      }
     }
 
     // Solve G Equation of Motion
@@ -251,6 +245,12 @@ void Simulation<Repr>::save(h5::File &file, const std::string &path) {
 
   h5e::dump(file, path + "/rhoM", p_MatSim_->rho());
   h5e::dump(file, path + "/hmfM", p_MatSim_->fock());
+
+  ZTensor<3> coeff(ntau_+1, nao_, nao_);
+  Dyson.Convolution().collocation().to_spectral(coeff, ZTensorView<3>(G.matptr(0), ntau_+1, nao_, nao_));
+  h5e::dump(file, path + "/Gcoeff", coeff);
+  Dyson.Convolution().collocation().to_spectral(coeff, ZTensorView<3>(Sigma.matptr(0), ntau_+1, nao_, nao_));
+  h5e::dump(file, path + "/Scoeff", coeff);
 }
 
 

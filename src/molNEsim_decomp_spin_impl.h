@@ -72,19 +72,10 @@ void DecompSpinSimulation<Repr>::do_boot() {
 
     // Update mean field & self energy
     for(int tstp = 0; tstp <= k_; tstp++){
-      Gup.get_dm(tstp, rho.data());
-      Gdown.get_dm(tstp, rho.data() + nao2);
-        
-      ZMatrixMap(hmf.data() + tstp*nao2, nao_, nao_) = DMatrixConstMap(h0.data(),nao_,nao_);
-      ZMatrixMap(hmf.data() + (nt_+1)*nao2 + tstp*nao2, nao_, nao_) = DMatrixConstMap(h0.data(),nao_,nao_);
-
-      p_NEgf2_->solve_HF(tstp, hmf, rho);
+      ZMatrixMap(hmf.data() + tstp*nao2, nao_, nao_) = DMatrixConstMap(p_MatSim_->fock().data(),nao_,nao_);
+      ZMatrixMap(hmf.data() + (nt_+1)*nao2 + tstp*nao2, nao_, nao_) = DMatrixConstMap(p_MatSim_->fock().data() + nao2, nao_, nao_);
 
       if(!hfbool_) p_NEgf2_->solve(tstp, Sigma, G);
-      if(boolPumpProbe_) {
-        Dyson.dipole_field(tstp, dfield_, Gup, Gdown, dipole_, lPumpProbe_, nPumpProbe_, dt_);
-        Ed_contractions(tstp);
-      }
     }
 
     // Solve G Equation of Motion
