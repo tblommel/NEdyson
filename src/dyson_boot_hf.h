@@ -23,7 +23,7 @@ double dyson::dyson_start_ret_hf(GREEN &G, const cplx *hmf, double mu, double dt
   memset(M.data(), 0, k_*k_*es_*sizeof(cplx));
   memset(Q.data(), 0, k_*es_*sizeof(cplx));
 
-  for(n=m+1; n<=k_; n++) {
+  for(n=1; n<=k_; n++) {
     auto QMapBlock = QMap.block((n-1)*nao_, 0, nao_, nao_);
 
     for(l=0; l<=k_; l++) {
