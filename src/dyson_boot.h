@@ -18,51 +18,57 @@ double dyson::dyson_start_ret(GREEN &G, const GREEN &Sig, const cplx *hmf, doubl
     ZMatrixMap(G.retptr(i,i), nao_, nao_).noalias() = ncplxi*IMap;
   }
 
-  // Fill the first k timesteps
-  for(m=0; m<k_; m++) {
-    ZMatrixMap MMap = ZMatrixMap(M.data(), nao_*(k_-m), nao_*(k_-m));
-    memset(M.data(), 0, k_*k_*es_*sizeof(cplx));
-    memset(Q.data(), 0, k_*es_*sizeof(cplx));
+  // Fill GR(:k+1,0)
+  ZMatrixMap MMap = ZMatrixMap(M.data(), nao_*k_, nao_*k_);
+  memset(M.data(), 0, k_*k_*es_*sizeof(cplx));
+  memset(Q.data(), 0, k_*es_*sizeof(cplx));
 
-    for(n=m+1; n<=k_; n++) {
-      auto QMapBlock = QMap.block((n-m-1)*nao_, 0, nao_, nao_);
+  for(n=1; n<=k_; n++) {
+    auto QMapBlock = QMap.block((n-1)*nao_, 0, nao_, nao_);
 
-      for(l=0; l<=k_; l++) {
-        auto MMapBlock = MMap.block((n-m-1)*nao_, (l-m-1)*nao_, nao_, nao_);
+    for(l=0; l<=k_; l++) {
+      auto MMapBlock = MMap.block((n-1)*nao_, (l-1)*nao_, nao_, nao_);
 
-        if(l<=m){ // We know these G's. Put into Q
-          QMapBlock.noalias() += ncplxi/dt * I.poly_diff(n,l) * -1.*ZMatrixMap(G.retptr(m,l), nao_, nao_).adjoint()
-                              + dt*I.poly_integ(m,n,l) * ZMatrixMap(Sig.retptr(n,l), nao_, nao_) * -1*ZMatrixMap(G.retptr(m,l), nao_, nao_).adjoint();
+      if(l==0){ // We know these G's. Put into Q
+        QMapBlock.noalias() += ncplxi/dt * I.poly_diff(n,l) * -1.*ZMatrixMap(G.retptr(0,l), nao_, nao_).adjoint()
+                            + dt*I.poly_integ(0,n,l) * ZMatrixMap(Sig.retptr(n,l), nao_, nao_) * -1*ZMatrixMap(G.retptr(0,l), nao_, nao_).adjoint();
+      }
+      else{ // Don't have these. Put into M
+
+        // Derivative term
+        MMapBlock.noalias() = -ncplxi/dt * I.poly_diff(n,l) * IMap;
+
+        // Delta energy term
+        if(n==l){
+          MMapBlock.noalias() += mu*IMap - ZMatrixConstMap(hmf + l*es_, nao_, nao_);
         }
-        else{ // Don't have these. Put into M
 
-          // Derivative term
-          MMapBlock.noalias() = -ncplxi/dt * I.poly_diff(n,l) * IMap;
-
-          // Delta energy term
-          if(n==l){
-            MMapBlock.noalias() += mu*IMap - ZMatrixConstMap(hmf + l*es_, nao_, nao_);
-          }
-
-          // Integral term
-          if(n>=l){ // We have Sig
-            MMapBlock.noalias() -= dt*I.poly_integ(m,n,l) * ZMatrixMap(Sig.retptr(n,l), nao_, nao_);
-          }
-          else{ // Don't have it
-            MMapBlock.noalias() += dt*I.poly_integ(m,n,l) * ZMatrixMap(Sig.retptr(l,n), nao_, nao_).adjoint();
-          }
+        // Integral term
+        if(n>=l){ // We have Sig
+          MMapBlock.noalias() -= dt*I.poly_integ(0,n,l) * ZMatrixMap(Sig.retptr(n,l), nao_, nao_);
+        }
+        else{ // Don't have it
+          MMapBlock.noalias() += dt*I.poly_integ(0,n,l) * ZMatrixMap(Sig.retptr(l,n), nao_, nao_).adjoint();
         }
       }
     }
+  }
 
-    //solve MX=Q for X
-    Eigen::FullPivLU<ZMatrix> lu(ZMatrixMap(M.data(), (k_-m)*nao_, (k_-m)*nao_));
-    ZMatrixMap(X.data(), (k_-m)*nao_, nao_) = lu.solve(ZMatrixMap(Q.data(), (k_-m)*nao_, nao_));
-    
-    //put X into G
-    for(l=0; l<k_-m; l++){
-      err += (ZColVectorMap(G.retptr(l+m+1,m), es_) - ZColVectorMap(X.data() + l*es_, es_)).norm();
-      ZMatrixMap(G.retptr(l+m+1,m), nao_, nao_).noalias() = ZMatrixMap(X.data() + l*es_, nao_, nao_);
+  // Solve MX=Q for X
+  Eigen::FullPivLU<ZMatrix> lu(ZMatrixMap(M.data(), k_*nao_, k_*nao_));
+  ZMatrixMap(X.data(), k_*nao_, nao_) = lu.solve(ZMatrixMap(Q.data(), k_*nao_, nao_));
+  
+  // Put X into G
+  for(l=0; l<k_; l++){
+    err += (ZColVectorMap(G.retptr(l+1,0), es_) - ZColVectorMap(X.data() + l*es_, es_)).norm();
+    ZMatrixMap(G.retptr(l+1,0), nao_, nao_).noalias() = ZMatrixMap(X.data() + l*es_, nao_, nao_);
+  }
+
+  // Enforce TTI for bootstrapping routine
+  for(l = 1; l <= k_; l++) {
+    for(n = l; n <= k_; n++) {
+      err += (ZColVectorMap(G.retptr(n,l), es_) - ZColVectorMap(G.retptr(n-l,0), es_)).norm();
+      ZMatrixMap(G.retptr(n,l), nao_, nao_).noalias() = ZMatrixMap(G.retptr(n-l,0), nao_, nao_);
     }
   }
 
@@ -156,7 +162,12 @@ double dyson::dyson_start_tv(GREEN &G, const GREEN &Sig, const cplx *hmf, double
 
 double dyson::dyson_start_les(GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double beta, double dt) const {
   double err=0;
-  for(int n=0; n<=k_; n++) err += dyson_step_les(n,G,Sig,hmf,mu,beta,dt);
+  for(int l = 0; l <= k_; l++) {
+    for(int n = 0; n <= l; n++) {
+      err += (ZMatrixMap(G.lesptr(n,l), nao_, nao_) + ZMatrixMap(G.tvptr(l-n,0), nao_, nao_).adjoint()).norm();
+      ZMatrixMap(G.lesptr(n,l), nao_, nao_) = -ZMatrixMap(G.tvptr(l-n,0), nao_, nao_).adjoint();
+    }
+  }
   return err;
 }
 
@@ -179,11 +190,8 @@ double dyson::dyson_start(GREEN &G, const GREEN &Sig, const cplx *hmf, double mu
   }
   else {
     err += dyson_start_ret_hf(G, hmf, mu, dt);
-    std::cout<<"ret err: "<<err<<std::endl;
     err += dyson_start_tv_hf(G, hmf, mu, beta, dt);
-    std::cout<<"tv err: "<<err<<std::endl;
     err += dyson_start_les_hf(G, hmf, mu, beta, dt);
-    std::cout<<"les err: "<<err<<std::endl;
   }
   return err;
 }

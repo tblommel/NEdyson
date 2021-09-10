@@ -37,6 +37,17 @@ SimulationBase::SimulationBase(const gfmol::HartreeFock &hf,
 
     h5e::File molinp(MolInput);
     dipole_ = h5e::load<DTensor<3>>(molinp, "/dipole");
+
+    // Bootstrapping is tti so we need to make sure e and E are zero
+    // for first k+1 timesteps
+    for(int d = 0; d < 3; d++) {
+      double enorm = DRowVectorMap(efield_.data() + d * (nt_+1), k_+1).norm();
+      double Enorm = DRowVectorMap(Efield_.data() + d * (nt_+1), k_+1).norm();
+      if(enorm > 1e-15 || Enorm > 1e-15) {
+        std::cout << "applied field is nonzero in the first k timesteps" << std::endl;
+        std::exit(0);
+      }
+    }
   }
 
   MatMax_ = MatMax;
@@ -85,7 +96,7 @@ void SimulationBase::run(){
   // Calculate the free GF
   free_gf();
 
-  // Take the coefficients from gfmol and transform them into equidistant mesh
+  // Take the coefficients from gfmol and transform them into Legendre mesh
   L_to_Tau();
   
   // Do the bootstrapping routines
@@ -106,6 +117,7 @@ void SimulationBase::run(){
   }
   else {
     std::cout << "Bootstrapping did not converge after " << BootMax_ << " iterations!" << std::endl;
+    std::exit(0);
   }
 }
 

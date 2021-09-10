@@ -38,10 +38,14 @@ green_func::green_func(int nt, int ntau, int size1, int sig){
   size1_=size1;
   element_size_=size1*size1;
   mat_ = new cplx[(ntau_+1)*element_size_];
+  memset(mat_, 0, (ntau_+1)*element_size_*sizeof(cplx));
   if(nt_ >= 0 ){
     les_ = new cplx[((nt_+1)*(nt_+2))/2*element_size_];
     ret_ = new cplx[((nt_+1)*(nt_+2))/2*element_size_];
     tv_ = new cplx[(nt_+1)*(ntau_+1)*element_size_];
+    memset(les_, 0, ((nt_+1)*(nt_+2))/2*element_size_*sizeof(cplx));
+    memset(ret_, 0, ((nt_+1)*(nt_+2))/2*element_size_*sizeof(cplx));
+    memset(tv_, 0, (nt_+1)*(ntau_+1)*element_size_*sizeof(cplx));
   } else {
     les_=0;
     ret_=0;

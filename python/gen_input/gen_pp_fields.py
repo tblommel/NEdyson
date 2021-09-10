@@ -3,7 +3,7 @@ import h5py
 
 #---------------------------------------------------
 datadir = "/pauli-storage/tblommel/He-VB2PP/paper_recreate/tau0/"
-filename = "PPinp_nt4000dt005_noprobe.h5"
+filename = "PPinp_nt4000dt01_break.h5"
 #---------------------------------------------------
 
 #---------------------------------------------------
@@ -18,13 +18,13 @@ omega_P = np.longfloat(0.57) / eV_scale
 E_0     = np.longfloat(6.6e9) / Efield_scale
 Delta_p = np.longfloat(0.5e-15) / time_scale
 omega_p = np.longfloat(22) / eV_scale
-e_0     = 0*np.longfloat(8.6e7) / Efield_scale
-dt      = 0.005
+e_0     = np.longfloat(8.6e7) / Efield_scale
+dt      = 0.01
 tau     = np.longfloat(0e-15) / time_scale
 #---------------------------------------------------
 
 nt = 4000
-delay = 0
+delay = 5
 Efield = np.zeros((3, nt+1+delay))
 efield = np.zeros((3, nt+1+delay))
 

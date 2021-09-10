@@ -2,7 +2,10 @@
 
 #SBATCH --job-name NEdyson_PP_hf
 #SBATCH --nodes=1
-#SBATCH --time=01:00:00
-#SBATCH --partition=debug,super,batch
+#SBATCH --time=06:00:00
+#SBATCH --partition=super,batch
+#SBATCH --array=0-7
 
-./build/programs/molNEdyson ./data/NEdyson-input.ini
+CASE_NUM=`printf %01d $SLURM_ARRAY_TASK_ID`
+
+./build/programs/molNEdyson ./data/NEdyson-input${CASE_NUM}.ini
