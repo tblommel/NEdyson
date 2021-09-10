@@ -38,6 +38,8 @@ private:
 public:
   dyson(int nt, int ntau, int nao, int k, bool hfbool_);
 
+  const INTEG &II() { return I; }
+
   // return convolution class
   const cpsitop::nonequilibrium::convolution Convolution() const { return Conv; }
   
@@ -84,13 +86,13 @@ public:
 
   // Step functions individual components ============================
   double dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double beta, double dt) const ;
-  void dyson_step_tv(int tstp, GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double beta, double dt) const ;
-  void dyson_step_ret(int tstp, GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double dt) const ;
+  double dyson_step_tv(int tstp, GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double beta, double dt) const ;
+  double dyson_step_ret(int tstp, GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double dt) const ;
 
   // Step functions HF individual components ==========================
   double dyson_step_les_hf(int n, GREEN &G, const cplx *hmf, double mu, double beta, double dt) const ;
-  void dyson_step_tv_hf(int tstp, GREEN &G, const cplx *hmf, double mu, double beta, double dt) const ;
-  void dyson_step_ret_hf(int tstp, GREEN &G, const cplx *hmf, double mu, double dt) const ;
+  double dyson_step_tv_hf(int tstp, GREEN &G, const cplx *hmf, double mu, double beta, double dt) const ;
+  double dyson_step_ret_hf(int tstp, GREEN &G, const cplx *hmf, double mu, double dt) const ;
 
   // TTI step functions ==============================================
   void dyson_step(int n, TTI_GREEN &G, const TTI_GREEN &Sig, const double *hmf, double mu, double beta, double dt) const ;
@@ -131,6 +133,9 @@ public:
   // Energy calculation =============================================
   double energy_conv(int tstp, const GREEN &Sig, const GREEN &G, double beta, double dt) const ;
   double energy_conv(int tstp, const TTI_GREEN &Sig, const TTI_GREEN &G, double beta, double dt) const ;
+
+  // Calculate dipole field =========================================
+  void dipole_field(int tstp, ZTensor<2> &dfield, const GREEN &Gu, const GREEN &Gd, const DTensor<3> &dipole, double l, double n, double dt) const ;
 
 }; // class dyson
 

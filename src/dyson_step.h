@@ -4,8 +4,10 @@
 namespace NEdyson{
 
 // i dt' GR(t,t-t') - GR(t-t')hmf(t-t') - \int_0^t' GR(t,t-s) SR(t-s,t-t') = 0
-void dyson::dyson_step_ret(int tstp, GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double dt) const {
+double dyson::dyson_step_ret(int tstp, GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double dt) const {
   int m, l, n, i;
+
+  double err = 0;
 
   std::chrono::time_point<std::chrono::system_clock> intstart, intend, start, end;
   std::chrono::duration<double> elapsed_seconds, inttime;
@@ -67,6 +69,7 @@ void dyson::dyson_step_ret(int tstp, GREEN &G, const GREEN &Sig, const cplx *hmf
 
   // Put X into G
   for(l=0; l<k_; l++){
+    err += (ZMatrixMap(G.retptr(tstp, tstp-l-1), nao_, nao_) - ZMatrixMap(X.data() + l*es_, nao_, nao_).transpose()).norm();
     ZMatrixMap(G.retptr(tstp, tstp-l-1), nao_, nao_).noalias() = ZMatrixMap(X.data() + l*es_, nao_, nao_).transpose();
   }
 
@@ -100,7 +103,9 @@ void dyson::dyson_step_ret(int tstp, GREEN &G, const GREEN &Sig, const cplx *hmf
 
     // Solve XM=Q for X
     Eigen::FullPivLU<ZMatrix> lu2(MMapSmall);
-    ZMatrixMap(G.retptr(tstp,tstp-n), nao_, nao_).noalias() = lu2.solve(QMapBlock).transpose();
+    ZMatrixMap(X.data(), nao_, nao_) = lu2.solve(QMapBlock).transpose();   
+    err += (ZMatrixMap(G.retptr(tstp, tstp-n), nao_, nao_) - ZMatrixMap(X.data(), nao_, nao_)).norm();
+    ZMatrixMap(G.retptr(tstp,tstp-n), nao_, nao_).noalias() = ZMatrixMap(X.data(), nao_, nao_);
 
     // Add this newly computed value to the integrals which need it
     intstart = std::chrono::system_clock::now();
@@ -123,11 +128,15 @@ void dyson::dyson_step_ret(int tstp, GREEN &G, const GREEN &Sig, const cplx *hmf
   std::string data_dir = std::string(DATA_DIR);
   out.open(data_dir + "dystiming.dat" + "," + std::to_string(G.size1()) + "," + std::to_string(G.nt()) + "," + std::to_string(G.ntau()), std::ofstream::app);
   out << intruntime << " " << runtime << " ";
+
+  return err;
 }
 
 // idt GRM(tstp,m) - hmf(tstp) GRM(t,m) - \int_0^t dT SR(t,T) GRM(T,m) = \int_0^{beta} dT SRM(t,T) GM(T-m)
-void dyson::dyson_step_tv(int tstp, GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double beta, double dt) const {
+double dyson::dyson_step_tv(int tstp, GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double beta, double dt) const {
   int m, l, n, i;
+
+  double err = 0;
 
   std::chrono::time_point<std::chrono::system_clock> start, end;
   std::chrono::duration<double> elapsed_seconds;
@@ -136,12 +145,14 @@ void dyson::dyson_step_tv(int tstp, GREEN &G, const GREEN &Sig, const cplx *hmf,
   auto IMap = ZMatrixMap(iden.data(), nao_, nao_);
   auto QMap = ZMatrixMap(Q.data(), nao_, nao_);
   auto MMap = ZMatrixMap(M.data(), nao_, nao_);
+  auto XMap = ZMatrixMap(X.data(), nao_, nao_);
 
+  std::memcpy(NTauTmp.data() + (ntau_+1)*es_, G.tvptr(tstp,0), (ntau_+1)*es_*sizeof(cplx));
   memset(G.tvptr(tstp,0),0,(ntau_+1)*es_*sizeof(cplx));
 
   start = std::chrono::system_clock::now();
 
-  // Do integrals
+  // Do integrals, results go into G.tv(tstp,:), not by increment
   Ctv_tstp(tstp, G, Sig, Sig, G, G, beta, dt);
 
   // Put derivatives into GRM(tstp,m)
@@ -159,7 +170,9 @@ void dyson::dyson_step_tv(int tstp, GREEN &G, const GREEN &Sig, const cplx *hmf,
   // Solve MX=Q
   for(m=0; m<=ntau_; m++) {
     QMap.noalias() = ZMatrixMap(G.tvptr(tstp, m), nao_, nao_);
-    ZMatrixMap(G.tvptr(tstp,m), nao_, nao_).noalias() = lu.solve(QMap);
+    XMap = lu.solve(QMap);
+    err += (ZMatrixMap(NTauTmp.data() + (ntau_+1+m)*es_, nao_, nao_) - XMap).norm();
+    ZMatrixMap(G.tvptr(tstp,m), nao_, nao_).noalias() = XMap;
   }
 
   // Output timing information
@@ -171,6 +184,8 @@ void dyson::dyson_step_tv(int tstp, GREEN &G, const GREEN &Sig, const cplx *hmf,
   std::string data_dir = std::string(DATA_DIR);
   out.open(data_dir + "dystiming.dat" + "," + std::to_string(G.size1()) + "," + std::to_string(G.nt()) + "," + std::to_string(G.ntau()), std::ofstream::app);
   out<<runtime<<" ";
+
+  return err;
 }
 
 double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double beta, double dt) const {
@@ -193,18 +208,20 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
   err += (ZMatrixMap(G.lesptr(0,n), nao_, nao_) + ZMatrixMap(G.tvptr(n,0), nao_, nao_).adjoint()).lpNorm<2>();
   ZMatrixMap(G.lesptr(0,n), nao_, nao_).noalias() = -ZMatrixMap(G.tvptr(n,0), nao_, nao_).adjoint();
 
-  // Integrals go into Q
+  // Integrals go into Q via increment.  Q must be 0.
   memset(Q.data(),0,sizeof(cplx)*(num+1)*es_);
   memset(M.data(),0,sizeof(cplx)*k_*k_*es_);
-  intstart = std::chrono::system_clock::now();
-  Cles2_tstp(Sig,Sig,G,G,n,dt,Q.data());
-  intend = std::chrono::system_clock::now();
-  int1 = intend-intstart;
 
   intstart = std::chrono::system_clock::now();
   Cles3_tstp(Sig,Sig,G,G,n,beta,Q.data());
   intend = std::chrono::system_clock::now();
   int2 = intend-intstart;
+
+  intstart = std::chrono::system_clock::now();
+  Cles2_tstp(Sig,Sig,G,G,n,dt,Q.data());
+  intend = std::chrono::system_clock::now();
+  int1 = intend-intstart;
+
 
   // Set up the kxk linear problem MX=Q
   for(m=1; m<=k_; m++) {
@@ -245,7 +262,7 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
   Eigen::FullPivLU<ZMatrix> lu(MMap);
   ZMatrixMap(X.data() + es_, k_*nao_, nao_).noalias() = lu.solve(ZMatrixMap(Q.data()+es_, k_*nao_, nao_));
 
-  ZMatrixMap(X.data(), nao_, nao_).noalias() = ZMatrixMap(G.lesptr(0,n), nao_, nao_);
+  ZMatrixMap(X.data(), nao_, nao_).noalias() = -ZMatrixMap(G.tvptr(n,0), nao_, nao_).adjoint();
 
   // Timestepping
   ZMatrixMap MMapSmall = ZMatrixMap(M.data(), nao_, nao_);
@@ -275,7 +292,7 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
   }
 
   // Write elements into G
-  for(l=1; l<=n; l++) {
+  for(l=0; l<=n; l++) {
     err += (ZColVectorMap(G.lesptr(l,n), es_) - ZColVectorMap(X.data() + l*es_, es_)).norm();
     ZMatrixMap(G.lesptr(l,n), nao_, nao_).noalias() = ZMatrixMap(X.data() + l*es_, nao_, nao_);
   }
@@ -305,16 +322,20 @@ void dyson::dyson_step(int n, GREEN &G, const GREEN &Sig, const cplx *hmf, doubl
   assert(n > k_);
   assert(n <= G.nt());
 
+  double err = 0;
+
   if(!hfbool_) {
-    dyson_step_ret(n, G, Sig, hmf, mu, dt);
-    dyson_step_tv(n, G, Sig, hmf, mu, beta, dt);
-    dyson_step_les(n, G, Sig, hmf, mu, beta, dt);
+    err += dyson_step_ret(n, G, Sig, hmf, mu, dt);
+    err += dyson_step_tv(n, G, Sig, hmf, mu, beta, dt);
+    err += dyson_step_les(n, G, Sig, hmf, mu, beta, dt);
   }
   else {
-    dyson_step_ret_hf(n, G, hmf, mu, dt);
-    dyson_step_tv_hf(n, G, hmf, mu, beta, dt);
-    dyson_step_les_hf(n, G, hmf, mu, beta, dt);
+    err += dyson_step_ret_hf(n, G, hmf, mu, dt);
+    err += dyson_step_tv_hf(n, G, hmf, mu, beta, dt);
+    err += dyson_step_les_hf(n, G, hmf, mu, beta, dt);
   }
+
+  std::cout << "err = " << err << std::endl;
 }
 
 

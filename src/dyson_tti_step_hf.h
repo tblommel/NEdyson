@@ -20,6 +20,11 @@ void dyson::dyson_step_ret_hf(int tstp, TTI_GREEN &G, const double *hmf, double 
 
   start = std::chrono::system_clock::now();
 
+  // Set up Q
+  for(l=1; l<=k_+1; l++){
+    QMap.noalias() += I.bd_weights(l)*ncplxi/dt * ZMatrixMap(G.retptr(tstp-l), nao_, nao_).transpose();
+  }
+
   // Set up mm
   MMap.noalias() = -DMatrixConstMap(hmf, nao_, nao_).transpose();
   MMap.noalias() += (mu - I.bd_weights(0)*ncplxi/dt) * IMap;

@@ -17,7 +17,6 @@ double dyson::energy_conv(int tstp, const TTI_GREEN &Sig, const TTI_GREEN &G, do
   assert(G.ntau == ntau_);
 
   int top = tstp >= k_ ? tstp : k_, sig = G.sig();
-  double dtau = beta/ntau_;
   cplx res1 = 0;
   cplx res2 = 0;
   

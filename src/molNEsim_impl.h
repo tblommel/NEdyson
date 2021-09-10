@@ -17,8 +17,10 @@ Simulation<Repr>::Simulation(const gfmol::HartreeFock &hf,
                              int nt, int ntau, int k, double dt,
                              int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
                              gfmol::Mode mode,
-                             double damping, bool hfbool) : 
-                                 SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, hfbool),
+                             double damping, bool hfbool, bool boolPumpProbe, 
+                             std::string PumpProbeInp, std::string MolInp,
+                             double lPumpProbe, double nPumpProbe) : 
+                                 SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, hfbool, boolPumpProbe, PumpProbeInp, MolInp, lPumpProbe, nPumpProbe),
                                  hmf(nt+1, nao_, nao_), 
                                  h0(hf.hcore()), 
                                  rho(nao_, nao_)
@@ -27,7 +29,6 @@ Simulation<Repr>::Simulation(const gfmol::HartreeFock &hf,
     case gfmol::Mode::GF2:
       p_MatSim_ = std::unique_ptr<gfmol::Simulation<Repr> >(new gfmol::Simulation<Repr>(hf, frepr, brepr, mode, 0., hfbool));
       beta_ = p_MatSim_->frepr().beta();
-      dtau_ = beta_/ntau;
       p_NEgf2_ = std::unique_ptr<molGF2Solver>(new molGF2Solver(hf.uchem(), p_MatSim_->u_exch()));
   }
 
@@ -47,6 +48,14 @@ void Simulation<Repr>::do_mat() {
   p_MatSim_->run(MatMax_, MatTol_, nullptr);
 }
 
+template <typename Repr>
+void Simulation<Repr>::Ed_contractions(int tstp) {
+  int nao = hmf.shape()[2];
+  for(int d = 0; d < 3; d++) {
+    ZMatrixMap(hmf.data() + tstp*nao*nao, nao, nao) += (Efield_(d, tstp) + efield_(d, tstp) + dfield_(d, tstp)) * DMatrixMap(dipole_.data() + d*nao*nao, nao, nao);
+  }
+}
+
 
 template <typename Repr>
 void Simulation<Repr>::do_boot() {
@@ -55,9 +64,7 @@ void Simulation<Repr>::do_boot() {
 
     // Update mean field & self energy
     for(int tstp = 0; tstp <= k_; tstp++){
-      G.get_dm(tstp, rho);
-      ZMatrixMap(hmf.data() + tstp*nao_*nao_, nao_, nao_) = DMatrixConstMap(h0.data(),nao_,nao_);
-      p_NEgf2_->solve_HF(tstp, hmf, rho);
+      ZMatrixMap(hmf.data() + tstp*nao_*nao_, nao_, nao_) = DMatrixConstMap(p_MatSim_->fock().data(),nao_,nao_);
       if(!hfbool_)  p_NEgf2_->solve(tstp, Sigma, G);
     }
 
@@ -71,6 +78,7 @@ void Simulation<Repr>::do_boot() {
     }
   }
 }
+
 
 
 template <typename Repr>
@@ -89,19 +97,25 @@ void Simulation<Repr>::do_tstp(int tstp) {
     G.get_dm(tstp, rho);
     ZMatrixMap(hmf.data() + tstp*nao_*nao_, nao_, nao_) = DMatrixConstMap(h0.data(),nao_,nao_);
 
+    // HF Contractions
     start = std::chrono::system_clock::now();
     p_NEgf2_->solve_HF(tstp, hmf, rho);
     end = std::chrono::system_clock::now();
     elapsed_seconds = end-start;
     out << elapsed_seconds.count() << " ";
 
-
+    // 2B Contractions
     start = std::chrono::system_clock::now();
     if(!hfbool_) p_NEgf2_->solve(tstp, Sigma, G);
     end = std::chrono::system_clock::now();
     elapsed_seconds = end-start;
     out << elapsed_seconds.count() << " ";
 
+    // Efield contractions
+    if(boolPumpProbe_) {
+      Dyson.dipole_field(tstp, dfield_, G, G, dipole_, lPumpProbe_, nPumpProbe_, dt_);
+      Ed_contractions(tstp);
+    }
 
     start = std::chrono::system_clock::now();
     Dyson.dyson_step(tstp, G, Sigma, hmf, p_MatSim_->mu(), beta_, dt_);
@@ -118,9 +132,98 @@ void Simulation<Repr>::save(h5::File &file, const std::string &path) {
 
   G.print_to_file(file, path + "/G");
   Sigma.print_to_file(file, path + "/Sigma");
+
+  //FUCK
+//  h5e::File fin("/pauli-storage/tblommel/He-VB2PP/UGU/H2-pvdz1.4out_nt100dt01_HF.h5");
+//  G.read_from_file(fin, "/G");
+  for(int t = 0; t<=nt_; t++) {
+    p_NEgf2_->solve(t, Sigma, G);
+  }
+  Sigma.print_to_file(file, path + "/Sigma2BHF");
+
+  GREEN Ints = GREEN(nt_, ntau_, nao_, -1);
+  std::memset(Ints.lesptr(0,0), 0, ((nt_+1)*(nt_+2))/2*nao_*nao_*sizeof(cplx));
+  for(int n = 0; n <= nt_; n++) {
+    for(int m = 0; m <= n; m++) {
+      Dyson.Cles2_tstp(m, m, Sigma, Sigma, G, G, n, dt_, Ints.lesptr(m,n));
+    }
+  }
+  Ints.print_to_file(file, path + "/IL2");
+  std::memset(Ints.lesptr(0,0), 0, ((nt_+1)*(nt_+2))/2*nao_*nao_*sizeof(cplx));
+  for(int n = 0; n <= nt_; n++) {
+    for(int m = 0; m <= n; m++) {
+      Dyson.Cles3_tstp(m, m, Sigma, Sigma, G, G, n, beta_, Ints.lesptr(m,n));
+    }
+  }
+  Ints.print_to_file(file, path + "/IL3");
+  std::memset(Ints.lesptr(0,0), 0, ((nt_+1)*(nt_+2))/2*nao_*nao_*sizeof(cplx));
+  for(int m = 0; m <= nt_; m++) {
+    for(int n = 0; n <= m; n++) {
+      if(n > k_) {
+        for(int j = 0; j <= n; j++) {
+          ZMatrixMap(Ints.lesptr(n,m), nao_, nao_) += dt_ * Dyson.II().gregory_weights(n,j) *              ZMatrixMap(Sigma.retptr(n,j), nao_, nao_) * ZMatrixMap(G.lesptr(j,m), nao_, nao_);
+        }
+      }
+      else if(n <= k_) {
+        for(int j = 0; j <= k_; j++) {  
+          if(n >= j && j <= m){
+            ZMatrixMap(Ints.lesptr(n,m), nao_, nao_) += dt_ * Dyson.II().gregory_weights(n,j) *              ZMatrixMap(Sigma.retptr(n,j), nao_, nao_) * ZMatrixMap(G.lesptr(j,m), nao_, nao_);
+          }
+          else if(n >= j && j > m){
+            ZMatrixMap(Ints.lesptr(n,m), nao_, nao_) -= dt_ * Dyson.II().gregory_weights(n,j) *              ZMatrixMap(Sigma.retptr(n,j), nao_, nao_) * ZMatrixMap(G.lesptr(m,j), nao_, nao_).adjoint();
+          }
+          else if(n < j && j <= m){
+            ZMatrixMap(Ints.lesptr(n,m), nao_, nao_) -= dt_ * Dyson.II().gregory_weights(n,j) *              ZMatrixMap(Sigma.retptr(j,n), nao_, nao_).adjoint() * ZMatrixMap(G.lesptr(j,m), nao_, nao_);
+          }
+          else if(n < j && j > m){
+            ZMatrixMap(Ints.lesptr(n,m), nao_, nao_) += dt_ * Dyson.II().gregory_weights(n,j) *              ZMatrixMap(Sigma.retptr(j,n), nao_, nao_).adjoint() * ZMatrixMap(G.lesptr(m,j), nao_, nao_).adjoint();
+          }
+        }
+      }
+    }
+  }
+  Ints.print_to_file(file, path + "/IL1");
+  std::memset(Ints.retptr(0,0), 0, ((nt_+1)*(nt_+2))/2*nao_*nao_*sizeof(cplx));
+  for(int n = 0; n <= nt_; n++) {
+    for(int m = 0; m <= n; m++) {
+      if(n > k_ && n-m > k_){
+        for(int j = m; j <= n; j++) {
+          ZMatrixMap(Ints.retptr(n,m), nao_, nao_) += dt_ * Dyson.II().gregory_weights(n-m, j-m) * ZMatrixMap(G.retptr(n,j), nao_, nao_) * ZMatrixMap(Sigma.retptr(j,m), nao_, nao_);
+        }
+      }
+      else if(n > k_ && n-m <= k_){
+        for(int j = 0; j <= k_; j++) {
+          if(n-j >= m) {
+            ZMatrixMap(Ints.retptr(n,m), nao_, nao_) += dt_ * Dyson.II().gregory_weights(n-m, j) * ZMatrixMap(G.retptr(n,n-j), nao_, nao_) * ZMatrixMap(Sigma.retptr(n-j,m), nao_, nao_);
+          }
+          else if(n-j < m) {
+            ZMatrixMap(Ints.retptr(n,m), nao_, nao_) -= dt_ * Dyson.II().gregory_weights(n-m, j) * ZMatrixMap(G.retptr(n,n-j), nao_, nao_) * ZMatrixMap(Sigma.retptr(m,n-j), nao_, nao_).adjoint();
+          }
+        }
+      }
+      else if(n <= k_) {
+        for(int j=0; j <= k_; j++) {
+          if(n >= j && j >= m){
+            ZMatrixMap(Ints.retptr(n,m), nao_, nao_) += dt_ * Dyson.II().poly_integ(m,n,j) * ZMatrixMap(G.retptr(n,j), nao_, nao_) * ZMatrixMap(Sigma.retptr(j,m), nao_, nao_); 
+          }
+          if(n >= j && j < m){
+            ZMatrixMap(Ints.retptr(n,m), nao_, nao_) -= dt_ * Dyson.II().poly_integ(m,n,j) * ZMatrixMap(G.retptr(n,j), nao_, nao_) * ZMatrixMap(Sigma.retptr(m,j), nao_, nao_).adjoint(); 
+          }
+          if(n < j && j >= m){
+            ZMatrixMap(Ints.retptr(n,m), nao_, nao_) -= dt_ * Dyson.II().poly_integ(m,n,j) * ZMatrixMap(G.retptr(j,n), nao_, nao_).adjoint() * ZMatrixMap(Sigma.retptr(j,m), nao_, nao_); 
+          }
+          if(n < j && j < m){
+            ZMatrixMap(Ints.retptr(n,m), nao_, nao_) += dt_ * Dyson.II().poly_integ(m,n,j) * ZMatrixMap(G.retptr(j,n), nao_, nao_).adjoint() * ZMatrixMap(Sigma.retptr(m,j), nao_, nao_).adjoint(); 
+          }
+        }
+      }
+    }
+  }
+  Ints.print_to_file(file, path + "/IR");
+  
+  //FUCK
   
   h5e::dump(file, path + "/params/beta", beta_);
-  h5e::dump(file, path + "/params/dtau", dtau_);
   h5e::dump(file, path + "/mu", p_MatSim_->mu());
   h5e::dump(file, path + "/hmf", hmf);
   h5e::dump(file, path + "/params/h0", h0);
@@ -129,6 +232,25 @@ void Simulation<Repr>::save(h5::File &file, const std::string &path) {
   
   h5e::dump(file, path + "/energy/EkinM", p_MatSim_->ehf() + p_MatSim_->ekin());
   h5e::dump(file, path + "/energy/EpotM", p_MatSim_->epot());
+
+  ZTensor<3> densm(nt_+1, nao_, nao_);
+  for(int i = 0; i<nao_; i++){
+    for(int j = 0; j<nao_; j++){
+      for(int t = 0; t<=nt_; t++){
+        densm(t,i,j) = -cplx(0.,1.)*G.lesptr(t,t)[i*nao_+j];
+      }
+    }
+  }
+  h5e::dump(file, path + "/rho", densm);
+
+  h5e::dump(file, path + "/rhoM", p_MatSim_->rho());
+  h5e::dump(file, path + "/hmfM", p_MatSim_->fock());
+
+  ZTensor<3> coeff(ntau_+1, nao_, nao_);
+  Dyson.Convolution().collocation().to_spectral(coeff, ZTensorView<3>(G.matptr(0), ntau_+1, nao_, nao_));
+  h5e::dump(file, path + "/Gcoeff", coeff);
+  Dyson.Convolution().collocation().to_spectral(coeff, ZTensorView<3>(Sigma.matptr(0), ntau_+1, nao_, nao_));
+  h5e::dump(file, path + "/Scoeff", coeff);
 }
 
 
@@ -149,6 +271,12 @@ void Simulation<Repr>::do_energy() {
     auto h0mat = DMatrixConstMap(h0.data(),nao_,nao_);
 
     eKin_(t) = rhomat.cwiseProduct((hmfmat+h0mat).transpose()).sum().real();
+    if(boolPumpProbe_) {
+      for(int i=0; i<3; i++) {
+        eKin_(t) += rhomat.cwiseProduct((Efield_(i,t) + efield_(i,t) + dfield_(i,t))
+                                        * DMatrixMap(dipole_.data() + i*nao2, nao_, nao_).transpose()).sum().real();
+      }
+    }
     ePot_(t) = 2*Dyson.energy_conv(t, Sigma, G, beta_, dt_);
   }
 }
@@ -200,14 +328,13 @@ tti_Simulation<Repr>::tti_Simulation(const gfmol::HartreeFock &hf,
                              int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
                              gfmol::Mode mode,
                              double damping, bool hfbool) : 
-                                 SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, hfbool),
+                                 SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, hfbool, false, "", "", 0, 0),
                                  h0(hf.hcore()) 
 {
   switch (mode) {
     case gfmol::Mode::GF2:
       p_MatSim_ = std::unique_ptr<gfmol::Simulation<Repr> >(new gfmol::Simulation<Repr>(hf, frepr, brepr, mode, 0., hfbool));
       beta_ = p_MatSim_->frepr().beta();
-      dtau_ = beta_/ntau;
       p_NEgf2_ = std::unique_ptr<tti_molGF2Solver>(new tti_molGF2Solver(hf.uchem(), p_MatSim_->u_exch()));
   }
 
@@ -227,6 +354,10 @@ void tti_Simulation<Repr>::do_mat() {
   p_MatSim_->run(MatMax_, MatTol_, nullptr);
 }
 
+template <typename Repr>
+void tti_Simulation<Repr>::Ed_contractions(int tstp) {
+  int a = 0;
+}
 
 template <typename Repr>
 void tti_Simulation<Repr>::do_boot() {
@@ -296,7 +427,6 @@ void tti_Simulation<Repr>::save(h5::File &file, const std::string &path) {
   Sigma.print_to_file(file, path + "/Sigma");
   
   h5e::dump(file, path + "/params/beta", beta_);
-  h5e::dump(file, path + "/params/dtau", dtau_);
   h5e::dump(file, path + "/mu", p_MatSim_->mu());
   h5e::dump(file, path + "/hmf", p_MatSim_->fock());
   h5e::dump(file, path + "/params/h0", h0);

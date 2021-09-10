@@ -18,6 +18,8 @@
 #include "dyson_boot_hf.h"
 #include "dyson_tti_boot_hf.h"
 
+#include "dyson_dfield.h"
+
 namespace NEdyson{
 
 dyson::dyson(int nt, int ntau, int nao, int k, bool hfbool) : nt_(nt),

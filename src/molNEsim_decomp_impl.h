@@ -18,8 +18,10 @@ DecompSimulation<Repr>::DecompSimulation(const gfmol::HartreeFock &hf,
                              int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
                              gfmol::Mode mode,
                              double damping,
-                             double decomp_prec, bool hfbool) : 
-                                 SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, hfbool),
+                             double decomp_prec, bool hfbool, bool boolPumpProbe, 
+                             std::string PumpProbeInp, std::string MolInp,
+                             double lPumpProbe, double nPumpProbe) : 
+                                 SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, hfbool, boolPumpProbe, PumpProbeInp, MolInp, lPumpProbe, nPumpProbe),
                                  hmf(nt+1, nao_, nao_), 
                                  h0(hf.hcore()), 
                                  rho(nao_,nao_)
@@ -28,7 +30,6 @@ DecompSimulation<Repr>::DecompSimulation(const gfmol::HartreeFock &hf,
     case gfmol::Mode::GF2:
       p_MatSim_ = std::unique_ptr<gfmol::DecompSimulation<Repr> >(new gfmol::DecompSimulation<Repr>(hf, frepr, brepr, mode, 0., decomp_prec, hfbool));
       beta_ = p_MatSim_->frepr().beta();
-      dtau_ = beta_/ntau;
       p_NEgf2_ = std::unique_ptr<molGF2SolverDecomp>(new molGF2SolverDecomp(p_MatSim_->Vija(), p_MatSim_->Viaj()));
   }
 
@@ -48,6 +49,13 @@ void DecompSimulation<Repr>::do_mat() {
   p_MatSim_->run(MatMax_, MatTol_, nullptr);
 }
 
+template <typename Repr>
+void DecompSimulation<Repr>::Ed_contractions(int tstp) {
+  int nao = hmf.shape()[2];
+  for(int d = 0; d < 3; d++) {
+    ZMatrixMap(hmf.data() + tstp*nao*nao, nao, nao) += (Efield_(d, tstp) + efield_(d, tstp) + dfield_(d, tstp)) * DMatrixMap(dipole_.data() + d*nao*nao, nao, nao);
+  }
+}
 
 template <typename Repr>
 void DecompSimulation<Repr>::do_boot() {
@@ -56,10 +64,8 @@ void DecompSimulation<Repr>::do_boot() {
 
     // Update mean field & self energy
     for(int tstp = 0; tstp <= k_; tstp++){
-      G.get_dm(tstp, rho);
-      ZMatrixMap(hmf.data() + tstp*nao_*nao_, nao_, nao_) = DMatrixConstMap(h0.data(),nao_,nao_);
-      p_NEgf2_->solve_HF(tstp, hmf, rho);
-      if (!hfbool_) p_NEgf2_->solve(tstp, Sigma, G);
+      ZMatrixMap(hmf.data() + tstp*nao_*nao_, nao_, nao_) = DMatrixConstMap(p_MatSim_->fock().data(),nao_,nao_);
+      if(!hfbool_) p_NEgf2_->solve(tstp, Sigma, G);
     }
 
     // Solve G Equation of Motion
@@ -86,6 +92,11 @@ void DecompSimulation<Repr>::do_tstp(int tstp) {
     p_NEgf2_->solve_HF(tstp, hmf, rho);
     if(!hfbool_) p_NEgf2_->solve(tstp, Sigma, G);
 
+    if(boolPumpProbe_) {
+      Dyson.dipole_field(tstp, dfield_, G, G, dipole_, lPumpProbe_, nPumpProbe_, dt_);
+      Ed_contractions(tstp);
+    }
+
     Dyson.dyson_step(tstp, G, Sigma, hmf, p_MatSim_->mu(), beta_, dt_);
   }
 }
@@ -99,7 +110,6 @@ void DecompSimulation<Repr>::save(h5::File &file, const std::string &path) {
   Sigma.print_to_file(file, path + "/Sigma");
   
   h5e::dump(file, path + "/params/beta", beta_);
-  h5e::dump(file, path + "/params/dtau", dtau_);
   h5e::dump(file, path + "/mu", p_MatSim_->mu());
   h5e::dump(file, path + "/hmf", hmf);
   h5e::dump(file, path + "/params/h0", h0);
@@ -172,14 +182,13 @@ tti_DecompSimulation<Repr>::tti_DecompSimulation(const gfmol::HartreeFock &hf,
                              gfmol::Mode mode,
                              double damping,
                              double decomp_prec, bool hfbool) : 
-                                 SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, hfbool),
+                                 SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, hfbool, false, "", "", 0, 0),
                                  h0(hf.hcore())
 {
   switch (mode) {
     case gfmol::Mode::GF2:
       p_MatSim_ = std::unique_ptr<gfmol::DecompSimulation<Repr> >(new gfmol::DecompSimulation<Repr>(hf, frepr, brepr, mode, 0., decomp_prec, hfbool));
       beta_ = p_MatSim_->frepr().beta();
-      dtau_ = beta_/ntau;
       p_NEgf2_ = std::unique_ptr<tti_molGF2SolverDecomp>(new tti_molGF2SolverDecomp(p_MatSim_->Vija(), p_MatSim_->Viaj()));
   }
 
@@ -198,6 +207,12 @@ template <typename Repr>
 void tti_DecompSimulation<Repr>::do_mat() {
   p_MatSim_->run(MatMax_, MatTol_, nullptr);
 }
+
+template <typename Repr>
+void tti_DecompSimulation<Repr>::Ed_contractions(int tstp) {
+  int a = 0;
+}
+
 
 
 template <typename Repr>
@@ -259,7 +274,6 @@ void tti_DecompSimulation<Repr>::save(h5::File &file, const std::string &path) {
   Sigma.print_to_file(file, path + "/Sigma");
   
   h5e::dump(file, path + "/params/beta", beta_);
-  h5e::dump(file, path + "/params/dtau", dtau_);
   h5e::dump(file, path + "/mu", p_MatSim_->mu());
   h5e::dump(file, path + "/hmf", p_MatSim_->fock());
   h5e::dump(file, path + "/params/h0", h0);

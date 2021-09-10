@@ -156,7 +156,7 @@ void dyson::G0_from_h0(GREEN &G, double mu, const double *hM, const double *ht, 
   assert(G.nt() >= k_);
 
   int sig=G.sig(), m, n;
-  double tau, t, dtau=beta/ntau_;
+  double tau, t;
   
   ZMatrix mHmu = mu*ZMatrixMap(iden.data(), nao_, nao_) - DMatrixConstMap(hM, nao_, nao_);
   Eigen::SelfAdjointEigenSolver<ZMatrix> eigensolver(mHmu);
@@ -170,7 +170,7 @@ void dyson::G0_from_h0(GREEN &G, double mu, const double *hM, const double *ht, 
 
   // Matsubara
   for(m=0; m<=ntau_; m++){
-    tau = m*dtau;
+    tau = beta/2. * (Convolution().collocation().x_i()(m) + 1.);
     if(sig==-1)     ZMatrixMap(G.matptr(m), nao_, nao_) = -evec0*fermi_exp(beta,tau,eval0).asDiagonal()*evec0.adjoint();
     else if(sig==1) ZMatrixMap(G.matptr(m), nao_, nao_) =  evec0* bose_exp(beta,tau,eval0).asDiagonal()*evec0.adjoint();
   }
@@ -195,7 +195,7 @@ void dyson::G0_from_h0(GREEN &G, double mu, const double *hM, const double *ht, 
     UtMap = ZMatrixMap(M.data() + n*es_, nao_, nao_);
 
     for(m=0; m<=ntau_; m++) {
-      tau=m*dtau;
+      tau = beta/2. * (Convolution().collocation().x_i()(m) + 1.);
 
       if(sig==-1) ZMatrixMap(G.tvptr(n,m), nao_, nao_) = cplx(0.,1.) * UtMap * evec0 * fermi_exp(beta,tau,eval0m).asDiagonal() * evec0.adjoint();
       else if(sig==1) ZMatrixMap(G.tvptr(n,m), nao_, nao_) = cplx(0.,1.) * UtMap * evec0 * bose_exp(beta,tau,eval0m).asDiagonal() * evec0.adjoint();
@@ -230,7 +230,7 @@ void dyson::G0_from_h0(GREEN &G, double mu, const double *H0, double beta, doubl
   assert(G.size1() == nao_);
 
   int sign=G.sig();
-  double tau,t,dtau=beta/ntau_;
+  double tau,t;
   
   // Make Hamiltonian and solve eigen problem
   ZMatrix Hmu = mu*ZMatrixMap(iden.data(), nao_, nao_) - DMatrixConstMap(H0, nao_, nao_);
@@ -245,7 +245,7 @@ void dyson::G0_from_h0(GREEN &G, double mu, const double *H0, double beta, doubl
 
   // Matsubara
   for(int m=0; m<=ntau_; m++) {
-    tau=m*dtau;
+    tau = beta/2. * (Convolution().collocation().x_i()(m) + 1.);
     if(sign==-1){
       ZMatrixMap(G.matptr(m), nao_, nao_) = -evec0 * fermi_exp(beta,tau,eval0).asDiagonal() * evec0.adjoint();
     } else if(sign==1){
@@ -265,8 +265,8 @@ void dyson::G0_from_h0(GREEN &G, double mu, const double *H0, double beta, doubl
   }
 
   // TV
-  for(int m=0; m<=ntau_; m++) {
-    tau=m*dtau;
+  for(int m=0; m <= ntau_; m++) {
+    tau = beta/2. * (Convolution().collocation().x_i()(m) + 1.);
 
     for(int n=0; n<=k_; n++) {
       ZMatrixMap UtMap = ZMatrixMap(M.data() + n*es_, nao_, nao_);
@@ -318,7 +318,7 @@ void dyson::G0_from_h0(TTI_GREEN &G, double mu, const double *H0, double beta, d
   assert(G.size1() == nao_);
 
   int sign=G.sig();
-  double tau, t, dtau=beta/ntau_;
+  double tau, t;
   
   ZMatrix Hmu = mu*ZMatrixMap(iden.data(), nao_, nao_) - DMatrixConstMap(H0, nao_, nao_);
   Eigen::SelfAdjointEigenSolver<ZMatrix> eigensolver(Hmu);  
@@ -330,7 +330,7 @@ void dyson::G0_from_h0(TTI_GREEN &G, double mu, const double *H0, double beta, d
   eval0m = -eval0;
 
   for(int m=0; m<=ntau_; m++) {
-    tau=m*dtau;
+    tau = beta/2. * (Convolution().collocation().x_i()(m) + 1.);
     if(sign==-1){
       ZMatrixMap(G.matptr(m), nao_, nao_) = -evec0 * fermi_exp(beta,tau,eval0).asDiagonal() * evec0.adjoint();
     } else if(sign==1){
@@ -349,7 +349,7 @@ void dyson::G0_from_h0(TTI_GREEN &G, double mu, const double *H0, double beta, d
   }
 
   for(int m=0; m<=ntau_; m++) {
-    tau=m*dtau;
+    tau = beta/2. * (Convolution().collocation().x_i()(m) + 1.);
 
     for(int n=0; n<=k_; n++) {
       ZMatrixMap UtMap = ZMatrixMap(M.data() + n*es_, nao_, nao_);

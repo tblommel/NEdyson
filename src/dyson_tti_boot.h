@@ -190,9 +190,7 @@ double dyson::dyson_start(TTI_GREEN &G, const TTI_GREEN &Sig, const DTensor<2> &
   assert(G.size1() == hmf.shape()[0]);
 
   double err=0;
-  err += dyson_start_ret(G, Sig, hmf.data(), mu, dt);
-  err += dyson_start_tv(G, Sig, hmf.data(), mu, beta, dt);
-  err += dyson_start_les(G, Sig, hmf.data(), mu, beta, dt);
+  err += dyson_start(G, Sig, hmf.data(), mu, beta, dt);
   return err;
 }
 

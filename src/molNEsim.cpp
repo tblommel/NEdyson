@@ -8,18 +8,47 @@ namespace NEdyson {
 
 SimulationBase::SimulationBase(const gfmol::HartreeFock &hf, 
                                int nt, int ntau, int k, double dt,
-                               int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,bool hfbool) 
+                               int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
+                               bool hfbool, bool boolPumpProbe, std::string PumpProbeInput, 
+                               std::string MolInput, double lPumpProbe, double nPumpProbe) 
                                : enuc_(hf.enuc()), 
                                  nao_(hf.nao()), 
                                  eKin_(nt+1), 
                                  ePot_(nt+1),
-                                 Dyson(nt, ntau, nao_, k, hfbool) { 
+                                 Dyson(nt, ntau, nao_, k, hfbool),
+                                 efield_(3, nt+1),
+                                 Efield_(3, nt+1),
+                                 dfield_(3, nt+1),
+                                 dipole_(3, nao_, nao_) {
   nt_ = nt;
   ntau_ = ntau;
   dt_ = dt;
   k_ = k;
   bootstrap_converged = false;
   hfbool_ = hfbool;
+  boolPumpProbe_ = boolPumpProbe;
+  lPumpProbe_ = lPumpProbe;
+  nPumpProbe_ = nPumpProbe;
+
+  if(boolPumpProbe_) {
+    h5e::File ppinp(PumpProbeInput);
+    Efield_ = h5e::load<DTensor<2>>(ppinp, "/E");
+    efield_ = h5e::load<DTensor<2>>(ppinp, "/e");
+
+    h5e::File molinp(MolInput);
+    dipole_ = h5e::load<DTensor<3>>(molinp, "/dipole");
+
+    // Bootstrapping is tti so we need to make sure e and E are zero
+    // for first k+1 timesteps
+    for(int d = 0; d < 3; d++) {
+      double enorm = DRowVectorMap(efield_.data() + d * (nt_+1), k_+1).norm();
+      double Enorm = DRowVectorMap(Efield_.data() + d * (nt_+1), k_+1).norm();
+      if(enorm > 1e-15 || Enorm > 1e-15) {
+        std::cout << "applied field is nonzero in the first k timesteps" << std::endl;
+        std::exit(0);
+      }
+    }
+  }
 
   MatMax_ = MatMax;
   MatTol_ = MatTol;
@@ -49,18 +78,25 @@ void SimulationBase::save_base(h5::File &file, const std::string &path) const {
   h5e::dump(file, path + "/solve/params/hf", hfbool_);
 }
 
+void SimulationBase::save_PP(h5::File &file, const std::string &path) const {
+  h5e::dump(file, path + "/l", lPumpProbe_);
+  h5e::dump(file, path + "/n", nPumpProbe_);
+  h5e::dump(file, path + "/dfield", dfield_);
+  h5e::dump(file, path + "/efield", efield_);
+  h5e::dump(file, path + "/dt", dt_);
+}
+
 
 void SimulationBase::run(){
   std::chrono::time_point<std::chrono::system_clock> start, end;
   std::chrono::duration<double> elapsed_seconds;
-  
   // Run the gfmol Matsubara solver
   do_mat();
 
   // Calculate the free GF
   free_gf();
 
-  // Take the coefficients from gfmol and transform them into equidistant mesh
+  // Take the coefficients from gfmol and transform them into Legendre mesh
   L_to_Tau();
   
   // Do the bootstrapping routines
@@ -81,6 +117,7 @@ void SimulationBase::run(){
   }
   else {
     std::cout << "Bootstrapping did not converge after " << BootMax_ << " iterations!" << std::endl;
+    std::exit(0);
   }
 }
 
