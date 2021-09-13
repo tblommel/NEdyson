@@ -14,7 +14,7 @@ template <typename Repr>
 Simulation<Repr>::Simulation(const gfmol::HartreeFock &hf,
                              const gfmol::RepresentationBase<Repr> &frepr,
                              const gfmol::RepresentationBase<Repr> &brepr,
-                             NEdyson::params &p) : 
+                             const Params &p) : 
                                  SimulationBase(hf, p),
                                  hmf(p.nt + 1, nao_, nao_), 
                                  h0(hf.hcore()), 
@@ -314,7 +314,7 @@ template <typename Repr>
 tti_Simulation<Repr>::tti_Simulation(const gfmol::HartreeFock &hf,
                              const gfmol::RepresentationBase<Repr> &frepr,
                              const gfmol::RepresentationBase<Repr> &brepr,
-                             params &p) : 
+                             const Params &p) : 
                                  SimulationBase(hf, p),
                                  h0(hf.hcore()) 
 {

@@ -7,6 +7,7 @@
 
 #include "gfmol/sim.h"
 #include "dyson.h"
+#include "params.h"
 #include "greens.h"
 #include "integration.h"
 #include "molHFSolver.h"
@@ -58,7 +59,7 @@ public:
   void save_PP(h5::File &file, const std::string &path) const;
 
   // Base class constructor
-  explicit SimulationBase(const gfmol::HartreeFock &hf, const NEdyson::Params &p);
+  explicit SimulationBase(const gfmol::HartreeFock &hf, const Params &p);
   
   // Calculate free GF
   virtual void free_gf() = 0;
@@ -365,7 +366,7 @@ public:
   tti_SpinSimulation(const gfmol::HartreeFock &hf,
              const gfmol::RepresentationBase<Repr> &frepr,
              const gfmol::RepresentationBase<Repr> &brepr,
-             const NEdyson::Params &p);
+             const Params &p);
 
   void free_gf() override;
 

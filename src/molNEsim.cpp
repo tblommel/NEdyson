@@ -28,11 +28,11 @@ SimulationBase::SimulationBase(const gfmol::HartreeFock &hf,
   nPumpProbe_ = p.nPumpProbe;
 
   if(boolPumpProbe_) {
-    h5e::File ppinp(p.PumpProbeInput);
+    h5e::File ppinp(p.PumpProbe_file);
     Efield_ = h5e::load<DTensor<2>>(ppinp, "/E");
     efield_ = h5e::load<DTensor<2>>(ppinp, "/e");
 
-    h5e::File molinp_file(p.MolInput);
+    h5e::File molinp_file(p.hf_input);
     dipole_ = h5e::load<DTensor<3>>(molinp_file, "/dipole");
 
     // Bootstrapping is tti so we need to make sure e and E are zero
@@ -47,10 +47,10 @@ SimulationBase::SimulationBase(const gfmol::HartreeFock &hf,
     }
   }
 
-  MatMax_ = p.MatMax;
-  MatTol_ = p.MatTol;
-  BootMax_ =p.BootMax;
-  BootTol_ = p.BootTol;
+  MatMax_ = p.maxiter;
+  MatTol_ = p.etol;
+  BootMax_ =p.BootMaxIter;
+  BootTol_ = p.BootMaxErr;
   CorrSteps_ = p.CorrSteps;
 }
 

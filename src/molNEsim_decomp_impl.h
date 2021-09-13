@@ -14,7 +14,7 @@ template <typename Repr>
 DecompSimulation<Repr>::DecompSimulation(const gfmol::HartreeFock &hf,
                              const gfmol::RepresentationBase<Repr> &frepr,
                              const gfmol::RepresentationBase<Repr> &brepr,
-                             params &p) : 
+                             const Params &p) : 
                                  SimulationBase(hf, p),
                                  hmf(p.nt + 1, nao_, nao_), 
                                  h0(hf.hcore()), 
@@ -171,7 +171,7 @@ template <typename Repr>
 tti_DecompSimulation<Repr>::tti_DecompSimulation(const gfmol::HartreeFock &hf,
                              const gfmol::RepresentationBase<Repr> &frepr,
                              const gfmol::RepresentationBase<Repr> &brepr,
-                             params &p) : 
+                             const Params &p) : 
                                  SimulationBase(hf, p),
                                  h0(hf.hcore())
 {
