@@ -14,29 +14,23 @@ template <typename Repr>
 DecompSpinSimulation<Repr>::DecompSpinSimulation(const gfmol::HartreeFock &hf,
                              const gfmol::RepresentationBase<Repr> &frepr,
                              const gfmol::RepresentationBase<Repr> &brepr,
-                             int nt, int ntau, int k, double dt,
-                             int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
-                             gfmol::Mode mode,
-                             double damping,
-                             double decomp_prec, bool hfbool, bool boolPumpProbe, 
-                             std::string PumpProbeInp, std::string MolInp,
-                             double lPumpProbe, double nPumpProbe) : 
-                                 SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, hfbool, boolPumpProbe, PumpProbeInp, MolInp, lPumpProbe, nPumpProbe),
-                                 hmf(2, nt+1, nao_, nao_), 
+                             const Params &p) : 
+                                 SimulationBase(hf, p),
+                                 hmf(2, p.nt + 1, nao_, nao_), 
                                  h0(hf.hcore()), 
-                                 rho(2,nao_,nao_)
+                                 rho(2, nao_, nao_)
 {
-  switch (mode) {
+  switch (p.gfmolmode) {
     case gfmol::Mode::GF2:
-      p_MatSim_ = std::unique_ptr<gfmol::DecompSpinSimulation<Repr> >(new gfmol::DecompSpinSimulation<Repr>(hf, frepr, brepr, mode, 0., hfbool));
+      p_MatSim_ = std::unique_ptr<gfmol::DecompSpinSimulation<Repr> >(new gfmol::DecompSpinSimulation<Repr>(hf, frepr, brepr, p.gfmolmode, 0., p.hfbool));
       beta_ = p_MatSim_->frepr().beta();
       p_NEgf2_ = std::unique_ptr<molGF2SolverSpinDecomp>(new molGF2SolverSpinDecomp(p_MatSim_->Vija(), p_MatSim_->Viaj()));
   }
 
-  Sup = GREEN(nt, ntau, nao_, -1);
-  Sdown = GREEN(nt, ntau, nao_, -1);
-  Gup = GREEN(nt, ntau, nao_, -1);
-  Gdown = GREEN(nt, ntau, nao_, -1);
+  Sup = GREEN(p.nt, p.ntau, nao_, -1);
+  Sdown = GREEN(p.nt, p.ntau, nao_, -1);
+  Gup = GREEN(p.nt, p.ntau, nao_, -1);
+  Gdown = GREEN(p.nt, p.ntau, nao_, -1);
 
   G = {Gup, Gdown};
   Sigma = {Sup, Sdown};
@@ -165,10 +159,9 @@ void DecompSpinSimulation<Repr>::load(const h5::File &file, const std::string &p
 
 template <>
 inline void DecompSpinSimulation<gfmol::ChebyshevRepr>::L_to_Tau(){
-  int ntau = ntau_;
   int nL = p_MatSim_->frepr().nl();
-  DMatrix Trans(ntau+1, nL);
-  for(int t=0; t<=ntau; t++){
+  DMatrix Trans(ntau_ + 1, nL);
+  for(int t=0; t<=ntau_; t++){
     double x = Dyson.Convolution().collocation().x_i()(t);
     for(int l=0; l<nL; l++){
       Trans(t,l) = boost::math::chebyshev_t(l,x);
@@ -205,25 +198,21 @@ template <typename Repr>
 tti_DecompSpinSimulation<Repr>::tti_DecompSpinSimulation(const gfmol::HartreeFock &hf,
                              const gfmol::RepresentationBase<Repr> &frepr,
                              const gfmol::RepresentationBase<Repr> &brepr,
-                             int nt, int ntau, int k, double dt,
-                             int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
-                             gfmol::Mode mode,
-                             double damping,
-                             double decomp_prec, bool hfbool) : 
-                                 SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, hfbool, false, "", "", 0, 0),
+                             const Params &p) : 
+                                 SimulationBase(hf, p),
                                  h0(hf.hcore())
 {
-  switch (mode) {
+  switch (p.gfmolmode) {
     case gfmol::Mode::GF2:
-      p_MatSim_ = std::unique_ptr<gfmol::DecompSpinSimulation<Repr> >(new gfmol::DecompSpinSimulation<Repr>(hf, frepr, brepr, mode, 0., hfbool));
+      p_MatSim_ = std::unique_ptr<gfmol::DecompSpinSimulation<Repr> >(new gfmol::DecompSpinSimulation<Repr>(hf, frepr, brepr, p.gfmolmode, 0., p.hfbool));
       beta_ = p_MatSim_->frepr().beta();
       p_NEgf2_ = std::unique_ptr<tti_molGF2SolverSpinDecomp>(new tti_molGF2SolverSpinDecomp(p_MatSim_->Vija(), p_MatSim_->Viaj()));
   }
 
-  Sup = TTI_GREEN(nt, ntau, nao_, -1);
-  Sdown = TTI_GREEN(nt, ntau, nao_, -1);
-  Gup = TTI_GREEN(nt, ntau, nao_, -1);
-  Gdown = TTI_GREEN(nt, ntau, nao_, -1);
+  Sup = TTI_GREEN(p.nt, p.ntau, nao_, -1);
+  Sdown = TTI_GREEN(p.nt, p.ntau, nao_, -1);
+  Gup = TTI_GREEN(p.nt, p.ntau, nao_, -1);
+  Gdown = TTI_GREEN(p.nt, p.ntau, nao_, -1);
 
   G = {Gup, Gdown};
   Sigma = {Sup, Sdown};
@@ -339,10 +328,9 @@ void tti_DecompSpinSimulation<Repr>::load(const h5::File &file, const std::strin
 
 template <>
 inline void tti_DecompSpinSimulation<gfmol::ChebyshevRepr>::L_to_Tau(){
-  int ntau = ntau_;
   int nL = p_MatSim_->frepr().nl();
-  DMatrix Trans(ntau+1, nL);
-  for(int t=0; t<=ntau; t++){
+  DMatrix Trans(ntau_+1, nL);
+  for(int t=0; t<=ntau_; t++){
     double x = Dyson.Convolution().collocation().x_i()(t);
     for(int l=0; l<nL; l++){
       Trans(t,l) = boost::math::chebyshev_t(l,x);

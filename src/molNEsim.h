@@ -7,6 +7,7 @@
 
 #include "gfmol/sim.h"
 #include "dyson.h"
+#include "params.h"
 #include "greens.h"
 #include "integration.h"
 #include "molHFSolver.h"
@@ -56,8 +57,9 @@ protected:
   
 public:
   void save_PP(h5::File &file, const std::string &path) const;
+
   // Base class constructor
-  explicit SimulationBase(const gfmol::HartreeFock &hf, int nt, int ntau, int k, double dt, int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps, bool hfbool, bool boolPumpProbe, std::string PumpProbeInput, std::string MolInput, double lPumpProbe, double nPumpProbe);
+  explicit SimulationBase(const gfmol::HartreeFock &hf, const Params &p);
   
   // Calculate free GF
   virtual void free_gf() = 0;
@@ -110,12 +112,7 @@ public:
   Simulation(const gfmol::HartreeFock &hf,
              const gfmol::RepresentationBase<Repr> &frepr,
              const gfmol::RepresentationBase<Repr> &brepr,
-             int nt, int ntau, int k, double dt,
-             int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
-             gfmol::Mode mode = gfmol::Mode::GF2,
-             double damping = 0, bool hfbool = false, bool boolPumpProbe = false, 
-             std::string PumpProbeInp = "", std::string MolInp = "", 
-             double lPumpProbe = 0, double nPumpProbe = 0);
+             const NEdyson::Params &p);
 
   void free_gf() override;
 
@@ -156,13 +153,7 @@ public:
   DecompSimulation(const gfmol::HartreeFock &hf,
              const gfmol::RepresentationBase<Repr> &frepr,
              const gfmol::RepresentationBase<Repr> &brepr,
-             int nt, int ntau, int k, double dt,
-             int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
-             gfmol::Mode mode = gfmol::Mode::GF2,
-             double damping = 0,
-             double decomp_prec = 1e-8, bool hfbool = false, bool boolPumpProbe = false, 
-             std::string PumpProbeInp = "", std::string MolInp = "",
-             double lPumpProbe = 0, double nPumpProbe = 0);
+             const NEdyson::Params &p);
 
   void free_gf() override;
 
@@ -207,12 +198,7 @@ public:
   SpinSimulation(const gfmol::HartreeFock &hf,
              const gfmol::RepresentationBase<Repr> &frepr,
              const gfmol::RepresentationBase<Repr> &brepr,
-             int nt, int ntau, int k, double dt,
-             int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
-             gfmol::Mode mode = gfmol::Mode::GF2,
-             double damping = 0, bool hfbool = false, bool boolPumpProbe = false, 
-             std::string PumpProbeInp = "", std::string MolInp = "",
-             double lPumpProbe = 0, double nPumpProbe = 0);
+             const NEdyson::Params &p);
 
   void free_gf() override;
 
@@ -258,13 +244,7 @@ public:
   DecompSpinSimulation(const gfmol::HartreeFock &hf,
              const gfmol::RepresentationBase<Repr> &frepr,
              const gfmol::RepresentationBase<Repr> &brepr,
-             int nt, int ntau, int k, double dt,
-             int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
-             gfmol::Mode mode = gfmol::Mode::GF2,
-             double damping = 0, 
-             double decomp_prec = 1e-8, bool hfbool = false, bool boolPumpProbe = false, 
-             std::string PumpProbeInp = "", std::string MolInp = "",
-             double lPumpProbe = 0, double nPumpProbe = 0);
+             const NEdyson::Params &p);
 
   void free_gf() override;
 
@@ -306,10 +286,7 @@ public:
   tti_Simulation(const gfmol::HartreeFock &hf,
              const gfmol::RepresentationBase<Repr> &frepr,
              const gfmol::RepresentationBase<Repr> &brepr,
-             int nt, int ntau, int k, double dt,
-             int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
-             gfmol::Mode mode = gfmol::Mode::GF2,
-             double damping = 0, bool hfbool = false);
+             const NEdyson::Params &p);
 
   void free_gf() override;
 
@@ -346,11 +323,7 @@ public:
   tti_DecompSimulation(const gfmol::HartreeFock &hf,
              const gfmol::RepresentationBase<Repr> &frepr,
              const gfmol::RepresentationBase<Repr> &brepr,
-             int nt, int ntau, int k, double dt,
-             int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
-             gfmol::Mode mode = gfmol::Mode::GF2,
-             double damping = 0,
-             double decomp_prec = 1e-8, bool hfbool = false);
+             const NEdyson::Params &p);
 
   void free_gf() override;
 
@@ -393,10 +366,7 @@ public:
   tti_SpinSimulation(const gfmol::HartreeFock &hf,
              const gfmol::RepresentationBase<Repr> &frepr,
              const gfmol::RepresentationBase<Repr> &brepr,
-             int nt, int ntau, int k, double dt,
-             int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
-             gfmol::Mode mode = gfmol::Mode::GF2,
-             double damping = 0, bool hfbool = false);
+             const Params &p);
 
   void free_gf() override;
 
@@ -440,10 +410,7 @@ public:
   tti_DecompSpinSimulation(const gfmol::HartreeFock &hf,
              const gfmol::RepresentationBase<Repr> &frepr,
              const gfmol::RepresentationBase<Repr> &brepr,
-             int nt, int ntau, int k, double dt,
-             int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
-             gfmol::Mode mode = gfmol::Mode::GF2,
-             double damping = 0, double decomp_prec = 1e-8, bool hfbool = false);
+             const NEdyson::Params &p);
 
   void free_gf() override;
 
@@ -471,61 +438,52 @@ public:
 
 // Factory for simulations
 template <typename Repr>
-std::unique_ptr<SimulationBase> make_simulation(bool tti,
-                                                bool unrestricted,
-                                                bool decomposed,
-                                                const gfmol::HartreeFock &hf,
+std::unique_ptr<SimulationBase> make_simulation(const gfmol::HartreeFock &hf,
                                                 const gfmol::RepresentationBase<Repr> &frepr,
                                                 const gfmol::RepresentationBase<Repr> &brepr,
-                                                gfmol::Mode mode,
-                                                int nt, int ntau, int k, double dt, 
-                                                int MatMax, double MatTol, int BootMax, 
-                                                double BootTol, int CorrSteps, double damping = 0, 
-                                                double decomp_prec = 1e-7, bool hfbool = false, 
-                                                bool boolPumpProbe = false, std::string PumpProbeInp= "", 
-                                                std::string MolInp = "", double lPumpProbe = 0., double nPumpProbe = 0.)
+                                                NEdyson::Params &p)
 {
-  if(tti) {
-    if(unrestricted) {
-      if(decomposed) {
+  if(p.tti) {
+    if(p.unrestricted) {
+      if(p.decomposed) {
         return std::unique_ptr<tti_DecompSpinSimulation<Repr>>(
-          new tti_DecompSpinSimulation<Repr>(hf, frepr, brepr, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, mode, damping, decomp_prec, hfbool));
+          new tti_DecompSpinSimulation<Repr>(hf, frepr, brepr, p));
       }
       else{
         return std::unique_ptr<tti_SpinSimulation<Repr>>(
-          new tti_SpinSimulation<Repr>(hf, frepr, brepr, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, mode, damping, hfbool));
+          new tti_SpinSimulation<Repr>(hf, frepr, brepr, p));
       }
     }
     else {
-      if(decomposed) {
+      if(p.decomposed) {
         return std::unique_ptr<tti_DecompSimulation<Repr>>(
-          new tti_DecompSimulation<Repr>(hf, frepr, brepr, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, mode, damping, decomp_prec, hfbool));
+          new tti_DecompSimulation<Repr>(hf, frepr, brepr, p));
       }
       else {
         return std::unique_ptr<tti_Simulation<Repr>>(
-          new tti_Simulation<Repr>(hf, frepr, brepr, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, mode, damping, hfbool));
+          new tti_Simulation<Repr>(hf, frepr, brepr, p));
       }
     }
   }
   else {
-    if(unrestricted) {
-      if(decomposed) {
+    if(p.unrestricted) {
+      if(p.decomposed) {
         return std::unique_ptr<DecompSpinSimulation<Repr>>(
-          new DecompSpinSimulation<Repr>(hf, frepr, brepr, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, mode, damping, decomp_prec, hfbool, boolPumpProbe, PumpProbeInp, MolInp, lPumpProbe, nPumpProbe));
+          new DecompSpinSimulation<Repr>(hf, frepr, brepr, p));
       }
       else{
         return std::unique_ptr<SpinSimulation<Repr>>(
-          new SpinSimulation<Repr>(hf, frepr, brepr, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, mode, damping, hfbool, boolPumpProbe, PumpProbeInp, MolInp, lPumpProbe, nPumpProbe));
+          new SpinSimulation<Repr>(hf, frepr, brepr, p));
       }
     }
     else {
-      if(decomposed) {
+      if(p.decomposed) {
         return std::unique_ptr<DecompSimulation<Repr>>(
-          new DecompSimulation<Repr>(hf, frepr, brepr, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, mode, damping, decomp_prec, hfbool, boolPumpProbe, PumpProbeInp, MolInp, lPumpProbe, nPumpProbe));
+          new DecompSimulation<Repr>(hf, frepr, brepr, p));
       }
       else {
         return std::unique_ptr<Simulation<Repr>>(
-          new Simulation<Repr>(hf, frepr, brepr, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, mode, damping, hfbool, boolPumpProbe, PumpProbeInp, MolInp, lPumpProbe, nPumpProbe));
+          new Simulation<Repr>(hf, frepr, brepr, p));
       }
     }
   }

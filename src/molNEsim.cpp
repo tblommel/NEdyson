@@ -7,36 +7,33 @@
 namespace NEdyson {
 
 SimulationBase::SimulationBase(const gfmol::HartreeFock &hf, 
-                               int nt, int ntau, int k, double dt,
-                               int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
-                               bool hfbool, bool boolPumpProbe, std::string PumpProbeInput, 
-                               std::string MolInput, double lPumpProbe, double nPumpProbe) 
+                               const NEdyson::Params &p) 
                                : enuc_(hf.enuc()), 
                                  nao_(hf.nao()), 
-                                 eKin_(nt+1), 
-                                 ePot_(nt+1),
-                                 Dyson(nt, ntau, nao_, k, hfbool),
-                                 efield_(3, nt+1),
-                                 Efield_(3, nt+1),
-                                 dfield_(3, nt+1),
+                                 eKin_(p.nt+1), 
+                                 ePot_(p.nt+1),
+                                 Dyson(p.nt, p.ntau, nao_, p.k, p.hfbool),
+                                 efield_(3, p.nt+1),
+                                 Efield_(3, p.nt+1),
+                                 dfield_(3, p.nt+1),
                                  dipole_(3, nao_, nao_) {
-  nt_ = nt;
-  ntau_ = ntau;
-  dt_ = dt;
-  k_ = k;
+  nt_ = p.nt;
+  ntau_ = p.ntau;
+  dt_ = p.dt;
+  k_ = p.k;
   bootstrap_converged = false;
-  hfbool_ = hfbool;
-  boolPumpProbe_ = boolPumpProbe;
-  lPumpProbe_ = lPumpProbe;
-  nPumpProbe_ = nPumpProbe;
+  hfbool_ = p.hfbool;
+  boolPumpProbe_ = p.boolPumpProbe;
+  lPumpProbe_ = p.lPumpProbe;
+  nPumpProbe_ = p.nPumpProbe;
 
   if(boolPumpProbe_) {
-    h5e::File ppinp(PumpProbeInput);
+    h5e::File ppinp(p.PumpProbe_file);
     Efield_ = h5e::load<DTensor<2>>(ppinp, "/E");
     efield_ = h5e::load<DTensor<2>>(ppinp, "/e");
 
-    h5e::File molinp(MolInput);
-    dipole_ = h5e::load<DTensor<3>>(molinp, "/dipole");
+    h5e::File molinp_file(p.hf_input);
+    dipole_ = h5e::load<DTensor<3>>(molinp_file, "/dipole");
 
     // Bootstrapping is tti so we need to make sure e and E are zero
     // for first k+1 timesteps
@@ -50,11 +47,11 @@ SimulationBase::SimulationBase(const gfmol::HartreeFock &hf,
     }
   }
 
-  MatMax_ = MatMax;
-  MatTol_ = MatTol;
-  BootMax_ = BootMax;
-  BootTol_ = BootTol;
-  CorrSteps_ = CorrSteps;
+  MatMax_ = p.maxiter;
+  MatTol_ = p.etol;
+  BootMax_ =p.BootMaxIter;
+  BootTol_ = p.BootMaxErr;
+  CorrSteps_ = p.CorrSteps;
 }
 
 void SimulationBase::save_base(h5::File &file, const std::string &path) const {

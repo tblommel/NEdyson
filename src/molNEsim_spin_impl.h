@@ -14,28 +14,23 @@ template <typename Repr>
 SpinSimulation<Repr>::SpinSimulation(const gfmol::HartreeFock &hf,
                              const gfmol::RepresentationBase<Repr> &frepr,
                              const gfmol::RepresentationBase<Repr> &brepr,
-                             int nt, int ntau, int k, double dt,
-                             int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
-                             gfmol::Mode mode,
-                             double damping, bool hfbool, bool boolPumpProbe, 
-                             std::string PumpProbeInp, std::string MolInp,
-                             double lPumpProbe, double nPumpProbe) : 
-                                 SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, hfbool, boolPumpProbe, PumpProbeInp, MolInp, lPumpProbe, nPumpProbe),
-                                 hmf(2, nt+1, nao_, nao_), 
+                             const Params &p) : 
+                                 SimulationBase(hf, p),
+                                 hmf(2, p.nt + 1, nao_, nao_), 
                                  h0(hf.hcore()), 
-                                 rho(2,nao_,nao_)
+                                 rho(2, nao_, nao_)
 {
-  switch (mode) {
+  switch (p.gfmolmode) {
     case gfmol::Mode::GF2:
-      p_MatSim_ = std::unique_ptr<gfmol::SpinSimulation<Repr> >(new gfmol::SpinSimulation<Repr>(hf, frepr, brepr, mode, 0., hfbool));
+      p_MatSim_ = std::unique_ptr<gfmol::SpinSimulation<Repr> >(new gfmol::SpinSimulation<Repr>(hf, frepr, brepr, p.gfmolmode, 0., p.hfbool));
       beta_ = p_MatSim_->frepr().beta();
       p_NEgf2_ = std::unique_ptr<molGF2SolverSpin>(new molGF2SolverSpin(hf.uchem(), p_MatSim_->u_exch()));
   }
 
-  Sup = GREEN(nt, ntau, nao_, -1);
-  Sdown = GREEN(nt, ntau, nao_, -1);
-  Gup = GREEN(nt, ntau, nao_, -1);
-  Gdown = GREEN(nt, ntau, nao_, -1);
+  Sup = GREEN(p.nt, p.ntau, nao_, -1);
+  Sdown = GREEN(p.nt, p.ntau, nao_, -1);
+  Gup = GREEN(p.nt, p.ntau, nao_, -1);
+  Gdown = GREEN(p.nt, p.ntau, nao_, -1);
 
   G = {Gup, Gdown};
   Sigma = {Sup, Sdown};
@@ -208,24 +203,21 @@ template <typename Repr>
 tti_SpinSimulation<Repr>::tti_SpinSimulation(const gfmol::HartreeFock &hf,
                              const gfmol::RepresentationBase<Repr> &frepr,
                              const gfmol::RepresentationBase<Repr> &brepr,
-                             int nt, int ntau, int k, double dt,
-                             int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
-                             gfmol::Mode mode,
-                             double damping, bool hfbool) : 
-                                 SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, hfbool, false, "", "", 0, 0),
+                             const Params &p) : 
+                                 SimulationBase(hf, p),
                                  h0(hf.hcore())
 {
-  switch (mode) {
+  switch (p.gfmolmode) {
     case gfmol::Mode::GF2:
-      p_MatSim_ = std::unique_ptr<gfmol::SpinSimulation<Repr> >(new gfmol::SpinSimulation<Repr>(hf, frepr, brepr, mode, 0., hfbool));
+      p_MatSim_ = std::unique_ptr<gfmol::SpinSimulation<Repr> >(new gfmol::SpinSimulation<Repr>(hf, frepr, brepr, p.gfmolmode, 0., p.hfbool));
       beta_ = p_MatSim_->frepr().beta();
       p_NEgf2_ = std::unique_ptr<tti_molGF2SolverSpin>(new tti_molGF2SolverSpin(hf.uchem(), p_MatSim_->u_exch()));
   }
 
-  Sup = TTI_GREEN(nt, ntau, nao_, -1);
-  Sdown = TTI_GREEN(nt, ntau, nao_, -1);
-  Gup = TTI_GREEN(nt, ntau, nao_, -1);
-  Gdown = TTI_GREEN(nt, ntau, nao_, -1);
+  Sup = TTI_GREEN(p.nt, p.ntau, nao_, -1);
+  Sdown = TTI_GREEN(p.nt, p.ntau, nao_, -1);
+  Gup = TTI_GREEN(p.nt, p.ntau, nao_, -1);
+  Gdown = TTI_GREEN(p.nt, p.ntau, nao_, -1);
 
   G = {Gup, Gdown};
   Sigma = {Sup, Sdown};
