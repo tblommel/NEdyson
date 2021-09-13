@@ -17,12 +17,6 @@ int main(const int argc, char *const *const argv)
   if (!hf.transformed())
     throw std::invalid_argument("Input Hartree-Fock should be in orthogonal basis!");
 
-  gfmol::Mode mode;
-  if (p.mode == "GF2")
-    mode = gfmol::Mode::GF2;
-  else if (p.mode == "GW")
-    throw std::runtime_error("GW solver not implemented");
-
   if (p.repr == "cheb") {
     // load repr
     std::cout << "Loading Chebyshev repr at " << p.repr_file << std::endl;
@@ -32,7 +26,7 @@ int main(const int argc, char *const *const argv)
 
     // Make the sim
     std::unique_ptr<SimulationBase> p_sim =
-        make_simulation(hf, frepr, brepr, mode, p);
+        make_simulation(hf, frepr, brepr, p);
 
     // Run the sim
     p_sim->run();

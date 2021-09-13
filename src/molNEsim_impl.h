@@ -20,9 +20,9 @@ Simulation<Repr>::Simulation(const gfmol::HartreeFock &hf,
                                  h0(hf.hcore()), 
                                  rho(nao_, nao_)
 {
-  switch (mode) {
+  switch (p.gfmolmode) {
     case gfmol::Mode::GF2:
-      p_MatSim_ = std::unique_ptr<gfmol::Simulation<Repr> >(new gfmol::Simulation<Repr>(hf, frepr, brepr, mode, 0., p.hfbool));
+      p_MatSim_ = std::unique_ptr<gfmol::Simulation<Repr> >(new gfmol::Simulation<Repr>(hf, frepr, brepr, p.gfmolmode, 0., p.hfbool));
       beta_ = p_MatSim_->frepr().beta();
       p_NEgf2_ = std::unique_ptr<molGF2Solver>(new molGF2Solver(hf.uchem(), p_MatSim_->u_exch()));
   }
@@ -128,9 +128,6 @@ void Simulation<Repr>::save(h5::File &file, const std::string &path) {
   G.print_to_file(file, path + "/G");
   Sigma.print_to_file(file, path + "/Sigma");
 
-  //FUCK
-//  h5e::File fin("/pauli-storage/tblommel/He-VB2PP/UGU/H2-pvdz1.4out_nt100dt01_HF.h5");
-//  G.read_from_file(fin, "/G");
   for(int t = 0; t<=nt_; t++) {
     p_NEgf2_->solve(t, Sigma, G);
   }
@@ -215,8 +212,6 @@ void Simulation<Repr>::save(h5::File &file, const std::string &path) {
     }
   }
   Ints.print_to_file(file, path + "/IR");
-  
-  //FUCK
   
   h5e::dump(file, path + "/params/beta", beta_);
   h5e::dump(file, path + "/mu", p_MatSim_->mu());
@@ -319,22 +314,19 @@ template <typename Repr>
 tti_Simulation<Repr>::tti_Simulation(const gfmol::HartreeFock &hf,
                              const gfmol::RepresentationBase<Repr> &frepr,
                              const gfmol::RepresentationBase<Repr> &brepr,
-                             int nt, int ntau, int k, double dt,
-                             int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
-                             gfmol::Mode mode,
-                             double damping, bool hfbool) : 
-                                 SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, hfbool, false, "", "", 0, 0),
+                             params &p) : 
+                                 SimulationBase(hf, p),
                                  h0(hf.hcore()) 
 {
-  switch (mode) {
+  switch (p.gfmolmode) {
     case gfmol::Mode::GF2:
-      p_MatSim_ = std::unique_ptr<gfmol::Simulation<Repr> >(new gfmol::Simulation<Repr>(hf, frepr, brepr, mode, 0., hfbool));
+      p_MatSim_ = std::unique_ptr<gfmol::Simulation<Repr> >(new gfmol::Simulation<Repr>(hf, frepr, brepr, p.gfmolmode, 0., p.hfbool));
       beta_ = p_MatSim_->frepr().beta();
       p_NEgf2_ = std::unique_ptr<tti_molGF2Solver>(new tti_molGF2Solver(hf.uchem(), p_MatSim_->u_exch()));
   }
 
-  Sigma = TTI_GREEN(nt, ntau, nao_, -1);
-  G = TTI_GREEN(nt, ntau, nao_, -1);
+  Sigma = TTI_GREEN(p.nt, p.ntau, nao_, -1);
+  G = TTI_GREEN(p.nt, p.ntau, nao_, -1);
 }
 
 

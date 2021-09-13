@@ -440,7 +440,6 @@ template <typename Repr>
 std::unique_ptr<SimulationBase> make_simulation(const gfmol::HartreeFock &hf,
                                                 const gfmol::RepresentationBase<Repr> &frepr,
                                                 const gfmol::RepresentationBase<Repr> &brepr,
-                                                gfmol::Mode mode,
                                                 NEdyson::Params &p)
 {
   if(p.tti) {
