@@ -14,26 +14,21 @@ template <typename Repr>
 Simulation<Repr>::Simulation(const gfmol::HartreeFock &hf,
                              const gfmol::RepresentationBase<Repr> &frepr,
                              const gfmol::RepresentationBase<Repr> &brepr,
-                             int nt, int ntau, int k, double dt,
-                             int MatMax, double MatTol, int BootMax, double BootTol, int CorrSteps,
-                             gfmol::Mode mode,
-                             double damping, bool hfbool, bool boolPumpProbe, 
-                             std::string PumpProbeInp, std::string MolInp,
-                             double lPumpProbe, double nPumpProbe) : 
-                                 SimulationBase(hf, nt, ntau, k, dt, MatMax, MatTol, BootMax, BootTol, CorrSteps, hfbool, boolPumpProbe, PumpProbeInp, MolInp, lPumpProbe, nPumpProbe),
-                                 hmf(nt+1, nao_, nao_), 
+                             NEdyson::params &p) : 
+                                 SimulationBase(hf, p),
+                                 hmf(p.nt + 1, nao_, nao_), 
                                  h0(hf.hcore()), 
                                  rho(nao_, nao_)
 {
   switch (mode) {
     case gfmol::Mode::GF2:
-      p_MatSim_ = std::unique_ptr<gfmol::Simulation<Repr> >(new gfmol::Simulation<Repr>(hf, frepr, brepr, mode, 0., hfbool));
+      p_MatSim_ = std::unique_ptr<gfmol::Simulation<Repr> >(new gfmol::Simulation<Repr>(hf, frepr, brepr, mode, 0., p.hfbool));
       beta_ = p_MatSim_->frepr().beta();
       p_NEgf2_ = std::unique_ptr<molGF2Solver>(new molGF2Solver(hf.uchem(), p_MatSim_->u_exch()));
   }
 
-  Sigma = GREEN(nt, ntau, nao_, -1);
-  G = GREEN(nt, ntau, nao_, -1);
+  Sigma = GREEN(p.nt, p.ntau, nao_, -1);
+  G = GREEN(p.nt, p.ntau, nao_, -1);
 }
 
 
