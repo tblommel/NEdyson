@@ -5,6 +5,7 @@
 #ifndef _PARAMS_H_
 #define _PARAMS_H_
 
+#include "gfmol/sim.h"
 #include <args.hxx>
 #include <iniparser.hpp>
 #include <iostream>
@@ -45,6 +46,7 @@ struct Params {
   std::string outputPP;
   bool boolOutputPP;
 
+  gfmol::Mode gfmolmode;
 
   void validate() const
   {
@@ -224,6 +226,12 @@ inline Params parse_args(const int argc, char *const *const argv)
            extract_value(param_file, nPumpProbe),
            extract_value(param_file, outputPP),
            extract_value(param_file, boolOutputPP)};
+
+  if (p.mode == "GF2")
+    p.gfmolmode = gfmol::Mode::GF2;
+  else if (p.mode == "GW")
+    throw std::runtime_error("GW solver not implemented");
+
   try {
     p.validate();
   } catch (const std::runtime_error &e) {
