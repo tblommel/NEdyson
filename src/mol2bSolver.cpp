@@ -1150,25 +1150,16 @@ void molGF2SolverDecomp::solve_exch(int tstp, GREEN &Sigma, GREEN &G) const {
 
 
 void molGF2SolverDecomp::solve(int tstp, GREEN &Sigma, GREEN &G) const {
-  assert(G.sig() == G.sig());
-  assert(Sigma.sig() == Sigma.sig());
   assert(G.sig() == Sigma.sig());
 
-  assert(G.ntau() == G.ntau());
-  assert(Sigma.ntau() == Sigma.ntau());
   assert(G.ntau() == Sigma.ntau());
 
   assert(tstp <= G.nt());
-  assert(tstp <= G.nt());
-  assert(tstp <= Sigma.nt());
   assert(tstp <= Sigma.nt());
 
   assert(G.size1() == nao_);
-  assert(G.size1() == nao_);
-  assert(Sigma.size1() == nao_);
   assert(Sigma.size1() == nao_);
 
-  Sigma.set_tstp_zero(tstp);
   Sigma.set_tstp_zero(tstp);
   
   solve_bubble(tstp, Sigma, G);
@@ -1194,7 +1185,6 @@ void molGF2SolverDecomp::solve_loop(int tstp, GREEN &Sigma, GREEN &G) const {
   assert(Sigma.size1() == nao_);
   assert(Sigma.size1() == nao_);
 
-  Sigma.set_tstp_zero(tstp);
   Sigma.set_tstp_zero(tstp);
 
   int sig = G.sig();
@@ -1846,53 +1836,62 @@ void molGF2Solver::solve_ret(int tstp, GREEN &Sigma, GREEN &G) const {
 
 
 void molGF2Solver::solve(int tstp, GREEN &Sigma, GREEN &G) const {
-  assert(G.sig() == G.sig());
-  assert(Sigma.sig() == Sigma.sig());
   assert(G.sig() == Sigma.sig());
 
-  assert(G.ntau() == G.ntau());
-  assert(Sigma.ntau() == Sigma.ntau());
   assert(G.ntau() == Sigma.ntau());
 
   assert(tstp <= G.nt());
-  assert(tstp <= G.nt());
-  assert(tstp <= Sigma.nt());
   assert(tstp <= Sigma.nt());
 
   assert(G.size1() == nao_);
-  assert(G.size1() == nao_);
-  assert(Sigma.size1() == nao_);
   assert(Sigma.size1() == nao_);
 
-  Sigma.set_tstp_zero(tstp);
   Sigma.set_tstp_zero(tstp);
   
   std::chrono::time_point<std::chrono::system_clock> start, end;
   std::chrono::duration<double> elapsed_seconds;
-  std::ofstream out;
-  std::string data_dir = std::string(DATA_DIR);
-  out.open(data_dir + "gf2timing.dat" + "," + std::to_string(G.size1()) + "," + std::to_string(G.nt()) + "," + std::to_string(G.ntau()), std::ofstream::app);
-
 
   start = std::chrono::system_clock::now();
   solve_les(tstp, Sigma, G);
   end = std::chrono::system_clock::now();
   elapsed_seconds = end-start;
-  if(tstp > 5) out << elapsed_seconds.count() << " ";
-
+  //TIMING
+  if(tstp > 5) {
+    std::ofstream out1;
+    std::string timing_data_dir = std::string(TIMING_DATA_DIR);
+    out1.open(timing_data_dir + "Nao" + std::to_string(G.size1()) + "Nt" + std::to_string(G.nt()) + "Ntau" + std::to_string(G.ntau()) + "les_cont.dat", std::ofstream::app);
+    out1 << elapsed_seconds.count() << "\n" ;
+    out1.close();
+  }
+  // TIMING
 
   start = std::chrono::system_clock::now();
   solve_tv(tstp, Sigma, G);
   end = std::chrono::system_clock::now();
   elapsed_seconds = end-start;
-  if(tstp > 5) out << elapsed_seconds.count() << " ";
+  //TIMING
+  if(tstp > 5) {
+    std::ofstream out2;
+    std::string timing_data_dir = std::string(TIMING_DATA_DIR);
+    out2.open(timing_data_dir + "Nao" + std::to_string(G.size1()) + "Nt" + std::to_string(G.nt()) + "Ntau" + std::to_string(G.ntau()) + "tv_cont.dat", std::ofstream::app);
+    out2 << elapsed_seconds.count() << "\n" ;
+    out2.close();
+  }
+  // TIMING
 
 
   start = std::chrono::system_clock::now();
   solve_ret(tstp, Sigma, G);
   end = std::chrono::system_clock::now();
   elapsed_seconds = end-start;
-  if(tstp > 5) out << elapsed_seconds.count() << std::endl;
+  if(tstp > 5) {
+    std::ofstream out3;
+    std::string timing_data_dir = std::string(TIMING_DATA_DIR);
+    out3.open(timing_data_dir + "Nao" + std::to_string(G.size1()) + "Nt" + std::to_string(G.nt()) + "Ntau" + std::to_string(G.ntau()) + "ret_cont.dat", std::ofstream::app);
+    out3 << elapsed_seconds.count() << "\n" ;
+    out3.close();
+  }
+  // TIMING
 }
   
 
@@ -1918,7 +1917,6 @@ void molGF2Solver::solve_loop(int tstp, GREEN &Sigma, GREEN &G) const {
   assert(Sigma.size1() == nao_);
   assert(Sigma.size1() == nao_);
 
-  Sigma.set_tstp_zero(tstp);
   Sigma.set_tstp_zero(tstp);
 
   int sig = G.sig();
@@ -3027,25 +3025,16 @@ void tti_molGF2SolverDecomp::solve_exch(int tstp, TTI_GREEN &Sigma, TTI_GREEN &G
 
 
 void tti_molGF2SolverDecomp::solve(int tstp, TTI_GREEN &Sigma, TTI_GREEN &G) const {
-  assert(G.sig() == G.sig());
-  assert(Sigma.sig() == Sigma.sig());
   assert(G.sig() == Sigma.sig());
 
-  assert(G.ntau() == G.ntau());
-  assert(Sigma.ntau() == Sigma.ntau());
   assert(G.ntau() == Sigma.ntau());
 
   assert(tstp <= G.nt());
-  assert(tstp <= G.nt());
-  assert(tstp <= Sigma.nt());
   assert(tstp <= Sigma.nt());
 
   assert(G.size1() == nao_);
-  assert(G.size1() == nao_);
-  assert(Sigma.size1() == nao_);
   assert(Sigma.size1() == nao_);
 
-  Sigma.set_tstp_zero(tstp);
   Sigma.set_tstp_zero(tstp);
   
   solve_bubble(tstp, Sigma, G);
@@ -3071,7 +3060,6 @@ void tti_molGF2SolverDecomp::solve_loop(int tstp, TTI_GREEN &Sigma, TTI_GREEN &G
   assert(Sigma.size1() == nao_);
   assert(Sigma.size1() == nao_);
 
-  Sigma.set_tstp_zero(tstp);
   Sigma.set_tstp_zero(tstp);
 
   int sig = G.sig();
@@ -3656,53 +3644,21 @@ void tti_molGF2Solver::solve_ret(int tstp, TTI_GREEN &Sigma, TTI_GREEN &G) const
 
 
 void tti_molGF2Solver::solve(int tstp, TTI_GREEN &Sigma, TTI_GREEN &G) const {
-  assert(G.sig() == G.sig());
-  assert(Sigma.sig() == Sigma.sig());
   assert(G.sig() == Sigma.sig());
 
-  assert(G.ntau() == G.ntau());
-  assert(Sigma.ntau() == Sigma.ntau());
   assert(G.ntau() == Sigma.ntau());
 
   assert(tstp <= G.nt());
-  assert(tstp <= G.nt());
-  assert(tstp <= Sigma.nt());
   assert(tstp <= Sigma.nt());
 
   assert(G.size1() == nao_);
-  assert(G.size1() == nao_);
-  assert(Sigma.size1() == nao_);
   assert(Sigma.size1() == nao_);
 
   Sigma.set_tstp_zero(tstp);
-  Sigma.set_tstp_zero(tstp);
   
-  std::chrono::time_point<std::chrono::system_clock> start, end;
-  std::chrono::duration<double> elapsed_seconds;
-  std::ofstream out;
-  std::string data_dir = std::string(DATA_DIR);
-  out.open(data_dir + "tti_gf2timing.dat" + "," + std::to_string(G.size1()) + "," + std::to_string(G.nt()) + "," + std::to_string(G.ntau()), std::ofstream::app);
-  
-
-  start = std::chrono::system_clock::now();
   solve_tv(tstp, Sigma, G);
-  end = std::chrono::system_clock::now();
-  elapsed_seconds = end-start;
-  out << elapsed_seconds.count() << " ";
-
-
-  start = std::chrono::system_clock::now();
   solve_les(tstp, Sigma, G);
-  end = std::chrono::system_clock::now();
-  elapsed_seconds = end-start;
-  out << elapsed_seconds.count() << " ";
-  
-
-  start = std::chrono::system_clock::now();
   solve_ret(tstp, Sigma, G);
-  end = std::chrono::system_clock::now();
-  elapsed_seconds = end-start;
-  out << elapsed_seconds.count() << std::endl;
 }
 
 void tti_molGF2Solver::solve_loop(int tstp, TTI_GREEN &Sigma, TTI_GREEN &G) const {
@@ -3724,7 +3680,6 @@ void tti_molGF2Solver::solve_loop(int tstp, TTI_GREEN &Sigma, TTI_GREEN &G) cons
   assert(Sigma.size1() == nao_);
   assert(Sigma.size1() == nao_);
 
-  Sigma.set_tstp_zero(tstp);
   Sigma.set_tstp_zero(tstp);
 
   int sig = G.sig();

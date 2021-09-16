@@ -9,9 +9,8 @@ double dyson::dyson_step_ret(int tstp, GREEN &G, const GREEN &Sig, const cplx *h
 
   double err = 0;
 
-  std::chrono::time_point<std::chrono::system_clock> intstart, intend, start, end;
-  std::chrono::duration<double> elapsed_seconds, inttime;
-  start = std::chrono::system_clock::now();
+  std::chrono::time_point<std::chrono::system_clock> intstart, intend;
+  std::chrono::duration<double> inttime;
 
   cplx ncplxi = cplx(0,-1);
   ZMatrixMap IMap = ZMatrixMap(iden.data(), nao_, nao_);
@@ -22,8 +21,6 @@ double dyson::dyson_step_ret(int tstp, GREEN &G, const GREEN &Sig, const cplx *h
   memset(M.data(), 0, k_*k_*es_*sizeof(cplx));
   memset(Q.data(), 0, (tstp+1)*es_*sizeof(cplx));
 
-  start = std::chrono::system_clock::now();
-            
   // Initial condition
   ZMatrixMap(G.retptr(tstp,tstp), nao_, nao_) = ncplxi * IMap;
         
@@ -118,16 +115,13 @@ double dyson::dyson_step_ret(int tstp, GREEN &G, const GREEN &Sig, const cplx *h
     inttime += intend-intstart;
   }
 
-  // Output timing information
-  end = std::chrono::system_clock::now();
-  elapsed_seconds = end-start;
-  double runtime = elapsed_seconds.count();
-  double intruntime = inttime.count();
-
+  //TIMING
   std::ofstream out;
-  std::string data_dir = std::string(DATA_DIR);
-  out.open(data_dir + "dystiming.dat" + "," + std::to_string(G.size1()) + "," + std::to_string(G.nt()) + "," + std::to_string(G.ntau()), std::ofstream::app);
-  out << intruntime << " " << runtime << " ";
+  std::string timing_data_dir = std::string(TIMING_DATA_DIR);
+  out.open(timing_data_dir + "Nao" + std::to_string(G.size1()) + "Nt" + std::to_string(G.nt()) + "Ntau" + std::to_string(G.ntau()) + "ret_int.dat", std::ofstream::app);
+  out << inttime.count() << "\n" ;
+  out.close();
+  // TIMING
 
   return err;
 }
@@ -138,9 +132,6 @@ double dyson::dyson_step_tv(int tstp, GREEN &G, const GREEN &Sig, const cplx *hm
 
   double err = 0;
 
-  std::chrono::time_point<std::chrono::system_clock> start, end;
-  std::chrono::duration<double> elapsed_seconds;
-
   cplx cplxi = cplx(0.,1.);
   auto IMap = ZMatrixMap(iden.data(), nao_, nao_);
   auto QMap = ZMatrixMap(Q.data(), nao_, nao_);
@@ -149,8 +140,6 @@ double dyson::dyson_step_tv(int tstp, GREEN &G, const GREEN &Sig, const cplx *hm
 
   std::memcpy(NTauTmp.data() + (ntau_+1)*es_, G.tvptr(tstp,0), (ntau_+1)*es_*sizeof(cplx));
   memset(G.tvptr(tstp,0),0,(ntau_+1)*es_*sizeof(cplx));
-
-  start = std::chrono::system_clock::now();
 
   // Do integrals, results go into G.tv(tstp,:), not by increment
   Ctv_tstp(tstp, G, Sig, Sig, G, G, beta, dt);
@@ -175,16 +164,6 @@ double dyson::dyson_step_tv(int tstp, GREEN &G, const GREEN &Sig, const cplx *hm
     ZMatrixMap(G.tvptr(tstp,m), nao_, nao_).noalias() = XMap;
   }
 
-  // Output timing information
-  end = std::chrono::system_clock::now();
-  elapsed_seconds = end-start;
-  double runtime = elapsed_seconds.count();
-
-  std::ofstream out;
-  std::string data_dir = std::string(DATA_DIR);
-  out.open(data_dir + "dystiming.dat" + "," + std::to_string(G.size1()) + "," + std::to_string(G.nt()) + "," + std::to_string(G.ntau()), std::ofstream::app);
-  out<<runtime<<" ";
-
   return err;
 }
 
@@ -194,15 +173,13 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
   int num = n>=k_ ? n : k_;
   double err=0;
 
-  std::chrono::time_point<std::chrono::system_clock> start, end, intstart, intend;
-  std::chrono::duration<double> elapsed_seconds, int1, int2, int3;
+  std::chrono::time_point<std::chrono::system_clock> intstart, intend;
+  std::chrono::duration<double> int1, int2, int3;
 
   // Matricies
   cplx cplxi = cplx(0,1);
   ZMatrixMap MMap = ZMatrixMap(M.data(), nao_*k_, nao_*k_);
   ZMatrixMap IMap = ZMatrixMap(iden.data(), nao_, nao_);
-
-  start = std::chrono::system_clock::now();
 
   // Initial condition
   err += (ZMatrixMap(G.lesptr(0,n), nao_, nao_) + ZMatrixMap(G.tvptr(n,0), nao_, nao_).adjoint()).lpNorm<2>();
@@ -216,11 +193,24 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
   Cles3_tstp(Sig,Sig,G,G,n,beta,Q.data());
   intend = std::chrono::system_clock::now();
   int2 = intend-intstart;
+  //TIMING
+  std::ofstream out;
+  std::string timing_data_dir = std::string(TIMING_DATA_DIR);
+  out.open(timing_data_dir + "Nao" + std::to_string(G.size1()) + "Nt" + std::to_string(G.nt()) + "Ntau" + std::to_string(G.ntau()) + "les_int_tvvt.dat", std::ofstream::app);
+  out << int2.count() << "\n" ;
+  out.close();
+  // TIMING
 
   intstart = std::chrono::system_clock::now();
   Cles2_tstp(Sig,Sig,G,G,n,dt,Q.data());
   intend = std::chrono::system_clock::now();
   int1 = intend-intstart;
+  //TIMING
+  std::ofstream out2;
+  out2.open(timing_data_dir + "Nao" + std::to_string(G.size1()) + "Nt" + std::to_string(G.nt()) + "Ntau" + std::to_string(G.ntau()) + "les_int_la.dat", std::ofstream::app);
+  out2 << int1.count() << "\n" ;
+  out2.close();
+  // TIMING
 
 
   // Set up the kxk linear problem MX=Q
@@ -296,16 +286,13 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
     err += (ZColVectorMap(G.lesptr(l,n), es_) - ZColVectorMap(X.data() + l*es_, es_)).norm();
     ZMatrixMap(G.lesptr(l,n), nao_, nao_).noalias() = ZMatrixMap(X.data() + l*es_, nao_, nao_);
   }
+  //TIMING
+  std::ofstream out3;
+  out3.open(timing_data_dir + "Nao" + std::to_string(G.size1()) + "Nt" + std::to_string(G.nt()) + "Ntau" + std::to_string(G.ntau()) + "les_int_rl.dat", std::ofstream::app);
+  out3 << int3.count() << "\n" ;
+  out3.close();
+  // TIMING
 
-  end = std::chrono::system_clock::now();
-  elapsed_seconds = end-start;
-  double runtime = elapsed_seconds.count();
-  if(n>k_){
-    std::ofstream out;
-    std::string data_dir = std::string(DATA_DIR);
-    out.open(data_dir + "dystiming.dat" + "," + std::to_string(G.size1()) + "," + std::to_string(G.nt()) + "," + std::to_string(G.ntau()), std::ofstream::app);
-    out << int1.count() << " " << int2.count() << " " << int3.count() << " " << runtime << " " << std::endl;
-  }
   return err;
 }
 

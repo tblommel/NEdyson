@@ -42,6 +42,7 @@ double dyson::energy_conv(int tstp, const GREEN &Sig, const GREEN &G, double bet
   res1 *= dt;
 
   // Sig^rm * G^lm
+//  OLD CODE FOR UNIFORM MESH
 //  for(int i=0; i <= ntau_; i++) {
 //    res2 += I.gregory_weights(ntau_, i) * ZMatrixConstMap(Sig.tvptr(tstp, i), nao_, nao_).cwiseProduct(ZMatrixConstMap(G.tvptr(tstp, ntau_-i), nao_, nao_).conjugate()).sum();
 //  }
@@ -263,9 +264,7 @@ void dyson::Ctv_tstp(int tstp, GREEN &C, const GREEN &A, const GREEN &Acc, const
   std::chrono::time_point<std::chrono::system_clock> start, end;
   std::chrono::duration<double> elapsed_seconds;
 
-  std::ofstream out;
-  std::string data_dir = std::string(DATA_DIR);
-  out.open(data_dir + "dystiming.dat" + "," + std::to_string(C.size1()) + "," + std::to_string(C.nt()) + "," + std::to_string(C.ntau()), std::ofstream::app);
+
 
   // First do the A^TV B^M convolution.  This gets put into temporary storage since CTV1 may need access to C^TV(tstp, m)
   start = std::chrono::system_clock::now();
@@ -283,15 +282,27 @@ void dyson::Ctv_tstp(int tstp, GREEN &C, const GREEN &A, const GREEN &Acc, const
               ZTensorView<3>(B.matptr(0), ntau_+1, nao_, nao_),
               beta, (double)B.sig());
   end = std::chrono::system_clock::now();
+  //TIMING
   elapsed_seconds = end-start;
-  out << elapsed_seconds.count() << " " ;
+  std::ofstream out1;
+  std::string timing_data_dir = std::string(TIMING_DATA_DIR);
+  out1.open(timing_data_dir + "Nao" + std::to_string(C.size1()) + "Nt" + std::to_string(C.nt()) + "Ntau" + std::to_string(C.ntau()) + "tv_int_tvm.dat", std::ofstream::app);
+  out1 << elapsed_seconds.count() << "\n" ;
+  out1.close();
+  // TIMING
+
 
   // This does the A^R B^TV convolution and puts into first argument via increment
   start = std::chrono::system_clock::now();
   CTV1(NTauTmp.data(), A, Acc, B, tstp, dt);
   end = std::chrono::system_clock::now();
+  //TIMING
   elapsed_seconds = end-start;
-  out << elapsed_seconds.count() << " " ;
+  std::ofstream out2;
+  out2.open(timing_data_dir + "Nao" + std::to_string(C.size1()) + "Nt" + std::to_string(C.nt()) + "Ntau" + std::to_string(C.ntau()) + "tv_int_rtv.dat", std::ofstream::app);
+  out2 << elapsed_seconds.count() << "\n" ;
+  out2.close();
+  // TIMING
 
   // Copy over the results into C.tv(tstp,m)
   memcpy(C.tvptr(tstp,0), NTauTmp.data(), (ntau_+1)*es_*sizeof(cplx));

@@ -81,30 +81,16 @@ void Simulation<Repr>::do_tstp(int tstp) {
   // Predictor
   Dyson.Extrapolate(tstp, G);
 
-  std::chrono::time_point<std::chrono::system_clock> start, end;
-  std::chrono::duration<double> elapsed_seconds;
-  std::ofstream out;
-  std::string data_dir = std::string(DATA_DIR);
-  out.open(data_dir + "tottiming.dat" + "," + std::to_string(G.size1()) + "," + std::to_string(G.nt()) + "," + std::to_string(G.ntau()), std::ofstream::app);
-
   // Corrector
   for(int iter = 0; iter < CorrSteps_; iter++) {
     G.get_dm(tstp, rho);
     ZMatrixMap(hmf.data() + tstp*nao_*nao_, nao_, nao_) = DMatrixConstMap(h0.data(),nao_,nao_);
 
     // HF Contractions
-    start = std::chrono::system_clock::now();
     p_NEgf2_->solve_HF(tstp, hmf, rho);
-    end = std::chrono::system_clock::now();
-    elapsed_seconds = end-start;
-    out << elapsed_seconds.count() << " ";
 
     // 2B Contractions
-    start = std::chrono::system_clock::now();
     if(!hfbool_) p_NEgf2_->solve(tstp, Sigma, G);
-    end = std::chrono::system_clock::now();
-    elapsed_seconds = end-start;
-    out << elapsed_seconds.count() << " ";
 
     // Efield contractions
     if(boolPumpProbe_) {
@@ -112,11 +98,7 @@ void Simulation<Repr>::do_tstp(int tstp) {
       Ed_contractions(tstp);
     }
 
-    start = std::chrono::system_clock::now();
     Dyson.dyson_step(tstp, G, Sigma, hmf, p_MatSim_->mu(), beta_, dt_);
-    end = std::chrono::system_clock::now();
-    elapsed_seconds = end-start;
-    out << elapsed_seconds.count() << std::endl;
   }
 }
 
@@ -274,10 +256,9 @@ void Simulation<Repr>::do_energy() {
 
 template <>
 inline void Simulation<gfmol::ChebyshevRepr>::L_to_Tau(){
-  int ntau = ntau_;
   int nL = p_MatSim_->frepr().nl();
-  DMatrix Trans(ntau+1, nL);
-  for(int t=0; t<=ntau; t++){
+  DMatrix Trans(ntau_+1, nL);
+  for(int t=0; t<=ntau_; t++){
     double x = Dyson.Convolution().collocation().x_i()(t);
     for(int l=0; l<nL; l++){
       Trans(t,l) = boost::math::chebyshev_t(l,x);
@@ -373,26 +354,11 @@ void tti_Simulation<Repr>::do_tstp(int tstp) {
   // Predictor
   Dyson.Extrapolate(tstp, G);
 
-  std::chrono::time_point<std::chrono::system_clock> start, end;
-  std::chrono::duration<double> elapsed_seconds;
-  std::ofstream out;
-  std::string data_dir = std::string(DATA_DIR);
-  out.open(data_dir + "tti_tottiming.dat" + "," + std::to_string(G.size1()) + "," + std::to_string(G.nt()) + "," + std::to_string(G.ntau()), std::ofstream::app);
-
   // Corrector
   for(int iter = 0; iter < CorrSteps_; iter++) {
 
-    start = std::chrono::system_clock::now();
     if(!hfbool_) p_NEgf2_->solve(tstp, Sigma, G);
-    end = std::chrono::system_clock::now();
-    elapsed_seconds = end-start;
-    out << elapsed_seconds.count() << " ";
-
-    start = std::chrono::system_clock::now();
     Dyson.dyson_step(tstp, G, Sigma, p_MatSim_->fock(), p_MatSim_->mu(), beta_, dt_);
-    end = std::chrono::system_clock::now();
-    elapsed_seconds = end-start;
-    out << elapsed_seconds.count() << std::endl;
   }
 }
 
@@ -474,10 +440,9 @@ void tti_Simulation<Repr>::do_energy() {
 
 template <>
 inline void tti_Simulation<gfmol::ChebyshevRepr>::L_to_Tau(){
-  int ntau = ntau_;
   int nL = p_MatSim_->frepr().nl();
-  DMatrix Trans(ntau+1, nL);
-  for(int t=0; t<=ntau; t++){
+  DMatrix Trans(ntau_+1, nL);
+  for(int t=0; t<=ntau_; t++){
     double x = Dyson.Convolution().collocation().x_i()(t);
     for(int l=0; l<nL; l++){
       Trans(t,l) = boost::math::chebyshev_t(l,x);

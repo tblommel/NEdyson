@@ -9,10 +9,6 @@ double dyson::dyson_step_ret_hf(int tstp, GREEN &G, const cplx *hmf, double mu, 
 
   double err = 0;
 
-  std::chrono::time_point<std::chrono::system_clock> intstart, intend, start, end;
-  std::chrono::duration<double> elapsed_seconds, inttime;
-  start = std::chrono::system_clock::now();
-
   cplx ncplxi = cplx(0,-1);
   ZMatrixMap IMap = ZMatrixMap(iden.data(), nao_, nao_);
   ZMatrixMap QMap = ZMatrixMap(Q.data(), k_*nao_, nao_);
@@ -22,8 +18,6 @@ double dyson::dyson_step_ret_hf(int tstp, GREEN &G, const cplx *hmf, double mu, 
   memset(M.data(), 0, k_*k_*es_*sizeof(cplx));
   memset(Q.data(), 0, (tstp+1)*es_*sizeof(cplx));
 
-  start = std::chrono::system_clock::now();
-            
   // Initial condition
   ZMatrixMap(G.retptr(tstp,tstp), nao_, nao_) = ncplxi * IMap;
         
@@ -79,17 +73,6 @@ double dyson::dyson_step_ret_hf(int tstp, GREEN &G, const cplx *hmf, double mu, 
     ZMatrixMap(G.retptr(tstp,tstp-n), nao_, nao_).noalias() = lu2.solve(QMapBlock).transpose();
   }
 
-  // Output timing information
-  end = std::chrono::system_clock::now();
-  elapsed_seconds = end-start;
-  double runtime = elapsed_seconds.count();
-  double intruntime = inttime.count();
-
-  std::ofstream out;
-  std::string data_dir = std::string(DATA_DIR);
-  out.open(data_dir + "dystiming.dat" + "," + std::to_string(G.size1()) + "," + std::to_string(G.nt()) + "," + std::to_string(G.ntau()), std::ofstream::app);
-  out << intruntime << " " << runtime << " ";
-
   return err;
 }
 
@@ -99,9 +82,6 @@ double dyson::dyson_step_tv_hf(int tstp, GREEN &G, const cplx *hmf, double mu, d
 
   double err = 0;
 
-  std::chrono::time_point<std::chrono::system_clock> start, end;
-  std::chrono::duration<double> elapsed_seconds;
-
   cplx cplxi = cplx(0.,1.);
   auto IMap = ZMatrixMap(iden.data(), nao_, nao_);
   auto QMap = ZMatrixMap(Q.data(), nao_, nao_);
@@ -110,8 +90,6 @@ double dyson::dyson_step_tv_hf(int tstp, GREEN &G, const cplx *hmf, double mu, d
 
   std::memcpy(NTauTmp.data(), G.tvptr(tstp,0), (ntau_+1)*es_*sizeof(cplx));
   memset(G.tvptr(tstp,0),0,(ntau_+1)*es_*sizeof(cplx));
-
-  start = std::chrono::system_clock::now();
 
   // Put derivatives into GRM(tstp,m)
   for(l=1; l<=k_+1; l++) {
@@ -132,16 +110,6 @@ double dyson::dyson_step_tv_hf(int tstp, GREEN &G, const cplx *hmf, double mu, d
     ZMatrixMap(G.tvptr(tstp,m), nao_, nao_).noalias() = XMap;
   }
 
-  // Output timing information
-  end = std::chrono::system_clock::now();
-  elapsed_seconds = end-start;
-  double runtime = elapsed_seconds.count();
-
-  std::ofstream out;
-  std::string data_dir = std::string(DATA_DIR);
-  out.open(data_dir + "dystiming.dat" + "," + std::to_string(G.size1()) + "," + std::to_string(G.nt()) + "," + std::to_string(G.ntau()), std::ofstream::app);
-  out<<runtime<<" ";
-
   return err;
 }
 
@@ -151,15 +119,10 @@ double dyson::dyson_step_les_hf(int n, GREEN &G, const cplx *hmf, double mu, dou
   int num = n>=k_ ? n : k_;
   double err=0;
 
-  std::chrono::time_point<std::chrono::system_clock> start, end, intstart, intend;
-  std::chrono::duration<double> elapsed_seconds, int1, int2, int3;
-
   // Matricies
   cplx cplxi = cplx(0,1);
   ZMatrixMap MMap = ZMatrixMap(M.data(), nao_*k_, nao_*k_);
   ZMatrixMap IMap = ZMatrixMap(iden.data(), nao_, nao_);
-
-  start = std::chrono::system_clock::now();
 
   // Initial condition
   err += (ZMatrixMap(G.lesptr(0,n), nao_, nao_) + ZMatrixMap(G.tvptr(n,0), nao_, nao_).adjoint()).lpNorm<2>();
@@ -221,15 +184,6 @@ double dyson::dyson_step_les_hf(int n, GREEN &G, const cplx *hmf, double mu, dou
     ZMatrixMap(G.lesptr(l,n), nao_, nao_).noalias() = ZMatrixMap(X.data() + l*es_, nao_, nao_);
   }
 
-  end = std::chrono::system_clock::now();
-  elapsed_seconds = end-start;
-  double runtime = elapsed_seconds.count();
-  if(n>k_){
-    std::ofstream out;
-    std::string data_dir = std::string(DATA_DIR);
-    out.open(data_dir + "dystiming.dat" + "," + std::to_string(G.size1()) + "," + std::to_string(G.nt()) + "," + std::to_string(G.ntau()), std::ofstream::app);
-    out << int1.count() << " " << int2.count() << " " << int3.count() << " " << runtime << " " << std::endl;
-  }
   return err;
 }
 

@@ -13,7 +13,8 @@ add_library(libNEdyson
 
 target_include_directories(libNEdyson INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_definitions(libNEdyson PUBLIC 
-  DATA_DIR="${PROJECT_SOURCE_DIR}/data/")
+  DATA_DIR="/pauli-storage/tblommel/NEdyson_data/"
+  TIMING_DATA_DIR="/pauli-storage/tblommel/NEdyson_data/timing_data/")
 target_link_libraries(libNEdyson PUBLIC
   alps::alps-gf
   Eigen3::Eigen
