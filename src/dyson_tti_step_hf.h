@@ -3,29 +3,9 @@
 
 namespace NEdyson {
 
-void dyson::dyson_step_ret_hf(int tstp, TTI_GREEN &G, const double *hmf, double mu, double dt) const {
-  int l;
 
-  cplx ncplxi = cplx(0,-1);
-  ZMatrixMap IMap = ZMatrixMap(iden.data(), nao_, nao_);
-  ZMatrixMap QMap = ZMatrixMap(Q.data(), nao_, nao_);
-  ZMatrixMap MMap = ZMatrixMap(M.data(), nao_, nao_);
-
-  memset(M.data(), 0, es_*sizeof(cplx));
-  memset(Q.data(), 0, es_*sizeof(cplx));
-
-  // Set up Q
-  for(l=1; l<=k_+1; l++){
-    QMap.noalias() += I.bd_weights(l)*ncplxi/dt * ZMatrixMap(G.retptr(tstp-l), nao_, nao_).transpose();
-  }
-
-  // Set up mm
-  MMap.noalias() = -DMatrixConstMap(hmf, nao_, nao_).transpose();
-  MMap.noalias() += (mu - I.bd_weights(0)*ncplxi/dt) * IMap;
-
-  // Solve XM=Q for X
-  Eigen::FullPivLU<ZMatrix> lu(MMap);
-  ZMatrixMap(G.retptr(tstp), nao_, nao_) = lu.solve(QMap).transpose();
+void dyson::dyson_step_ret_hf(int n, TTI_GREEN &G, const double *hmf, double mu, double dt) const {
+  ZMatrixMap(G.retptr(n), nao_, nao_).noalias() = G.sig() * ZMatrixMap(G.tvptr(n, G.ntau()), nao_, nao_) - ZMatrixMap(G.tvptr(n, 0), nao_, nao_);
 }
 
 
