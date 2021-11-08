@@ -24,7 +24,7 @@ DecompSpinSimulation<Repr>::DecompSpinSimulation(const gfmol::HartreeFock &hf,
     case gfmol::Mode::GF2:
       p_MatSim_ = std::unique_ptr<gfmol::DecompSpinSimulation<Repr> >(new gfmol::DecompSpinSimulation<Repr>(hf, frepr, brepr, p.gfmolmode, 0., p.hfbool));
       beta_ = p_MatSim_->frepr().beta();
-      p_NEgf2_ = std::unique_ptr<molGF2SolverSpinDecomp>(new molGF2SolverSpinDecomp(p_MatSim_->Vija(), p_MatSim_->Viaj()));
+      p_NEgf2_ = std::unique_ptr<molGF2SolverSpinDecomp>(new molGF2SolverSpinDecomp(p_MatSim_->Vija(), dynamic_cast<gfmol::DecompGF2SolverSpin *>(p_MatSim_->p_sigma().get())->Viaj() ));
   }
 
   Sup = GREEN(p.nt, p.ntau, nao_, -1);
@@ -206,7 +206,7 @@ tti_DecompSpinSimulation<Repr>::tti_DecompSpinSimulation(const gfmol::HartreeFoc
     case gfmol::Mode::GF2:
       p_MatSim_ = std::unique_ptr<gfmol::DecompSpinSimulation<Repr> >(new gfmol::DecompSpinSimulation<Repr>(hf, frepr, brepr, p.gfmolmode, 0., p.hfbool));
       beta_ = p_MatSim_->frepr().beta();
-      p_NEgf2_ = std::unique_ptr<tti_molGF2SolverSpinDecomp>(new tti_molGF2SolverSpinDecomp(p_MatSim_->Vija(), p_MatSim_->Viaj()));
+      p_NEgf2_ = std::unique_ptr<tti_molGF2SolverSpinDecomp>(new tti_molGF2SolverSpinDecomp(p_MatSim_->Vija(), dynamic_cast<gfmol::DecompGF2SolverSpin *>(p_MatSim_->p_sigma().get())->Viaj() ));
   }
 
   Sup = TTI_GREEN(p.nt, p.ntau, nao_, -1);

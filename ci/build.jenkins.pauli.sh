@@ -60,24 +60,6 @@ function setup_environment() {
   module add openmpi/${_COMPILER_PREFIX}/3.1.4
   module add alpscore/${_COMPILER_PREFIX}/2.3.1a-mpi
 
-  [[ $TMP_INSTALL_DIR ]] || TMP_INSTALL_DIR="build.tmp/install/${COMPILER}"
-  mkdir -pv "$TMP_INSTALL_DIR"
-  
-  [[ $GFMOL_BUILD_DIR ]] || GFMOL_BUILD_DIR="build.tmp/gfmol/${COMPILER}"
-  mkdir -pv "$GFMOL_BUILD_DIR"
-  cd "$GFMOL_BUILD_DIR"
-  git clone git@github.com:CQMP/gfmol.git
-  cd gfmol
-  git checkout NEdyson_reqs
-  cmake                        \
-    -DCMAKE_INSTALL_PREFIX=$TMP_INSTALL_DIR \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_CXX_FLAGS="${CMAKE_CXX_FLAGS} -Ofast -march=core-avx2"  \
-  ..
-  make
-  make install
-
-
   [[ $BUILD_DIR ]] || BUILD_DIR="build.tmp/${COMPILER}"
 
   mkdir -pv "$BUILD_DIR"
@@ -90,7 +72,10 @@ function run_cmake() {
   rm -rf *
   cmake "$BASE_DIR" \
     -DCMAKE_BUILD_TYPE=$BUILD_CONFIG \
-    -Domp=On
+    -DCMAKE_CXX_FLAGS="${CMAKE_CXX_FLAGS} -O3 -g -march=znver2"  \
+    -DINCLUDE_DIR=/data/tblommel/Install/include  \
+    -DLINK_DIR=/data/tblommel/Install/lib  \
+  ..
 }
 
 function run_make() {

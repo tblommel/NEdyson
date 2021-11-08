@@ -33,8 +33,8 @@ CPMAddPackage(
 include_directories(${INCLUDE_DIR})
 link_directories(${LINK_DIR})
 
-include_directories("~/Libraries/NEdyson/deps/args/include/")
-include_directories("~/Libraries/NEdyson/deps/LeksysINI/include/")
+include_directories("${PROJECT_SOURCE_DIR}/deps/args/include/")
+include_directories("${PROJECT_SOURCE_DIR}/deps/LeksysINI/include/")
 
 add_subdirectory(src)
 add_subdirectory(programs)

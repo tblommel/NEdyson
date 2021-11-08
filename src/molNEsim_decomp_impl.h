@@ -24,7 +24,7 @@ DecompSimulation<Repr>::DecompSimulation(const gfmol::HartreeFock &hf,
     case gfmol::Mode::GF2:
       p_MatSim_ = std::unique_ptr<gfmol::DecompSimulation<Repr> >(new gfmol::DecompSimulation<Repr>(hf, frepr, brepr, p.gfmolmode, 0., p.decomp_prec, p.hfbool));
       beta_ = p_MatSim_->frepr().beta();
-      p_NEgf2_ = std::unique_ptr<molGF2SolverDecomp>(new molGF2SolverDecomp(p_MatSim_->Vija(), p_MatSim_->Viaj()));
+      p_NEgf2_ = std::unique_ptr<molGF2SolverDecomp>(new molGF2SolverDecomp(p_MatSim_->Vija(), dynamic_cast<gfmol::DecompGF2Solver *>(p_MatSim_->p_sigma().get())->Viaj() ));
   }
 
   Sigma = GREEN(p.nt, p.ntau, nao_, -1);
@@ -179,7 +179,7 @@ tti_DecompSimulation<Repr>::tti_DecompSimulation(const gfmol::HartreeFock &hf,
     case gfmol::Mode::GF2:
       p_MatSim_ = std::unique_ptr<gfmol::DecompSimulation<Repr> >(new gfmol::DecompSimulation<Repr>(hf, frepr, brepr, p.gfmolmode, 0., p.decomp_prec, p.hfbool));
       beta_ = p_MatSim_->frepr().beta();
-      p_NEgf2_ = std::unique_ptr<tti_molGF2SolverDecomp>(new tti_molGF2SolverDecomp(p_MatSim_->Vija(), p_MatSim_->Viaj()));
+      p_NEgf2_ = std::unique_ptr<tti_molGF2SolverDecomp>(new tti_molGF2SolverDecomp(p_MatSim_->Vija(), dynamic_cast<gfmol::DecompGF2Solver *>(p_MatSim_->p_sigma().get())->Viaj() ));
   }
 
   Sigma = TTI_GREEN(p.nt, p.ntau, nao_, -1);
