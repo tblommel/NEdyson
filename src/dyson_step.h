@@ -138,6 +138,7 @@ double dyson::dyson_step_tv(int tstp, GREEN &G, const GREEN &Sig, const cplx *hm
   auto MMap = ZMatrixMap(M.data(), nao_, nao_);
   auto XMap = ZMatrixMap(X.data(), nao_, nao_);
 
+  // Copy previous G to temporary storage
   std::memcpy(NTauTmp.data() + (ntau_+1)*es_, G.tvptr(tstp,0), (ntau_+1)*es_*sizeof(cplx));
   memset(G.tvptr(tstp,0),0,(ntau_+1)*es_*sizeof(cplx));
 

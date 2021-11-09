@@ -25,6 +25,7 @@ class green_func{
 		/*get sizes*/
 		int element_size(void) const {return element_size_;}
 		int size1(void) const {return size1_;}
+		int nao(void) const {return size1_;}
 		int ntau(void) const {return ntau_;}
 		int nt(void) const {return nt_;}
 		int sig(void) const {return sig_;}
@@ -116,6 +117,7 @@ class tti_green_func{
 		/*get sizes*/
 		int element_size(void) const {return element_size_;}
 		int size1(void) const {return size1_;}
+		int nao(void) const {return size1_;}
 		int ntau(void) const {return ntau_;}
 		int nt(void) const {return nt_;}
 		int sig(void) const {return sig_;}

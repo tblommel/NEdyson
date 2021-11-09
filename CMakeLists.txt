@@ -30,10 +30,11 @@ CPMAddPackage(
     "HIGHFIVE_EXAMPLES OFF"
 )
 
-include_directories("~/Libraries/Install/include/")
-include_directories("~/Libraries/NEdyson/deps/args/include/")
-include_directories("~/Libraries/NEdyson/deps/LeksysINI/include/")
-link_directories("~/Libraries/Install/lib/")
+include_directories(${INCLUDE_DIR})
+link_directories(${LINK_DIR})
+
+include_directories("${PROJECT_SOURCE_DIR}/deps/args/include/")
+include_directories("${PROJECT_SOURCE_DIR}/deps/LeksysINI/include/")
 
 add_subdirectory(src)
 add_subdirectory(programs)

@@ -24,7 +24,7 @@ Simulation<Repr>::Simulation(const gfmol::HartreeFock &hf,
     case gfmol::Mode::GF2:
       p_MatSim_ = std::unique_ptr<gfmol::Simulation<Repr> >(new gfmol::Simulation<Repr>(hf, frepr, brepr, p.gfmolmode, 0., p.hfbool));
       beta_ = p_MatSim_->frepr().beta();
-      p_NEgf2_ = std::unique_ptr<molGF2Solver>(new molGF2Solver(hf.uchem(), p_MatSim_->u_exch()));
+      p_NEgf2_ = std::unique_ptr<molGF2Solver>(new molGF2Solver(hf.uchem(), dynamic_cast<gfmol::GF2Solver *>(p_MatSim_->p_sigma().get())->Vijkl_exch() ));
   }
 
   Sigma = GREEN(p.nt, p.ntau, nao_, -1);
@@ -303,7 +303,7 @@ tti_Simulation<Repr>::tti_Simulation(const gfmol::HartreeFock &hf,
     case gfmol::Mode::GF2:
       p_MatSim_ = std::unique_ptr<gfmol::Simulation<Repr> >(new gfmol::Simulation<Repr>(hf, frepr, brepr, p.gfmolmode, 0., p.hfbool));
       beta_ = p_MatSim_->frepr().beta();
-      p_NEgf2_ = std::unique_ptr<tti_molGF2Solver>(new tti_molGF2Solver(hf.uchem(), p_MatSim_->u_exch()));
+      p_NEgf2_ = std::unique_ptr<tti_molGF2Solver>(new tti_molGF2Solver(hf.uchem(), dynamic_cast<gfmol::GF2Solver *>(p_MatSim_->p_sigma().get())->Vijkl_exch() ));
   }
 
   Sigma = TTI_GREEN(p.nt, p.ntau, nao_, -1);

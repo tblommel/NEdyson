@@ -5,10 +5,10 @@
 namespace NEdyson{
 
 void dyson::dipole_field(int tstp, ZTensor<2> &dfield, const GREEN &Gu, const GREEN &Gd, const DTensor<3> &dipole, double l, double n, double dt) const {
-  assert(G.nao() == dipole.shape()[1]);
-  assert(G.nao() == dipole.shape()[2]);
+  assert(Gu.nao() == dipole.shape()[1]);
+  assert(Gu.nao() == dipole.shape()[2]);
   assert(dfield.shape()[0] == dipole.shape()[0]);
-  assert(tstp <= G.nt());
+  assert(tstp <= Gu.nt());
   assert(tstp <= dfield.shape()[1]);
 
   if( tstp <= k_) { // Need to use poly_diff coeff

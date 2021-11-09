@@ -23,7 +23,7 @@ function setup_environment() {
   _COMPILER_PREFIX="${COMPILER/_//}"
 
   case $COMPILER in
-  gcc_7.3.0)
+  gcc_10.2.0)
     module add ${_COMPILER_MODULE}
     ;;
   llvm_5.0.1)
@@ -58,8 +58,7 @@ function setup_environment() {
   esac
 
   module add openmpi/${_COMPILER_PREFIX}/3.1.4
-  module add alpscore/${_COMPILER_PREFIX}/2.3.0-master-mpi
-
+  module add alpscore/${_COMPILER_PREFIX}/2.3.1a-mpi
 
   [[ $BUILD_DIR ]] || BUILD_DIR="build.tmp/${COMPILER}"
 
@@ -73,7 +72,10 @@ function run_cmake() {
   rm -rf *
   cmake "$BASE_DIR" \
     -DCMAKE_BUILD_TYPE=$BUILD_CONFIG \
-    -Domp=On
+    -DCMAKE_CXX_FLAGS="${CMAKE_CXX_FLAGS} -O3 -g -march=znver2"  \
+    -DINCLUDE_DIR=/data/tblommel/Install/include  \
+    -DLINK_DIR=/data/tblommel/Install/lib  \
+  ..
 }
 
 function run_make() {

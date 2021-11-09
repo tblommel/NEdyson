@@ -14,7 +14,7 @@ double dyson::energy_conv(int tstp, const TTI_GREEN &Sig, const TTI_GREEN &G, do
   assert(G.size1() == Sig.size1());
   assert(G.size1() == nao_);
   assert(G.nt() == nt_);
-  assert(G.ntau == ntau_);
+  assert(G.ntau() == ntau_);
 
   int top = tstp >= k_ ? tstp : k_, sig = G.sig();
   cplx res1 = 0;

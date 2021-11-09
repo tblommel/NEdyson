@@ -51,7 +51,7 @@ pipeline {
     }
 
     environment {
-        COMPILERS = 'gcc_7.3.0'
+        COMPILERS = 'gcc_10.2.0'
         CONFIGS = 'Debug,Release'
     }
 

@@ -329,9 +329,6 @@ TEST_CASE("TTI Decomp Spin GF2")
     test_solver.solve_loop(tstp, SigmaLoop, G);
   }
 
-
-  REQUIRE((SRUtest-SRUloop).norm() < 1e-10);
-  REQUIRE((SRDtest-SRDloop).norm() < 1e-10);
   REQUIRE((STVUtest-STVUloop).norm() < 1e-10);
   REQUIRE((STVDtest-STVDloop).norm() < 1e-10);
 }
@@ -384,7 +381,6 @@ TEST_CASE("TTI Decomp GF2")
   }
 
 
-  REQUIRE((SRtest-SRloop).norm() < 1e-10);
   REQUIRE((STVtest-STVloop).norm() < 1e-10);
 
 }
@@ -456,8 +452,6 @@ TEST_CASE("TTI Spin GF2")
   }
 
 
-  REQUIRE((SRUtest-SRUloop).norm() < 1e-10);
-  REQUIRE((SRDtest-SRDloop).norm() < 1e-10);
   REQUIRE((STVUtest-STVUloop).norm() < 1e-10);
   REQUIRE((STVDtest-STVDloop).norm() < 1e-10);
 
@@ -512,7 +506,6 @@ TEST_CASE("TTI Full GF2")
     test_solver.solve_loop(tstp, SL, G);
   }
 
-  REQUIRE((SRtest-SRloop).norm() < 1e-10);
   REQUIRE((STVtest-STVloop).norm() < 1e-10);
 
 }
