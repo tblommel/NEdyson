@@ -183,11 +183,11 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
   ZMatrixMap IMap = ZMatrixMap(iden.data(), nao_, nao_);
 
   // Initial condition
-//  err += (ZMatrixMap(G.lesptr(0,n), nao_, nao_) + ZMatrixMap(G.tvptr(n,0), nao_, nao_).adjoint()).lpNorm<2>();
-//  ZMatrixMap(G.lesptr(0,n), nao_, nao_).noalias() = -ZMatrixMap(G.tvptr(n,0), nao_, nao_).adjoint();
-//  ZMatrixMap(X.data(), nao_, nao_).noalias() = -ZMatrixMap(G.tvptr(n,0), nao_, nao_).adjoint();
+  err += (ZMatrixMap(G.lesptr(0,n), nao_, nao_) + ZMatrixMap(G.tvptr(n,0), nao_, nao_).adjoint()).lpNorm<2>();
+  ZMatrixMap(G.lesptr(0,n), nao_, nao_).noalias() = -ZMatrixMap(G.tvptr(n,0), nao_, nao_).adjoint();
+  ZMatrixMap(X.data(), nao_, nao_).noalias() = -ZMatrixMap(G.tvptr(n,0), nao_, nao_).adjoint();
 
-
+/*
   // ===================== CASE FOR NO MATSUBARA BRANCH =========================
   ZMatrix QIC = ZMatrix::Zero(nao_,nao_);
   ZMatrix MIC = ZMatrix::Zero(nao_,nao_);
@@ -207,14 +207,14 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
   std::cout << ZMatrixMap(G.lesptr(0,n), nao_, nao_) << std::endl;
 
   // ===================== CASE FOR NO MATSUBARA BRANCH =========================
-
+*/
 
   // Integrals go into Q via increment.  Q must be 0.
   memset(Q.data(),0,sizeof(cplx)*(num+1)*es_);
   memset(M.data(),0,sizeof(cplx)*k_*k_*es_);
 
   intstart = std::chrono::system_clock::now();
-//  Cles3_tstp(Sig,Sig,G,G,n,beta,Q.data());
+  Cles3_tstp(Sig,Sig,G,G,n,beta,Q.data());
   intend = std::chrono::system_clock::now();
   int2 = intend-intstart;
   //TIMING

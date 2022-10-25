@@ -164,6 +164,8 @@ double dyson::dyson_start_les(GREEN &G, const GREEN &Sig, const cplx *hmf, doubl
   double err=0;
   cplx cplxi = cplx(0,1); 
   ZMatrixMap(G.lesptr(0,0), nao_, nao_) = -ZMatrixMap(G.tvptr(0,0), nao_, nao_).adjoint();
+
+/*
   // ==================================== FOR NO MATSUBARA CASE ===============================
   ZMatrix M = ZMatrix::Zero(k_*nao_, k_*nao_);
   ZMatrix Q = ZMatrix::Zero(k_*nao_, nao_);
@@ -197,16 +199,14 @@ double dyson::dyson_start_les(GREEN &G, const GREEN &Sig, const cplx *hmf, doubl
     }
   }
   
-
-
   // =================================== FOR NO MATSUBARA CASE ================================
-
-//  for(int l = 0; l <= k_; l++) {
-//    for(int n = 0; n <= l; n++) {
-//      err += (ZMatrixMap(G.lesptr(n,l), nao_, nao_) + ZMatrixMap(G.tvptr(l-n,0), nao_, nao_).adjoint()).norm();
-//      ZMatrixMap(G.lesptr(n,l), nao_, nao_) = -ZMatrixMap(G.tvptr(l-n,0), nao_, nao_).adjoint();
-//    }
-//  }
+*/
+  for(int l = 0; l <= k_; l++) {
+    for(int n = 0; n <= l; n++) {
+      err += (ZMatrixMap(G.lesptr(n,l), nao_, nao_) + ZMatrixMap(G.tvptr(l-n,0), nao_, nao_).adjoint()).norm();
+      ZMatrixMap(G.lesptr(n,l), nao_, nao_) = -ZMatrixMap(G.tvptr(l-n,0), nao_, nao_).adjoint();
+    }
+  }
   return err;
 }
 
