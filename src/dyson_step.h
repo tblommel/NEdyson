@@ -183,15 +183,38 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
   ZMatrixMap IMap = ZMatrixMap(iden.data(), nao_, nao_);
 
   // Initial condition
-  err += (ZMatrixMap(G.lesptr(0,n), nao_, nao_) + ZMatrixMap(G.tvptr(n,0), nao_, nao_).adjoint()).lpNorm<2>();
-  ZMatrixMap(G.lesptr(0,n), nao_, nao_).noalias() = -ZMatrixMap(G.tvptr(n,0), nao_, nao_).adjoint();
+//  err += (ZMatrixMap(G.lesptr(0,n), nao_, nao_) + ZMatrixMap(G.tvptr(n,0), nao_, nao_).adjoint()).lpNorm<2>();
+//  ZMatrixMap(G.lesptr(0,n), nao_, nao_).noalias() = -ZMatrixMap(G.tvptr(n,0), nao_, nao_).adjoint();
+//  ZMatrixMap(X.data(), nao_, nao_).noalias() = -ZMatrixMap(G.tvptr(n,0), nao_, nao_).adjoint();
+
+
+  // ===================== CASE FOR NO MATSUBARA BRANCH =========================
+  ZMatrix QIC = ZMatrix::Zero(nao_,nao_);
+  ZMatrix MIC = ZMatrix::Zero(nao_,nao_);
+  
+  MIC = (-cplxi/dt*I.bd_weights(0) * IMap - ZMatrixConstMap(hmf + n*nao_*nao_, nao_, nao_) - dt*I.gregory_weights(n, n) * ZMatrixMap(Sig.retptr(n,n), nao_, nao_).adjoint()).transpose();
+  for(int i = 0; i < n; i++) {
+    QIC += dt * I.gregory_weights(n, i) * ZMatrixMap(Sig.retptr(n,i), nao_, nao_).conjugate() * ZMatrixMap(G.lesptr(0,i), nao_, nao_).transpose();
+  }
+  for(int l = 1; l <= k_+1; l++) {
+    QIC += cplxi/dt * I.bd_weights(l) * ZMatrixMap(G.lesptr(0,n-l),nao_,nao_).transpose();
+  }
+
+  Eigen::FullPivLU<ZMatrix> luIC(MIC);
+  ZMatrixMap(X.data(), nao_, nao_).noalias() = luIC.solve(QIC).transpose();
+//  ZMatrixMap(G.lesptr(0,n), nao_, nao_) = ZMatrixMap(X.data(), nao_, nao_);
+  std::cout << ZMatrixMap(X.data(), nao_, nao_) << std::endl;
+  std::cout << ZMatrixMap(G.lesptr(0,n), nao_, nao_) << std::endl;
+
+  // ===================== CASE FOR NO MATSUBARA BRANCH =========================
+
 
   // Integrals go into Q via increment.  Q must be 0.
   memset(Q.data(),0,sizeof(cplx)*(num+1)*es_);
   memset(M.data(),0,sizeof(cplx)*k_*k_*es_);
 
   intstart = std::chrono::system_clock::now();
-  Cles3_tstp(Sig,Sig,G,G,n,beta,Q.data());
+//  Cles3_tstp(Sig,Sig,G,G,n,beta,Q.data());
   intend = std::chrono::system_clock::now();
   int2 = intend-intstart;
   //TIMING
@@ -253,7 +276,6 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
   Eigen::FullPivLU<ZMatrix> lu(MMap);
   ZMatrixMap(X.data() + es_, k_*nao_, nao_).noalias() = lu.solve(ZMatrixMap(Q.data()+es_, k_*nao_, nao_));
 
-  ZMatrixMap(X.data(), nao_, nao_).noalias() = -ZMatrixMap(G.tvptr(n,0), nao_, nao_).adjoint();
 
   // Timestepping
   ZMatrixMap MMapSmall = ZMatrixMap(M.data(), nao_, nao_);

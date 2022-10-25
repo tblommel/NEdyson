@@ -91,7 +91,7 @@ void SimulationBase::run(){
   do_mat();
 
   // Calculate the free GF
-  free_gf();
+//  free_gf();
 
   // Take the coefficients from gfmol and transform them into Legendre mesh
   L_to_Tau();

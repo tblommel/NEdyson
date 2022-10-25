@@ -110,95 +110,15 @@ void Simulation<Repr>::save(h5::File &file, const std::string &path) {
   G.print_to_file(file, path + "/G");
   Sigma.print_to_file(file, path + "/Sigma");
 
-  for(int t = 0; t<=nt_; t++) {
-    p_NEgf2_->solve(t, Sigma, G);
-  }
-  Sigma.print_to_file(file, path + "/Sigma2BHF");
-
-  GREEN Ints = GREEN(nt_, ntau_, nao_, -1);
-  std::memset(Ints.lesptr(0,0), 0, ((nt_+1)*(nt_+2))/2*nao_*nao_*sizeof(cplx));
-  for(int n = 0; n <= nt_; n++) {
-    for(int m = 0; m <= n; m++) {
-      Dyson.Cles2_tstp(m, m, Sigma, Sigma, G, G, n, dt_, Ints.lesptr(m,n));
-    }
-  }
-  Ints.print_to_file(file, path + "/IL2");
-  std::memset(Ints.lesptr(0,0), 0, ((nt_+1)*(nt_+2))/2*nao_*nao_*sizeof(cplx));
-  for(int n = 0; n <= nt_; n++) {
-    for(int m = 0; m <= n; m++) {
-      Dyson.Cles3_tstp(m, m, Sigma, Sigma, G, G, n, beta_, Ints.lesptr(m,n));
-    }
-  }
-  Ints.print_to_file(file, path + "/IL3");
-  std::memset(Ints.lesptr(0,0), 0, ((nt_+1)*(nt_+2))/2*nao_*nao_*sizeof(cplx));
-  for(int m = 0; m <= nt_; m++) {
-    for(int n = 0; n <= m; n++) {
-      if(n > k_) {
-        for(int j = 0; j <= n; j++) {
-          ZMatrixMap(Ints.lesptr(n,m), nao_, nao_) += dt_ * Dyson.II().gregory_weights(n,j) *              ZMatrixMap(Sigma.retptr(n,j), nao_, nao_) * ZMatrixMap(G.lesptr(j,m), nao_, nao_);
-        }
-      }
-      else if(n <= k_) {
-        for(int j = 0; j <= k_; j++) {  
-          if(n >= j && j <= m){
-            ZMatrixMap(Ints.lesptr(n,m), nao_, nao_) += dt_ * Dyson.II().gregory_weights(n,j) *              ZMatrixMap(Sigma.retptr(n,j), nao_, nao_) * ZMatrixMap(G.lesptr(j,m), nao_, nao_);
-          }
-          else if(n >= j && j > m){
-            ZMatrixMap(Ints.lesptr(n,m), nao_, nao_) -= dt_ * Dyson.II().gregory_weights(n,j) *              ZMatrixMap(Sigma.retptr(n,j), nao_, nao_) * ZMatrixMap(G.lesptr(m,j), nao_, nao_).adjoint();
-          }
-          else if(n < j && j <= m){
-            ZMatrixMap(Ints.lesptr(n,m), nao_, nao_) -= dt_ * Dyson.II().gregory_weights(n,j) *              ZMatrixMap(Sigma.retptr(j,n), nao_, nao_).adjoint() * ZMatrixMap(G.lesptr(j,m), nao_, nao_);
-          }
-          else if(n < j && j > m){
-            ZMatrixMap(Ints.lesptr(n,m), nao_, nao_) += dt_ * Dyson.II().gregory_weights(n,j) *              ZMatrixMap(Sigma.retptr(j,n), nao_, nao_).adjoint() * ZMatrixMap(G.lesptr(m,j), nao_, nao_).adjoint();
-          }
-        }
-      }
-    }
-  }
-  Ints.print_to_file(file, path + "/IL1");
-  std::memset(Ints.retptr(0,0), 0, ((nt_+1)*(nt_+2))/2*nao_*nao_*sizeof(cplx));
-  for(int n = 0; n <= nt_; n++) {
-    for(int m = 0; m <= n; m++) {
-      if(n > k_ && n-m > k_){
-        for(int j = m; j <= n; j++) {
-          ZMatrixMap(Ints.retptr(n,m), nao_, nao_) += dt_ * Dyson.II().gregory_weights(n-m, j-m) * ZMatrixMap(G.retptr(n,j), nao_, nao_) * ZMatrixMap(Sigma.retptr(j,m), nao_, nao_);
-        }
-      }
-      else if(n > k_ && n-m <= k_){
-        for(int j = 0; j <= k_; j++) {
-          if(n-j >= m) {
-            ZMatrixMap(Ints.retptr(n,m), nao_, nao_) += dt_ * Dyson.II().gregory_weights(n-m, j) * ZMatrixMap(G.retptr(n,n-j), nao_, nao_) * ZMatrixMap(Sigma.retptr(n-j,m), nao_, nao_);
-          }
-          else if(n-j < m) {
-            ZMatrixMap(Ints.retptr(n,m), nao_, nao_) -= dt_ * Dyson.II().gregory_weights(n-m, j) * ZMatrixMap(G.retptr(n,n-j), nao_, nao_) * ZMatrixMap(Sigma.retptr(m,n-j), nao_, nao_).adjoint();
-          }
-        }
-      }
-      else if(n <= k_) {
-        for(int j=0; j <= k_; j++) {
-          if(n >= j && j >= m){
-            ZMatrixMap(Ints.retptr(n,m), nao_, nao_) += dt_ * Dyson.II().poly_integ(m,n,j) * ZMatrixMap(G.retptr(n,j), nao_, nao_) * ZMatrixMap(Sigma.retptr(j,m), nao_, nao_); 
-          }
-          if(n >= j && j < m){
-            ZMatrixMap(Ints.retptr(n,m), nao_, nao_) -= dt_ * Dyson.II().poly_integ(m,n,j) * ZMatrixMap(G.retptr(n,j), nao_, nao_) * ZMatrixMap(Sigma.retptr(m,j), nao_, nao_).adjoint(); 
-          }
-          if(n < j && j >= m){
-            ZMatrixMap(Ints.retptr(n,m), nao_, nao_) -= dt_ * Dyson.II().poly_integ(m,n,j) * ZMatrixMap(G.retptr(j,n), nao_, nao_).adjoint() * ZMatrixMap(Sigma.retptr(j,m), nao_, nao_); 
-          }
-          if(n < j && j < m){
-            ZMatrixMap(Ints.retptr(n,m), nao_, nao_) += dt_ * Dyson.II().poly_integ(m,n,j) * ZMatrixMap(G.retptr(j,n), nao_, nao_).adjoint() * ZMatrixMap(Sigma.retptr(m,j), nao_, nao_).adjoint(); 
-          }
-        }
-      }
-    }
-  }
-  Ints.print_to_file(file, path + "/IR");
-  
   h5e::dump(file, path + "/params/beta", beta_);
   h5e::dump(file, path + "/mu", p_MatSim_->mu());
   h5e::dump(file, path + "/hmf", hmf);
   h5e::dump(file, path + "/params/h0", h0);
+  h5e::dump(file, path + "/h0minusMu", DMatrixConstMap(h0.data(), nao_, nao_) - p_MatSim_->mu()*DMatrix::Identity(nao_, nao_));
+  h5e::dump(file, path + "/GL00", -ZMatrixMap(G.lesptr(0,0), nao_, nao_).adjoint());
+  h5e::dump(file, path + "/GG00",  ZMatrixMap(G.retptr(0,0), nao_, nao_) - ZMatrixMap(G.lesptr(0,0), nao_, nao_).adjoint());
+  h5e::dump(file, path + "/SL00", -ZMatrixMap(Sigma.lesptr(0,0), nao_, nao_).adjoint());
+  h5e::dump(file, path + "/SG00",  ZMatrixMap(Sigma.retptr(0,0), nao_, nao_) - ZMatrixMap(Sigma.lesptr(0,0), nao_, nao_).adjoint());
   h5e::dump(file, path + "/params/filling", p_MatSim_->filling());
   h5e::dump(file, path + "/tti", 0);
   
@@ -218,11 +138,13 @@ void Simulation<Repr>::save(h5::File &file, const std::string &path) {
   h5e::dump(file, path + "/rhoM", p_MatSim_->rho());
   h5e::dump(file, path + "/hmfM", p_MatSim_->fock());
 
-  ZTensor<3> coeff(ntau_+1, nao_, nao_);
-  Dyson.Convolution().collocation().to_spectral(coeff, ZTensorView<3>(G.matptr(0), ntau_+1, nao_, nao_));
-  h5e::dump(file, path + "/Gcoeff", coeff);
-  Dyson.Convolution().collocation().to_spectral(coeff, ZTensorView<3>(Sigma.matptr(0), ntau_+1, nao_, nao_));
-  h5e::dump(file, path + "/Scoeff", coeff);
+  h5e::dump(file, path + "/U", p_NEgf2_->Uijkl());
+
+//  ZTensor<3> coeff(ntau_+1, nao_, nao_);
+//  Dyson.Convolution().collocation().to_spectral(coeff, ZTensorView<3>(G.matptr(0), ntau_+1, nao_, nao_));
+//  h5e::dump(file, path + "/Gcoeff", coeff);
+//  Dyson.Convolution().collocation().to_spectral(coeff, ZTensorView<3>(Sigma.matptr(0), ntau_+1, nao_, nao_));
+//  h5e::dump(file, path + "/Scoeff", coeff);
 }
 
 
@@ -388,30 +310,6 @@ void tti_Simulation<Repr>::save(h5::File &file, const std::string &path) {
 
   h5e::dump(file, path + "/energy/EkinM", p_MatSim_->ehf() + p_MatSim_->ekin());
   h5e::dump(file, path + "/energy/EpotM", p_MatSim_->epot());
-
-  std::string data_dir = std::string(DATA_DIR);
-  std::ofstream ofile;
-
-  ofile.open(data_dir + "/tti_LegCoeff.dat" + "," + std::to_string(nao_) + "," + std::to_string(nt_) + "," + std::to_string(ntau_), std::ofstream::out);
-  auto c = Dyson.Convolution().collocation();
-  ZTensor<3> G_naa(ntau_+1, nao_, nao_);
-  for(int t = 0; t <= nt_; t++) {
-    ZTensorView<3> GTVTV(G.tvptr(t,0), ntau_+1, nao_, nao_);
-    c.to_spectral(G_naa, GTVTV);
-    for(int tau = 0; tau <= ntau_; tau++) {
-      ZTensorView<1> GetMaxOf(G_naa.data() + tau*nao_*nao_, nao_*nao_);
-      Sigma.tvptr(t,tau)[0] = CoeffMax<Repr>(GetMaxOf);
-    }
-  }
-
-  for(int tau = 0; tau <= ntau_; tau++) {
-    for(int t = 0; t <= nt_; t++) {
-      ofile << Sigma.tvptr(t, tau)[0].real() << " ";
-    }
-    ofile << std::endl;
-  }
-
-  ofile.close();
 
 }
 

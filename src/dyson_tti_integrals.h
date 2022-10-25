@@ -24,16 +24,16 @@ double dyson::energy_conv(int tstp, const TTI_GREEN &Sig, const TTI_GREEN &G, do
   for(int i=0; i<=tstp; i++) {
     res1 += I.gregory_weights(tstp, i) * ZMatrixConstMap(Sig.retptr(tstp-i), nao_, nao_).cwiseProduct(ZMatrixConstMap(G.lesptr(i-tstp), nao_, nao_).transpose()).sum();
   }
-  for(int i=tstp+1; i<=top; i++) {
-    res1 += std::conj(I.gregory_weights(tstp, i) * ZMatrixConstMap(Sig.retptr(i-tstp), nao_, nao_).cwiseProduct(ZMatrixConstMap(G.lesptr(tstp-i), nao_, nao_).transpose()).sum());
+  for(int i=tstp; i<=top; i++) {
+    res1 += std::conj(I.gregory_weights(top-tstp+1, top-tstp+1, i-tstp) * ZMatrixConstMap(Sig.retptr(i-tstp), nao_, nao_).cwiseProduct(ZMatrixConstMap(G.lesptr(tstp-i), nao_, nao_).transpose()).sum());
   }
 
   // Sig^< * G^A
   for(int i=0; i<=tstp; i++) {
     res1 -= std::conj(I.gregory_weights(tstp, i) * ZMatrixConstMap(Sig.lesptr(i-tstp), nao_, nao_).cwiseProduct(ZMatrixConstMap(G.retptr(tstp-i), nao_, nao_).transpose()).sum());
   }
-  for(int i=tstp+1; i<=top; i++) {
-    res1 -= I.gregory_weights(tstp, i) * ZMatrixConstMap(Sig.lesptr(tstp-i), nao_, nao_).cwiseProduct(ZMatrixConstMap(G.retptr(i-tstp), nao_, nao_).transpose()).sum();
+  for(int i=tstp; i<=top; i++) {
+    res1 -= I.gregory_weights(top-tstp+1, top-tstp+1, i-tstp) * ZMatrixConstMap(Sig.lesptr(tstp-i), nao_, nao_).cwiseProduct(ZMatrixConstMap(G.retptr(i-tstp), nao_, nao_).transpose()).sum();
   }
 
   res1 *= dt;

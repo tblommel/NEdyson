@@ -1,12 +1,8 @@
 #!/bin/bash
 
-#SBATCH --job-name NEdyson_PP_hf
+#SBATCH --job-name NEdyson
 #SBATCH --nodes=1
-#SBATCH --time=36:00:00
-#SBATCH --partition=super
-#SBATCH --exclusive
-#SBATCH --array=0-0
+#SBATCH --time=24:00:00
+#SBATCH --partition=batch,super
 
-CASE_NUM=`printf %01d $SLURM_ARRAY_TASK_ID`
-
-./build/programs/molNEdyson ./data/NEdyson-input-hf-tti.ini
+./build/programs/molNEdyson ./inputs/NEdyson-input0.ini

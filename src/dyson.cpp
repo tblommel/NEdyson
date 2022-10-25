@@ -35,7 +35,7 @@ dyson::dyson(int nt, int ntau, int nao, int k, bool hfbool) : nt_(nt),
                                                  M(k_*k_*es_),
                                                  Q((nt_+1)*es_),
                                                  X((nt_+1)*es_),
-                                                 NTauTmp(k*(ntau_+1)*es_),
+                                                 NTauTmp((k+1)*(ntau_+1)*es_),
                                                  I(k_),
                                                  Conv(nao, ntau+1)
 {
@@ -92,7 +92,11 @@ void dyson::Extrapolate(int n, GREEN &G) const {
 
   //less
   memset(G.lesptr(0,n), 0, (n+1)*es_*sizeof(cplx));
-  ZMatrixMap(G.lesptr(0,n), nao_, nao_).noalias() = -ZMatrixMap(G.tvptr(n,0), nao_, nao_).adjoint();
+//  ZMatrixMap(G.lesptr(0,n), nao_, nao_).noalias() = -ZMatrixMap(G.tvptr(n,0), nao_, nao_).adjoint();
+  for(j = 0; j <= k_; j++) {
+    ZMatrixMap(G.lesptr(0,n), nao_, nao_).noalias() += ex_weights(j) * ZMatrixMap(G.lesptr(0,n-1-j), nao_, nao_);
+  }
+
   for(l=1; l<=k_; l++) {
     jcut=(k_>n-l-1)?(n-l-1):k_;
 

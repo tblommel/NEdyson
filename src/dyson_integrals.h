@@ -55,6 +55,7 @@ double dyson::energy_conv(int tstp, const GREEN &Sig, const GREEN &G, double bet
   return (cplx(0., sig * 0.5)*(res1+res2)).real();
 }
 
+
 // This one does integral for every tau, and puts result into C by incrementing it!!!
 // For every \tau \equiv m...
 //   C[n,m] += \int_0^n dt A^R(n,t) B^{TV}(t,m)

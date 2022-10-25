@@ -162,12 +162,51 @@ double dyson::dyson_start_tv(GREEN &G, const GREEN &Sig, const cplx *hmf, double
 
 double dyson::dyson_start_les(GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double beta, double dt) const {
   double err=0;
-  for(int l = 0; l <= k_; l++) {
-    for(int n = 0; n <= l; n++) {
-      err += (ZMatrixMap(G.lesptr(n,l), nao_, nao_) + ZMatrixMap(G.tvptr(l-n,0), nao_, nao_).adjoint()).norm();
-      ZMatrixMap(G.lesptr(n,l), nao_, nao_) = -ZMatrixMap(G.tvptr(l-n,0), nao_, nao_).adjoint();
+  cplx cplxi = cplx(0,1); 
+  ZMatrixMap(G.lesptr(0,0), nao_, nao_) = -ZMatrixMap(G.tvptr(0,0), nao_, nao_).adjoint();
+  // ==================================== FOR NO MATSUBARA CASE ===============================
+  ZMatrix M = ZMatrix::Zero(k_*nao_, k_*nao_);
+  ZMatrix Q = ZMatrix::Zero(k_*nao_, nao_);
+  ZMatrix X = ZMatrix::Zero(k_*nao_, nao_);
+  ZMatrixMap IMap = ZMatrixMap(iden.data(), nao_, nao_);
+
+  for( int l = 0; l < k_; l++) {
+    for( int m = 0; m < k_; m++) {
+      auto MMapBlock = M.block(m*nao_, l*nao_, nao_, nao_);
+      MMapBlock += -cplxi/dt * I.poly_diff(m+1,l+1) * IMap;
+      if(m>=l)  MMapBlock += -dt * I.gregory_weights(m+1,l+1) * ZMatrixMap(Sig.retptr(m+1,l+1), nao_, nao_).conjugate();
+      else MMapBlock += dt * I.gregory_weights(m+1,l+1) * ZMatrixMap(Sig.retptr(l+1,m+1), nao_, nao_).transpose();
+      if(m==l) MMapBlock += -ZMatrixConstMap(hmf + (m+1)*nao_*nao_, nao_, nao_).transpose();
     }
   }
+  for( int m = 0; m < k_; m++) {
+    auto QMapBlock = Q.block(m*nao_, 0, nao_, nao_);
+    QMapBlock += cplxi/dt*I.poly_diff(m+1,0)*ZMatrixMap(G.lesptr(0,0), nao_, nao_).transpose() - dt*I.gregory_weights(m+1,0)*ZMatrixMap(Sig.retptr(m+1,0), nao_, nao_).conjugate() * ZMatrixMap(G.lesptr(0,0), nao_, nao_).transpose();
+  }
+
+  Eigen::FullPivLU<ZMatrix> lu(M);
+  X = lu.solve(Q);
+  for(int l = 1; l <= k_; l++) {
+    err += (ZMatrixMap(G.lesptr(0,l), nao_, nao_) - ZMatrixMap(X.data() + (l-1)*nao_*nao_, nao_, nao_)).norm();
+    ZMatrixMap(G.lesptr(0,l), nao_, nao_) = ZMatrixMap(X.data() + (l-1)*nao_*nao_, nao_, nao_);
+  }
+  for(int l = 1; l <= k_; l++) {
+    for(int m = 1; m <= l; m++) {
+      err += (ZMatrixMap(G.lesptr(m,l), nao_, nao_) - ZMatrixMap(G.lesptr(0,l-m), nao_, nao_)).norm();
+      ZMatrixMap(G.lesptr(m,l), nao_, nao_) = ZMatrixMap(G.lesptr(0,l-m), nao_, nao_);
+    }
+  }
+  
+
+
+  // =================================== FOR NO MATSUBARA CASE ================================
+
+//  for(int l = 0; l <= k_; l++) {
+//    for(int n = 0; n <= l; n++) {
+//      err += (ZMatrixMap(G.lesptr(n,l), nao_, nao_) + ZMatrixMap(G.tvptr(l-n,0), nao_, nao_).adjoint()).norm();
+//      ZMatrixMap(G.lesptr(n,l), nao_, nao_) = -ZMatrixMap(G.tvptr(l-n,0), nao_, nao_).adjoint();
+//    }
+//  }
   return err;
 }
 

@@ -135,9 +135,9 @@ class tti_green_func{
 		void get_dm(int i, ZMatrix &M) const {
  		  assert(M.rows()==size1_ && M.cols()==size1_ && i>=-1 && i<=nt_);
 		  if(i==-1){
-        M = -ZMatrixMap(matptr(ntau_), size1_, size1_);
+        M = -ZMatrixMap(matptr(ntau_), size1_, size1_).transpose();
 		  } else {
-        M = cplx(0.0, 1.0*sig_)*ZMatrixMap(lesptr(0), size1_, size1_);
+        M = cplx(0.0, 1.0*sig_)*ZMatrixMap(lesptr(0), size1_, size1_).transpose();
 		  }
 		}
 
@@ -146,18 +146,18 @@ class tti_green_func{
       assert(rho.shape()[1] == size1_);
       assert(i>=-1 && i<=nt_);
       if(i==-1){
-        ZMatrixMap(rho.data(), size1_, size1_) = -ZMatrixMap(matptr(ntau_), size1_, size1_);
+        ZMatrixMap(rho.data(), size1_, size1_) = -ZMatrixMap(matptr(ntau_), size1_, size1_).transpose();
       } else {
-        ZMatrixMap(rho.data(), size1_, size1_) = cplx(0.0, 1.0*sig_)*ZMatrixMap(lesptr(0), size1_, size1_);
+        ZMatrixMap(rho.data(), size1_, size1_) = cplx(0.0, 1.0*sig_)*ZMatrixMap(lesptr(0), size1_, size1_).transpose();
       }
     }
 
     void get_dm(int i, cplx *rho) const {
       assert(i>=-1 && i<=nt_);
       if(i==-1){
-        ZMatrixMap(rho, size1_, size1_) = -ZMatrixMap(matptr(ntau_), size1_, size1_);
+        ZMatrixMap(rho, size1_, size1_) = -ZMatrixMap(matptr(ntau_), size1_, size1_).transpose();
       } else {
-        ZMatrixMap(rho, size1_, size1_) = cplx(0.0, 1.0*sig_)*ZMatrixMap(lesptr(0), size1_, size1_);
+        ZMatrixMap(rho, size1_, size1_) = cplx(0.0, 1.0*sig_)*ZMatrixMap(lesptr(0), size1_, size1_).transpose();
       }
     }
 
