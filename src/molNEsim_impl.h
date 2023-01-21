@@ -85,6 +85,12 @@ void Simulation<Repr>::do_tstp(int tstp) {
   for(int iter = 0; iter < CorrSteps_; iter++) {
     G.get_dm(tstp, rho);
     ZMatrixMap(hmf.data() + tstp*nao_*nao_, nao_, nao_) = DMatrixConstMap(h0.data(),nao_,nao_);
+    
+    // DEBUG  RAMP
+    ZMatrix A = ZMatrix::Zero(2,2);
+    A(0,0) = 1;
+    ZMatrixMap(hmf.data() + tstp*nao_*nao_, nao_, nao_) += 1 * (tanh(10*(tstp*dt_-1))+1) * A + 1 * (tanh(10*(tstp*dt_-3))+1) * A;
+    // END DEBUG
 
     // HF Contractions
     p_NEgf2_->solve_HF(tstp, hmf, rho);

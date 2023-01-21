@@ -172,6 +172,195 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
   // iterators
   int m, l, i;
   int num = n>=k_ ? n : k_;
+
+  double err=0;
+
+  std::chrono::time_point<std::chrono::system_clock> intstart, intend;
+  std::chrono::duration<double> int1, int2, int3;
+
+  // Matricies
+  cplx cplxi = cplx(0,1);
+  ZMatrixMap MMap = ZMatrixMap(M.data(), nao_*k_, nao_*k_);
+  ZMatrixMap IMap = ZMatrixMap(iden.data(), nao_, nao_);
+
+  // Integrals go into Q via increment.  Q must be 0.
+  memset(Q.data(),0,sizeof(cplx)*(num+1)*es_);
+  memset(M.data(),0,sizeof(cplx)*k_*k_*es_);
+
+  intstart = std::chrono::system_clock::now();
+//  Cles3_tstp(Sig,Sig,G,G,n,beta,Q.data());
+  intend = std::chrono::system_clock::now();
+  int2 = intend-intstart;
+  //TIMING
+  std::ofstream out;
+  std::string timing_data_dir = std::string(TIMING_DATA_DIR);
+  out.open(timing_data_dir + "Nao" + std::to_string(G.size1()) + "Nt" + std::to_string(G.nt()) + "Ntau" + std::to_string(G.ntau()) + "les_int_tvvt.dat", std::ofstream::app);
+  out << int2.count() << "\n" ;
+  out.close();
+  // TIMING
+
+  intstart = std::chrono::system_clock::now();
+  Cles2_tstp(Sig,Sig,G,G,n,dt,Q.data());
+  intend = std::chrono::system_clock::now();
+  int1 = intend-intstart;
+  //TIMING
+  std::ofstream out2;
+  out2.open(timing_data_dir + "Nao" + std::to_string(G.size1()) + "Nt" + std::to_string(G.nt()) + "Ntau" + std::to_string(G.ntau()) + "les_int_la.dat", std::ofstream::app);
+  out2 << int1.count() << "\n" ;
+  out2.close();
+  // TIMING
+
+
+  // Initial condition
+//  err += (ZMatrixMap(G.lesptr(0,n), nao_, nao_) + ZMatrixMap(G.tvptr(n,0), nao_, nao_).adjoint()).lpNorm<2>();
+//  ZMatrixMap(G.lesptr(0,n), nao_, nao_).noalias() = -ZMatrixMap(G.tvptr(n,0), nao_, nao_).adjoint();
+//  ZMatrixMap(X.data(), nao_, nao_).noalias() = -ZMatrixMap(G.tvptr(n,0), nao_, nao_).adjoint();
+
+
+// ===================== CASE FOR NO MATSUBARA BRANCH =========================
+  ZMatrix QIC = ZMatrix::Zero(nao_,nao_);
+  ZMatrix MIC = ZMatrix::Zero(nao_,nao_);
+  MIC = (-cplxi/dt*I.bd_weights(0) * IMap - ZMatrixConstMap(hmf + n*nao_*nao_, nao_, nao_) + mu*IMap - dt*I.gregory_weights(n, n) * ZMatrixMap(Sig.retptr(n,n), nao_, nao_).adjoint()).transpose();
+  for(int i = 0; i < n; i++) {
+    QIC += dt * I.gregory_weights(n, i) * ZMatrixMap(Sig.retptr(n,i), nao_, nao_).conjugate() * ZMatrixMap(G.lesptr(0,i), nao_, nao_).transpose();
+  }
+  for(int l = 1; l <= k_+1; l++) {
+    QIC += cplxi/dt * I.bd_weights(l) * ZMatrixMap(G.lesptr(0,n-l),nao_,nao_).transpose();
+  }
+  Eigen::FullPivLU<ZMatrix> luIC(MIC);
+  ZMatrixMap(X.data(), nao_, nao_).noalias() = luIC.solve(QIC).transpose();
+  ZMatrixMap(G.lesptr(0,n), nao_, nao_).noalias() = ZMatrixMap(X.data(), nao_, nao_);
+// ===================== CASE FOR NO MATSUBARA BRANCH =========================
+
+
+  // Set up the kxk linear problem MX=Q
+  for(m=1; m<=k_; m++) {
+    auto QMapBlock = ZMatrixMap(Q.data() + m*es_, nao_, nao_);
+    for(l=0; l<=k_; l++) {
+      auto MMapBlock = MMap.block((m-1)*nao_, (l-1)*nao_, nao_, nao_);
+      // Derivative term
+      if(l==0){ // We put this in Q
+        QMapBlock.noalias() -= cplxi/dt*I.poly_diff(m,l) * ZMatrixMap(G.lesptr(l,n), nao_, nao_);
+      }
+      else{ // It goes into M
+        MMapBlock.noalias() += cplxi/dt*I.poly_diff(m,l) * IMap;
+      }
+      // Delta energy term
+      if(m==l){
+        MMapBlock.noalias() += mu*IMap - ZMatrixConstMap(hmf+l*es_, nao_, nao_);
+      }
+      // Integral term
+      if(l==0){ // Goes into Q
+        QMapBlock.noalias() += dt*I.gregory_weights(m,l) * ZMatrixMap(Sig.retptr(m,l), nao_, nao_) * ZMatrixMap(G.lesptr(l,n), nao_, nao_);
+      }
+      else{ // Goes into M
+        if(m>=l){ // Have Sig
+          MMapBlock.noalias() -= dt*I.gregory_weights(m,l) * ZMatrixMap(Sig.retptr(m,l), nao_, nao_);
+        }
+        else{ // Dont have Sig
+          MMapBlock.noalias() += dt*I.gregory_weights(m,l) * ZMatrixMap(Sig.retptr(l,m), nao_, nao_).adjoint();
+        }
+      }
+    }
+  }
+
+  // Solve Mx=Q
+  Eigen::FullPivLU<ZMatrix> lu(MMap);
+  ZMatrixMap(X.data() + es_, k_*nao_, nao_).noalias() = lu.solve(ZMatrixMap(Q.data()+es_, k_*nao_, nao_));
+
+  // Timestepping
+  ZMatrixMap MMapSmall = ZMatrixMap(M.data(), nao_, nao_);
+//  for(m=k_+1; m<=n; m++) {
+  for(m=k_+1; m<n; m++) {
+    auto QMapBlock = ZMatrixMap(Q.data() + m*es_, nao_, nao_);
+    // Set up M
+    MMapSmall.noalias() = -ZMatrixConstMap(hmf+m*es_, nao_, nao_) + (cplxi/dt*I.bd_weights(0) + mu)*IMap - dt*I.omega(0)*ZMatrixMap(Sig.retptr(m,m), nao_, nao_);
+    // Derivatives into Q
+    for(l=1; l<=k_+1; l++) {
+      QMapBlock.noalias() -= cplxi/dt*I.bd_weights(l) * ZMatrixMap(X.data() + (m-l)*es_, nao_, nao_);
+    }
+    // Rest of the retles integral
+    intstart = std::chrono::system_clock::now();
+    for(l=0; l<m; l++) {
+      QMapBlock.noalias() += dt*I.gregory_weights(m,l) * ZMatrixMap(Sig.retptr(m,l), nao_, nao_)
+                                             * ZMatrixMap(X.data() + l*es_, nao_, nao_);
+    }
+    intend = std::chrono::system_clock::now();
+    int3 += intend-intstart;
+    // Solve MX=Q
+    Eigen::FullPivLU<ZMatrix> lu2(MMapSmall);
+    ZMatrixMap(X.data()+m*es_, nao_, nao_) = lu2.solve(ZMatrixMap(Q.data() + m*es_, nao_, nao_));
+  }
+
+  // Timestepping for diagonal part (density matrix)
+  // Extrapolate for G(t,t)
+  memset(ex_weights.data(), 0, (k_+1)*sizeof(cplx));
+  for(int ll=0; ll<=k_; ll++) {
+    for(int jj=0; jj<=k_; jj++) {
+      ex_weights(ll)+=I.poly_interp(jj,ll)*(1-2*(jj%2));
+    }
+  }
+  memset(X.data()+n*es_, 0, nao_*nao_*sizeof(cplx));
+  for(int jj = 0; jj <= k_; jj++) {
+    ZMatrixMap(X.data()+n*es_, nao_, nao_) += ex_weights(jj) * ZMatrixMap(G.lesptr(n-jj-1,n-jj-1), nao_, nao_);
+  }
+  auto QMapBlock = ZMatrixMap(Q.data() + n*es_, nao_, nao_);
+  QMapBlock = ZMatrix::Zero(nao_, nao_);
+  // do first integral
+  for(l = 0; l <= n; l++) {
+    QMapBlock.noalias() -= cplxi * dt * I.gregory_weights(n,l) * ZMatrixMap(Sig.retptr(n,l), nao_, nao_) * ZMatrixMap(X.data()+l*es_, nao_, nao_);
+  }
+  // do second integral
+  for(l = 0; l <= n; l++) {
+    QMapBlock.noalias() += cplxi * dt * I.gregory_weights(n,l) * ZMatrixMap(Sig.lesptr(l,n), nao_, nao_).adjoint() * ZMatrixMap(G.retptr(n,l), nao_, nao_).adjoint();
+  }
+  // add in hamiltonian term
+  QMapBlock.noalias() -= cplxi * (ZMatrixConstMap(hmf+n*es_, nao_, nao_) - mu*IMap) * ZMatrixMap(X.data()+n*es_, nao_, nao_);
+  // for diagonal timestepping
+  ZMatrixMap(Q.data(), nao_, nao_) = QMapBlock - QMapBlock.adjoint();
+  // add in derivative term
+  for(l=1; l<=k_+1; l++) {
+    ZMatrixMap(Q.data(), nao_, nao_) -= 1./dt * I.bd_weights(l) * ZMatrixMap(G.lesptr(n-l,n-l), nao_, nao_);
+  }
+  
+  MMapSmall.noalias() = 1./dt*I.bd_weights(0) * IMap;
+
+  Eigen::FullPivLU<ZMatrix> lu2(MMapSmall);
+  ZMatrixMap(X.data()+n*es_, nao_, nao_) = lu2.solve(ZMatrixMap(Q.data(), nao_, nao_));
+
+  // Write elements into G
+  for(l=0; l<=n; l++) {
+    err += (ZColVectorMap(G.lesptr(l,n), es_) - ZColVectorMap(X.data() + l*es_, es_)).norm();
+    ZMatrixMap(G.lesptr(l,n), nao_, nao_).noalias() = ZMatrixMap(X.data() + l*es_, nao_, nao_);
+  }
+
+  //TIMING
+  std::ofstream out3;
+  out3.open(timing_data_dir + "Nao" + std::to_string(G.size1()) + "Nt" + std::to_string(G.nt()) + "Ntau" + std::to_string(G.ntau()) + "les_int_rl.dat", std::ofstream::app);
+  out3 << int3.count() << "\n" ;
+  out3.close();
+
+  // TIMING
+  return err;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+
+  // iterators
+  int m, l, i;
+  int num = n>=k_ ? n : k_;
   double err=0;
 
   std::chrono::time_point<std::chrono::system_clock> intstart, intend;
@@ -185,28 +374,6 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
   // Initial condition
   err += (ZMatrixMap(G.lesptr(0,n), nao_, nao_) + ZMatrixMap(G.tvptr(n,0), nao_, nao_).adjoint()).lpNorm<2>();
   ZMatrixMap(G.lesptr(0,n), nao_, nao_).noalias() = -ZMatrixMap(G.tvptr(n,0), nao_, nao_).adjoint();
-
-/*
-  // ===================== CASE FOR NO MATSUBARA BRANCH =========================
-  ZMatrix QIC = ZMatrix::Zero(nao_,nao_);
-  ZMatrix MIC = ZMatrix::Zero(nao_,nao_);
-  
-  MIC = (-cplxi/dt*I.bd_weights(0) * IMap - ZMatrixConstMap(hmf + n*nao_*nao_, nao_, nao_) - dt*I.gregory_weights(n, n) * ZMatrixMap(Sig.retptr(n,n), nao_, nao_).adjoint()).transpose();
-  for(int i = 0; i < n; i++) {
-    QIC += dt * I.gregory_weights(n, i) * ZMatrixMap(Sig.retptr(n,i), nao_, nao_).conjugate() * ZMatrixMap(G.lesptr(0,i), nao_, nao_).transpose();
-  }
-  for(int l = 1; l <= k_+1; l++) {
-    QIC += cplxi/dt * I.bd_weights(l) * ZMatrixMap(G.lesptr(0,n-l),nao_,nao_).transpose();
-  }
-
-  Eigen::FullPivLU<ZMatrix> luIC(MIC);
-  ZMatrixMap(X.data(), nao_, nao_).noalias() = luIC.solve(QIC).transpose();
-//  ZMatrixMap(G.lesptr(0,n), nao_, nao_) = ZMatrixMap(X.data(), nao_, nao_);
-  std::cout << ZMatrixMap(X.data(), nao_, nao_) << std::endl;
-  std::cout << ZMatrixMap(G.lesptr(0,n), nao_, nao_) << std::endl;
-
-  // ===================== CASE FOR NO MATSUBARA BRANCH =========================
-*/
 
   // Integrals go into Q via increment.  Q must be 0.
   memset(Q.data(),0,sizeof(cplx)*(num+1)*es_);
@@ -317,6 +484,7 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
   // TIMING
 
   return err;
+*/
 }
 
 
