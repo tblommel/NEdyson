@@ -54,6 +54,8 @@ void Simulation<Repr>::Ed_contractions(int tstp) {
 
 template <typename Repr>
 void Simulation<Repr>::do_boot() {
+  G.set_conv_tensor(Dyson.Convolution(), beta_);
+
   for(int iter = 0; iter <= BootMax_; iter++){
     double err = 0;
 
@@ -139,12 +141,19 @@ void Simulation<Repr>::save(h5::File &file, const std::string &path) {
   h5e::dump(file, path + "/hmfM", p_MatSim_->fock());
 
   h5e::dump(file, path + "/U", p_NEgf2_->Uijkl());
+  h5e::dump(file, path + "/U_ex", p_NEgf2_->Uijkl_exch());
 
-//  ZTensor<3> coeff(ntau_+1, nao_, nao_);
-//  Dyson.Convolution().collocation().to_spectral(coeff, ZTensorView<3>(G.matptr(0), ntau_+1, nao_, nao_));
-//  h5e::dump(file, path + "/Gcoeff", coeff);
-//  Dyson.Convolution().collocation().to_spectral(coeff, ZTensorView<3>(Sigma.matptr(0), ntau_+1, nao_, nao_));
-//  h5e::dump(file, path + "/Scoeff", coeff);
+  h5e::dump(file, path + "/gl", p_MatSim_->gl());
+  h5e::dump(file, path + "/sl", p_MatSim_->sigmal());
+
+  h5e::dump(file, path + "/it0B", Dyson.Convolution().collocation().x_i());
+  h5e::dump(file, path + "/w_i", Dyson.Convolution().collocation().w_i());
+
+  h5e::dump(file, path + "/GMCT", DMatrixMap(G.GMCTptr(), 1, (ntau_+1)*(ntau_+1)*nao_*nao_));
+  h5e::dump(file, path + "/U_flat", DMatrixConstMap(p_NEgf2_->Uijkl().data(), 1, nao_*nao_*nao_*nao_));
+  h5e::dump(file, path + "/Uex_flat", DMatrixConstMap(p_NEgf2_->Uijkl_exch().data(), 1, nao_*nao_*nao_*nao_));
+
+  h5e::dump(file, path + "/ex_weights", DMatrixMap(Dyson.II().ex_weights_ptr(), 1, k_+1));
 }
 
 

@@ -3,6 +3,20 @@
 
 namespace NEdyson{
 
+
+void dyson::tv_it_conv(int m, int n, const GREEN &Sig, GREEN &G, cplx *res) const {
+  cplx *sig_trans = new cplx[(ntau_+1) * nao_ * nao_];
+  for(int i = 0; i <= ntau_; i++) {
+    ZMatrixMap(sig_trans + i*nao_*nao_, nao_, nao_) = ZMatrixMap(Sig.tvptr(n,i), nao_, nao_).transpose();
+  }
+
+  ZMatrixMap(res, nao_, nao_).noalias() += (DMatrixMap(G.GMCTptr() + m*nao_*nao_*(ntau_+1), nao_, (ntau_+1)*nao_) * ZMatrixMap(sig_trans, (ntau_+1)*nao_, nao_)).transpose();
+  delete [] sig_trans;
+}
+
+
+
+
 // returns E_{int}(t) = \pm \frac{i}{2} * (
 //                       \int_0^t du S^R(t,u) G^<(u,t)
 //                    +  \int_0^t du S^<(t,u) G^A(u,t)
@@ -106,7 +120,7 @@ void dyson::CTV1(cplx *ctv, const GREEN &A, const GREEN &Acc, const GREEN &B, in
 //           m<k                        = \sum_{j,l=0}^k d\tau R_{m,j,l} A^{TV}(n,l) s B^M(ntau-j)
 //           m>=k                       = \sum_{l=0}^m  d\tau w_{m,l} A^{TV}(n,m-l) s B^M(ntau-l)
 // Puts the result into res, which should be size1*size1
-void dyson::CTV2(const GREEN &A, const GREEN &B, int n, int m, double beta, cplx *res) const {
+/*void dyson::CTV2(const GREEN &A, const GREEN &B, int n, int m, double beta, cplx *res) const {
   assert(A.size1() == B.size1());
   assert(A.size1() == nao_);
   assert(A.nt() == B.nt());
@@ -232,7 +246,7 @@ void dyson::CTV3(const GREEN &A, const GREEN &B, int n, int m, double beta, cplx
   
   resMap *= (beta/ntau_);
 }
-
+*/
 
 
 // This function calls CTV1,2,3 to do the convolutions necessary for the timestepping of the TV component

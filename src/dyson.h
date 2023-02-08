@@ -36,6 +36,7 @@ private:
   mutable cpsitop::nonequilibrium::convolution Conv;
 
 public:
+  
   dyson(int nt, int ntau, int nao, int k, bool hfbool_);
 
   const INTEG &II() { return I; }
@@ -115,14 +116,15 @@ public:
   // TV convolutions ================================================
   void Ctv_tstp(int tstp, GREEN &C, const GREEN &A, const GREEN &Acc, const GREEN &B, const GREEN &Bcc, double beta, double dt) const ;
   void CTV1(cplx *ctv, const GREEN &A, const GREEN &Acc, const GREEN &B, int n, double dt) const ;
-  void CTV2(const GREEN &A, const GREEN &B, int n, int m, double beta, cplx *res) const ;
-  void CTV3(const GREEN &A, const GREEN &B, int n, int m, double beta, cplx *res) const ;
+//  void CTV2(const GREEN &A, const GREEN &B, int n, int m, double beta, cplx *res) const ;
+//  void CTV3(const GREEN &A, const GREEN &B, int n, int m, double beta, cplx *res) const ;
+  void tv_it_conv(int m, int n, const GREEN &Sig, GREEN &G, cplx *res) const;
 
   // TTI TV convolutions ============================================
   void Ctv_tstp(int tstp, TTI_GREEN &C, const TTI_GREEN &A, const TTI_GREEN &Acc, const TTI_GREEN &B, const TTI_GREEN &Bcc, double beta, double dt) const ;
   void CTV1(cplx *ctv, const TTI_GREEN &A, const TTI_GREEN &Acc, const TTI_GREEN &B, int n, double dt) const ;
-  void CTV2(const TTI_GREEN &A, const TTI_GREEN &B, int n, int m, double beta, cplx *res) const ;
-  void CTV3(const TTI_GREEN &A, const TTI_GREEN &B, int n, int m, double beta, cplx *res) const ;
+//  void CTV2(const TTI_GREEN &A, const TTI_GREEN &B, int n, int m, double beta, cplx *res) const ;
+//  void CTV3(const TTI_GREEN &A, const TTI_GREEN &B, int n, int m, double beta, cplx *res) const ;
 
   // Les convolutions ===============================================
   void Cles2_tstp(int j1, int j2, const GREEN &A, const GREEN &Acc, const GREEN &B, const GREEN &Bcc, int m, double dt, cplx *res) const ;

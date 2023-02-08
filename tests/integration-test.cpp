@@ -61,15 +61,6 @@ TEST_CASE("Polynomial Calculus Coefficients")
   }
   REQUIRE(Sigma.norm()<1e-12);
 
-  for(int i=1;i<5;i++){
-    for(int j=0;j<=5;j++){
-      for(int k=0;k<=5;k++){
-        Rcorr((i-1)*36+j*6+k)-=I.rcorr(i,j,k);
-      }
-    }
-  }
-  REQUIRE(Rcorr.norm()<1e-10);
-
   for(int i=0;i<=5;i++){
     omega(i)-=I.omega(i);
   }

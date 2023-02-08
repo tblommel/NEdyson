@@ -71,8 +71,8 @@ void SimulationBase::save_base(h5::File &file, const std::string &path) const {
   h5e::dump(file, path + "/solve/params/BootTol", BootTol_);
   h5e::dump(file, path + "/solve/params/CorrSteps", CorrSteps_);
   
-  h5e::dump(file, path + "/solve/params/boot_conv", bootstrap_converged);
-  h5e::dump(file, path + "/solve/params/hf", hfbool_);
+  h5e::dump(file, path + "/solve/params/boot_conv", (int)bootstrap_converged);
+  h5e::dump(file, path + "/solve/params/hf", (int)hfbool_);
 }
 
 void SimulationBase::save_PP(h5::File &file, const std::string &path) const {
@@ -91,7 +91,7 @@ void SimulationBase::run(){
   do_mat();
 
   // Calculate the free GF
-//  free_gf();
+  free_gf();
 
   // Take the coefficients from gfmol and transform them into Legendre mesh
   L_to_Tau();

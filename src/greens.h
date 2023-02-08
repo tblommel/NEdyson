@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <cassert>
 #include <cstring>
+#include "cpsitop/nonequilibrium.h"
 
 #include "utils.h"
 
@@ -37,6 +38,10 @@ class green_func{
 		cplx *retptr(int i, int j) const ;
 		cplx *tvptr(int i, int j) const ;
 		cplx *matptr(int i) const ;
+    double *GMCTptr() { return GMCT_.data(); }
+    DMatrix &GMCTMat() { return GMCT_; }
+
+    void set_conv_tensor(const cpsitop::nonequilibrium::convolution &Convolution, double beta);
 
     // Density Matrix
 		void get_dm(int i, ZMatrix &M) const {
@@ -103,6 +108,7 @@ class green_func{
 		int size1_;
 		int element_size_;
 		int sig_;
+    DMatrix GMCT_;
 };
 
 class tti_green_func{

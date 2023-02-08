@@ -244,14 +244,14 @@ void dyson::G0_from_h0(GREEN &G, double mu, const double *H0, double beta, doubl
   eval0m = -eval0;
 
   // Matsubara
-  for(int m=0; m<=ntau_; m++) {
-    tau = beta/2. * (Convolution().collocation().x_i()(m) + 1.);
-    if(sign==-1){
-      ZMatrixMap(G.matptr(m), nao_, nao_) = -evec0 * fermi_exp(beta,tau,eval0).asDiagonal() * evec0.adjoint();
-    } else if(sign==1){
-      ZMatrixMap(G.matptr(m), nao_, nao_) =  evec0 * bose_exp(beta,tau,eval0).asDiagonal() * evec0.adjoint();
-    }
-  }
+//  for(int m=0; m<=ntau_; m++) {
+//    tau = beta/2. * (Convolution().collocation().x_i()(m) + 1.);
+//    if(sign==-1){
+//      ZMatrixMap(G.matptr(m), nao_, nao_) = -evec0 * fermi_exp(beta,tau,eval0).asDiagonal() * evec0.adjoint();
+//    } else if(sign==1){
+//      ZMatrixMap(G.matptr(m), nao_, nao_) =  evec0 * bose_exp(beta,tau,eval0).asDiagonal() * evec0.adjoint();
+//    }
+//  }
 
   // Ut
   ZMatrixMap IHdt = ZMatrixMap(tmp.data(), nao_, nao_);

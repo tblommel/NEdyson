@@ -29,7 +29,7 @@ double dyson::dyson_step_ret(int tstp, GREEN &G, const GREEN &Sig, const cplx *h
     ZMatrixMap QMapBlock = ZMatrixMap(Q.data() + (n-1)*es_, nao_, nao_);
         
     for(l=0; l<=k_; l++) {
-      auto MMapBlock = MMap.block((n-1)*nao_, (l-1)*nao_, nao_, nao_);
+      auto MMapBlock = MMap.block((n-1)*nao_, (l==0)?0:(l-1)*nao_, nao_, nao_);
       
       // Derivative terms 
       if(l==0){ // Goes into Q
@@ -59,7 +59,7 @@ double dyson::dyson_step_ret(int tstp, GREEN &G, const GREEN &Sig, const cplx *h
       }
     }
   }
-
+  
   // Solve XM=Q for X
   Eigen::FullPivLU<ZMatrix> lu(MMap);
   XMap = lu.solve(QMap);
@@ -76,8 +76,8 @@ double dyson::dyson_step_ret(int tstp, GREEN &G, const GREEN &Sig, const cplx *h
   for(n = k_+1; n <= tstp; n++) {
     ZMatrixMap QMapBlock = ZMatrixMap(Q.data() + n*es_, nao_, nao_);
     for(l=0; l<=k_; l++) {
-      QMapBlock.noalias() += I.gregory_weights(n,l) * (ZMatrixMap(G.retptr(tstp,tstp-l), nao_, nao_)
-                                          * ZMatrixMap(Sig.retptr(tstp-l,tstp-n), nao_, nao_)).transpose();
+      QMapBlock.noalias() += I.gregory_weights(n,l) * ZMatrixMap(G.retptr(tstp,tstp-l), nao_, nao_)
+                                          * ZMatrixMap(Sig.retptr(tstp-l,tstp-n), nao_, nao_);
     }
   }
   intend = std::chrono::system_clock::now();
@@ -90,7 +90,7 @@ double dyson::dyson_step_ret(int tstp, GREEN &G, const GREEN &Sig, const cplx *h
     QMapBlock *= dt;
     // derivative info goes into Q
     for(l=1; l<=k_+1; l++){
-      QMapBlock.noalias() += I.bd_weights(l)*ncplxi/dt * ZMatrixMap(G.retptr(tstp,tstp-n+l), nao_, nao_).transpose();
+      QMapBlock.noalias() += I.bd_weights(l)*ncplxi/dt * ZMatrixMap(G.retptr(tstp,tstp-n+l), nao_, nao_);
     }
 
     // Set up M
@@ -100,7 +100,7 @@ double dyson::dyson_step_ret(int tstp, GREEN &G, const GREEN &Sig, const cplx *h
 
     // Solve XM=Q for X
     Eigen::FullPivLU<ZMatrix> lu2(MMapSmall);
-    ZMatrixMap(X.data(), nao_, nao_) = lu2.solve(QMapBlock).transpose();   
+    ZMatrixMap(X.data(), nao_, nao_) = lu2.solve(QMapBlock.transpose()).transpose();   
     err += (ZMatrixMap(G.retptr(tstp, tstp-n), nao_, nao_) - ZMatrixMap(X.data(), nao_, nao_)).norm();
     ZMatrixMap(G.retptr(tstp,tstp-n), nao_, nao_).noalias() = ZMatrixMap(X.data(), nao_, nao_);
 
@@ -108,8 +108,8 @@ double dyson::dyson_step_ret(int tstp, GREEN &G, const GREEN &Sig, const cplx *h
     intstart = std::chrono::system_clock::now();
     for(m=n+1; m<=tstp; m++) {
       ZMatrixMap(Q.data() + m*es_, nao_, nao_).noalias() += I.gregory_weights(m,n)
-                                          *(ZMatrixMap(G.retptr(tstp,tstp-n), nao_, nao_)
-                                          * ZMatrixMap(Sig.retptr(tstp-n,tstp-m), nao_, nao_)).transpose();
+                                          * ZMatrixMap(G.retptr(tstp,tstp-n), nao_, nao_)
+                                          * ZMatrixMap(Sig.retptr(tstp-n,tstp-m), nao_, nao_);
     }
     intend = std::chrono::system_clock::now();
     inttime += intend-intstart;
@@ -186,28 +186,6 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
   err += (ZMatrixMap(G.lesptr(0,n), nao_, nao_) + ZMatrixMap(G.tvptr(n,0), nao_, nao_).adjoint()).lpNorm<2>();
   ZMatrixMap(G.lesptr(0,n), nao_, nao_).noalias() = -ZMatrixMap(G.tvptr(n,0), nao_, nao_).adjoint();
 
-/*
-  // ===================== CASE FOR NO MATSUBARA BRANCH =========================
-  ZMatrix QIC = ZMatrix::Zero(nao_,nao_);
-  ZMatrix MIC = ZMatrix::Zero(nao_,nao_);
-  
-  MIC = (-cplxi/dt*I.bd_weights(0) * IMap - ZMatrixConstMap(hmf + n*nao_*nao_, nao_, nao_) - dt*I.gregory_weights(n, n) * ZMatrixMap(Sig.retptr(n,n), nao_, nao_).adjoint()).transpose();
-  for(int i = 0; i < n; i++) {
-    QIC += dt * I.gregory_weights(n, i) * ZMatrixMap(Sig.retptr(n,i), nao_, nao_).conjugate() * ZMatrixMap(G.lesptr(0,i), nao_, nao_).transpose();
-  }
-  for(int l = 1; l <= k_+1; l++) {
-    QIC += cplxi/dt * I.bd_weights(l) * ZMatrixMap(G.lesptr(0,n-l),nao_,nao_).transpose();
-  }
-
-  Eigen::FullPivLU<ZMatrix> luIC(MIC);
-  ZMatrixMap(X.data(), nao_, nao_).noalias() = luIC.solve(QIC).transpose();
-//  ZMatrixMap(G.lesptr(0,n), nao_, nao_) = ZMatrixMap(X.data(), nao_, nao_);
-  std::cout << ZMatrixMap(X.data(), nao_, nao_) << std::endl;
-  std::cout << ZMatrixMap(G.lesptr(0,n), nao_, nao_) << std::endl;
-
-  // ===================== CASE FOR NO MATSUBARA BRANCH =========================
-*/
-
   // Integrals go into Q via increment.  Q must be 0.
   memset(Q.data(),0,sizeof(cplx)*(num+1)*es_);
   memset(M.data(),0,sizeof(cplx)*k_*k_*es_);
@@ -225,7 +203,7 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
   // TIMING
 
   intstart = std::chrono::system_clock::now();
-  Cles2_tstp(Sig,Sig,G,G,n,dt,Q.data());
+//  Cles2_tstp(Sig,Sig,G,G,n,dt,Q.data());
   intend = std::chrono::system_clock::now();
   int1 = intend-intstart;
   //TIMING
@@ -272,6 +250,19 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
   }
 
   // Solve Mx=Q
+  std::cout << "################## MMap #####################" << std::endl;
+  for(int i = 0; i < nao_*k_; i++) {
+    for(int j = 0; j < nao_*k_; j++) {
+      std::cout << MMap(i,j) << std::endl;
+    }
+  }
+  std::cout << "################## QMap #####################" << std::endl;
+  for(int i = 0; i < nao_*k_; i++) {
+    for(int j = 0; j < nao_; j++) {
+      std::cout << ZMatrixMap(Q.data()+es_, k_*nao_, nao_)(i,j) << std::endl;
+    }
+  }
+  
   Eigen::FullPivLU<ZMatrix> lu(MMap);
   ZMatrixMap(X.data() + es_, k_*nao_, nao_).noalias() = lu.solve(ZMatrixMap(Q.data()+es_, k_*nao_, nao_));
   ZMatrixMap(X.data(), nao_, nao_).noalias() = -ZMatrixMap(G.tvptr(n,0), nao_, nao_).adjoint();
@@ -335,8 +326,8 @@ void dyson::dyson_step(int n, GREEN &G, const GREEN &Sig, const cplx *hmf, doubl
   double err = 0;
 
   if(!hfbool_) {
-    err += dyson_step_ret(n, G, Sig, hmf, mu, dt);
-    err += dyson_step_tv(n, G, Sig, hmf, mu, beta, dt);
+//    err += dyson_step_ret(n, G, Sig, hmf, mu, dt);
+//    err += dyson_step_tv(n, G, Sig, hmf, mu, beta, dt);
     err += dyson_step_les(n, G, Sig, hmf, mu, beta, dt);
   }
   else {

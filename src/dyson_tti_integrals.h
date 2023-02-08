@@ -25,7 +25,7 @@ double dyson::energy_conv(int tstp, const TTI_GREEN &Sig, const TTI_GREEN &G, do
     res1 += I.gregory_weights(tstp, i) * ZMatrixConstMap(Sig.retptr(tstp-i), nao_, nao_).cwiseProduct(ZMatrixConstMap(G.lesptr(i-tstp), nao_, nao_).transpose()).sum();
   }
   for(int i=tstp; i<=top; i++) {
-    res1 += std::conj(I.gregory_weights(top-tstp+1, top-tstp+1, i-tstp) * ZMatrixConstMap(Sig.retptr(i-tstp), nao_, nao_).cwiseProduct(ZMatrixConstMap(G.lesptr(tstp-i), nao_, nao_).transpose()).sum());
+    res1 += std::conj(I.gregory_weights(tstp, i) * ZMatrixConstMap(Sig.retptr(i-tstp), nao_, nao_).cwiseProduct(ZMatrixConstMap(G.lesptr(tstp-i), nao_, nao_).transpose()).sum());
   }
 
   // Sig^< * G^A
@@ -33,7 +33,7 @@ double dyson::energy_conv(int tstp, const TTI_GREEN &Sig, const TTI_GREEN &G, do
     res1 -= std::conj(I.gregory_weights(tstp, i) * ZMatrixConstMap(Sig.lesptr(i-tstp), nao_, nao_).cwiseProduct(ZMatrixConstMap(G.retptr(tstp-i), nao_, nao_).transpose()).sum());
   }
   for(int i=tstp; i<=top; i++) {
-    res1 -= I.gregory_weights(top-tstp+1, top-tstp+1, i-tstp) * ZMatrixConstMap(Sig.lesptr(tstp-i), nao_, nao_).cwiseProduct(ZMatrixConstMap(G.retptr(i-tstp), nao_, nao_).transpose()).sum();
+    res1 -= I.gregory_weights(tstp, i) * ZMatrixConstMap(Sig.lesptr(tstp-i), nao_, nao_).cwiseProduct(ZMatrixConstMap(G.retptr(i-tstp), nao_, nao_).transpose()).sum();
   }
 
   res1 *= dt;
@@ -90,7 +90,7 @@ void dyson::CTV1(cplx *ctv, const TTI_GREEN &A, const TTI_GREEN &Acc, const TTI_
 
   }
 }
-
+/*
 //DEPRECIATED
 // Does the integral C^{TV}_2[A,B](n,m) = \int_0^m d\tau A^{TV(n,\tau) B^M(tau-m)
 //           m<k                        = \sum_{j,l=0}^k d\tau R_{m,j,l} A^{TV}(n,l) s B^M(ntau-j)
@@ -222,7 +222,7 @@ void dyson::CTV3(const TTI_GREEN &A, const TTI_GREEN &B, int n, int m, double be
   
   resMap *= (beta/ntau_);
 }
-
+*/
 
 
 // This function calls CTV1,2,3 to do the convolutions necessary for the timestepping of the TV component

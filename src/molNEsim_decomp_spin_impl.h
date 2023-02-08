@@ -74,7 +74,7 @@ void DecompSpinSimulation<Repr>::do_boot() {
 
     // Solve G Equation of Motion
     err = Dyson.dyson_start(Gup, Sup, hmf.data(), p_MatSim_->mu()[0], beta_, dt_);
-    err = Dyson.dyson_start(Gdown, Sdown, hmf.data() + (nt_+1)*nao2, p_MatSim_->mu()[1], beta_, dt_);
+    err += Dyson.dyson_start(Gdown, Sdown, hmf.data() + (nt_+1)*nao2, p_MatSim_->mu()[1], beta_, dt_);
 
     std::cout<<"Bootstrapping iteration : "<<iter<<" | Error = "<<err<<std::endl;
     if(err<BootTol_){
@@ -252,7 +252,7 @@ void tti_DecompSpinSimulation<Repr>::do_boot() {
 
     // Solve G Equation of Motion
     err = Dyson.dyson_start(Gup, Sup, p_MatSim_->fock().data(), p_MatSim_->mu()[0], beta_, dt_);
-    err = Dyson.dyson_start(Gdown, Sdown, p_MatSim_->fock().data() + nao2, p_MatSim_->mu()[1], beta_, dt_);
+    err += Dyson.dyson_start(Gdown, Sdown, p_MatSim_->fock().data() + nao2, p_MatSim_->mu()[1], beta_, dt_);
 
     std::cout<<"Bootstrapping iteration : "<<iter<<" | Error = "<<err<<std::endl;
     if(err<BootTol_){

@@ -168,6 +168,7 @@ public:
 
   void solve_loop(int tstp, GREEN &Sigma, GREEN &G) const;
 
+  const DTensor<4> &Uijkl_exch() { return Uijkl_exch_; }
 }; // class molGF2SolverSpinDecomp
 
 

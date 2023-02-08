@@ -14,6 +14,7 @@ green_func::green_func(){
   ret_=0;
   tv_=0;
   mat_=0;
+  GMCT_ = DMatrix();
   ntau_=0;
   nt_=0;
   size1_=0;
@@ -51,6 +52,7 @@ green_func::green_func(int nt, int ntau, int size1, int sig){
     ret_=0;
     tv_=0;
   }
+  GMCT_ = DMatrix(ntau_+1 , (ntau_+1) * size1_ * size1_);
 }
 
 green_func::green_func(const green_func &g){
@@ -103,7 +105,41 @@ green_func& green_func::operator=(const green_func &g){
   memcpy(les_,g.les_,sizeof(cplx)*((nt_+1)*(nt_+2))/2*element_size_);
   memcpy(ret_,g.ret_,sizeof(cplx)*((nt_+1)*(nt_+2))/2*element_size_);
   memcpy(tv_,g.tv_,sizeof(cplx)*((nt_+1)*(ntau_+1))*element_size_);
+  GMCT_ = DMatrix(ntau_+1 , (ntau_+1) * size1_ * size1_);
   return *this;
+}
+
+void green_func::set_conv_tensor(const cpsitop::nonequilibrium::convolution &Convolution, double beta) {
+  int nao_ = size1_;
+  int es_ = nao_ * nao_;
+  Tensor<complex, 1> A_n_(ntau_+1);
+  Tensor<complex, 2> A_n2_(ntau_+1, ntau_+1);
+  Tensor<complex, 3> G_nij_(ntau_+1, nao_, nao_);
+  Tensor<complex, 4> T (ntau_+1, ntau_+1, nao_, nao_);
+  Tensor<complex, 4> T2(ntau_+1, ntau_+1, nao_, nao_);
+ 
+  ZMatrixMap(G_nij_.data(), ntau_+1, nao_*nao_) = DMatrixConstMap(Convolution.collocation().S_ni().data(), ntau_+1, ntau_+1) * ZMatrixMap(mat_, ntau_+1, nao_*nao_);
+  for(int i = 0; i <= ntau_; i++) {
+    ZMatrixMap(G_nij_.data() + i*es_, nao_, nao_) *= sig_ * pow(-1., i);
+  }
+  for(int i = 0; i < nao_; i++) {
+    for(int j = 0; j < nao_; j++) {
+      for(int l = 0; l <= ntau_; l++) {
+        A_n_(l) = G_nij_(l,j,i);
+      }
+      A_n2_ = cpsitop::legendre::spectral::convolution_matrix_impl_scalar(A_n_, +1.);
+      A_n2_ -=  cpsitop::legendre::spectral::convolution_matrix_impl_scalar(A_n_, -1.) * (double)sig_;
+      A_n2_.matrix() *= 0.5 * beta;
+      ZMatrixMap(T.data() + i*(ntau_+1)*(ntau_+1)*nao_ + j*(ntau_+1)*(ntau_+1), ntau_+1, ntau_+1)
+        = DMatrixConstMap(Convolution.collocation().L_in().data(), ntau_+1, ntau_+1)
+        * ZMatrixMap(A_n2_.data(), ntau_+1, ntau_+1)
+        * DMatrixConstMap(Convolution.collocation().S_ni().data(), ntau_+1, ntau_+1);
+    }
+  }
+  ZMatrixMap(T2.data(), (ntau_+1) * (ntau_+1), es_) = ZMatrixMap(T.data(), es_, (ntau_+1) * (ntau_+1)).transpose();
+  for(int i = 0; i <= ntau_; i++) {
+    DMatrixMap(GMCT_.data() + i * (ntau_+1) * es_, nao_, (ntau_+1)*nao_) = ZMatrixMap(T2.data() + i * (ntau_+1) * es_, (ntau_+1)*nao_, nao_).transpose().real();
+  }
 }
 
 //======================

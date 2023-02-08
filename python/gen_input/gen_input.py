@@ -43,7 +43,7 @@ def save(path):
 if __name__ == '__main__':
     mol = gto.M(
         atom = [['H', (0, 0, 0)],['H', (0,0,1.4)] ],
-        basis = 'cc-pvdz',
+        basis = 'sto-6g',
         unit = 'A',
         verbose = 1,
         )
@@ -92,5 +92,5 @@ if __name__ == '__main__':
     u = np.einsum('Ll,ikjL->ikjl', xinv.conj().T, u)
     uchem = umatrix_symmetrize(u)
 
-    save("./H2pvdz1.4A.h5")
+    save("./H2sto1.4A.h5")
 
