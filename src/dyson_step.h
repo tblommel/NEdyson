@@ -203,7 +203,7 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
   // TIMING
 
   intstart = std::chrono::system_clock::now();
-//  Cles2_tstp(Sig,Sig,G,G,n,dt,Q.data());
+  Cles2_tstp(Sig,Sig,G,G,n,dt,Q.data());
   intend = std::chrono::system_clock::now();
   int1 = intend-intstart;
   //TIMING
@@ -212,7 +212,6 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
   out2 << int1.count() << "\n" ;
   out2.close();
   // TIMING
-
 
   // Set up the kxk linear problem MX=Q
   for(m=1; m<=k_; m++) {
@@ -249,24 +248,9 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
     }
   }
 
-  // Solve Mx=Q
-  std::cout << "################## MMap #####################" << std::endl;
-  for(int i = 0; i < nao_*k_; i++) {
-    for(int j = 0; j < nao_*k_; j++) {
-      std::cout << MMap(i,j) << std::endl;
-    }
-  }
-  std::cout << "################## QMap #####################" << std::endl;
-  for(int i = 0; i < nao_*k_; i++) {
-    for(int j = 0; j < nao_; j++) {
-      std::cout << ZMatrixMap(Q.data()+es_, k_*nao_, nao_)(i,j) << std::endl;
-    }
-  }
-  
   Eigen::FullPivLU<ZMatrix> lu(MMap);
   ZMatrixMap(X.data() + es_, k_*nao_, nao_).noalias() = lu.solve(ZMatrixMap(Q.data()+es_, k_*nao_, nao_));
   ZMatrixMap(X.data(), nao_, nao_).noalias() = -ZMatrixMap(G.tvptr(n,0), nao_, nao_).adjoint();
-
 
   // Timestepping
   ZMatrixMap MMapSmall = ZMatrixMap(M.data(), nao_, nao_);
@@ -275,11 +259,6 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
 
     // Set up M
     MMapSmall.noalias() = -ZMatrixConstMap(hmf+m*es_, nao_, nao_) + (cplxi/dt*I.bd_weights(0) + mu)*IMap - dt*I.omega(0)*ZMatrixMap(Sig.retptr(m,m), nao_, nao_);
-
-    // Derivatives into Q
-    for(l=1; l<=k_+1; l++) {
-      QMapBlock.noalias() -= cplxi/dt*I.bd_weights(l) * ZMatrixMap(X.data() + (m-l)*es_, nao_, nao_);
-    }
 
     // Rest of the retles integral
     intstart = std::chrono::system_clock::now();
@@ -290,7 +269,11 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
     intend = std::chrono::system_clock::now();
     int3 += intend-intstart;
 
-    // Solve MX=Q
+    // Derivatives into Q
+    for(l=1; l<=k_+1; l++) {
+      QMapBlock.noalias() -= cplxi/dt*I.bd_weights(l) * ZMatrixMap(X.data() + (m-l)*es_, nao_, nao_);
+    }
+
     Eigen::FullPivLU<ZMatrix> lu2(MMapSmall);
     ZMatrixMap(X.data()+m*es_, nao_, nao_) = lu2.solve(ZMatrixMap(Q.data() + m*es_, nao_, nao_));
   }
@@ -326,8 +309,8 @@ void dyson::dyson_step(int n, GREEN &G, const GREEN &Sig, const cplx *hmf, doubl
   double err = 0;
 
   if(!hfbool_) {
-//    err += dyson_step_ret(n, G, Sig, hmf, mu, dt);
-//    err += dyson_step_tv(n, G, Sig, hmf, mu, beta, dt);
+    err += dyson_step_ret(n, G, Sig, hmf, mu, dt);
+    err += dyson_step_tv(n, G, Sig, hmf, mu, beta, dt);
     err += dyson_step_les(n, G, Sig, hmf, mu, beta, dt);
   }
   else {
