@@ -145,6 +145,8 @@ void Simulation<Repr>::save(h5::File &file, const std::string &path) {
   h5e::dump(file, path + "/hmfM", p_MatSim_->fock());
 
   h5e::dump(file, path + "/U", p_NEgf2_->Uijkl());
+  h5e::dump(file, path + "/U_flat", DColVectorConstMap(p_NEgf2_->Uijkl().data(), nao_*nao_*nao_*nao_));
+  h5e::dump(file, path + "/U_ex_flat", DColVectorConstMap(dynamic_cast<gfmol::GF2Solver *>(p_MatSim_->p_sigma().get())->Vijkl_exch().data(), nao_*nao_*nao_*nao_));
 
 //  ZTensor<3> coeff(ntau_+1, nao_, nao_);
 //  Dyson.Convolution().collocation().to_spectral(coeff, ZTensorView<3>(G.matptr(0), ntau_+1, nao_, nao_));
