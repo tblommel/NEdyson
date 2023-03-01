@@ -89,7 +89,7 @@ void Simulation<Repr>::do_tstp(int tstp) {
     // DEBUG  RAMP
     ZMatrix A = ZMatrix::Zero(2,2);
     A(0,0) = 1;
-    ZMatrixMap(hmf.data() + tstp*nao_*nao_, nao_, nao_) += 1 * (tanh(10*(tstp*dt_-1))+1) * A + 1 * (tanh(10*(tstp*dt_-3))+1) * A;
+//    ZMatrixMap(hmf.data() + tstp*nao_*nao_, nao_, nao_) += 1 * (tanh(10*(tstp*dt_-1))+1) * A + 1 * (tanh(10*(tstp*dt_-3))+1) * A;
     // END DEBUG
 
     // HF Contractions
