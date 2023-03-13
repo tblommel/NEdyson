@@ -12,7 +12,7 @@ SimulationBase::SimulationBase(const gfmol::HartreeFock &hf,
                                  nao_(hf.nao()), 
                                  eKin_(p.nt+1), 
                                  ePot_(p.nt+1),
-                                 Dyson(p.nt, p.ntau, nao_, p.k, p.hfbool),
+                                 Dyson(p.nt, p.ntau, nao_, p.k, p.gfmolmode),
                                  efield_(3, p.nt+1),
                                  Efield_(3, p.nt+1),
                                  dfield_(3, p.nt+1),
@@ -22,10 +22,10 @@ SimulationBase::SimulationBase(const gfmol::HartreeFock &hf,
   dt_ = p.dt;
   k_ = p.k;
   bootstrap_converged = false;
-  hfbool_ = p.hfbool;
   boolPumpProbe_ = p.boolPumpProbe;
   lPumpProbe_ = p.lPumpProbe;
   nPumpProbe_ = p.nPumpProbe;
+  mode_ = p.gfmolmode;
 
   if(boolPumpProbe_) {
     h5e::File ppinp(p.PumpProbe_file);
@@ -72,7 +72,12 @@ void SimulationBase::save_base(h5::File &file, const std::string &path) const {
   h5e::dump(file, path + "/solve/params/CorrSteps", CorrSteps_);
   
   h5e::dump(file, path + "/solve/params/boot_conv", (int)bootstrap_converged);
-  h5e::dump(file, path + "/solve/params/hf", (int)hfbool_);
+  if(mode_ == gfmol::Mode::GF2) {
+    h5e::dump(file, path + "/solve/params/mode", std::string("GF2"));
+  }
+  if(mode_ == gfmol::Mode::HF) {
+    h5e::dump(file, path + "/solve/params/mode", std::string("HF"));
+  }
 }
 
 void SimulationBase::save_PP(h5::File &file, const std::string &path) const {

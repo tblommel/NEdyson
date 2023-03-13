@@ -254,7 +254,7 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
 
   // Timestepping
   ZMatrixMap MMapSmall = ZMatrixMap(M.data(), nao_, nao_);
-  for(m=k_+1; m<=n; m++) {
+  for(m=k_+1; m<n; m++) {
     auto QMapBlock = ZMatrixMap(Q.data() + m*es_, nao_, nao_);
 
     // Set up M
@@ -278,6 +278,37 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
     ZMatrixMap(X.data()+m*es_, nao_, nao_) = lu2.solve(ZMatrixMap(Q.data() + m*es_, nao_, nao_));
   }
 
+  // Diagonal Component
+  // Extrapolate
+  memset(X.data()+n*es_, 0, nao_*nao_*sizeof(cplx));
+  for(int jj = 0; jj <= k_; jj++) {
+    ZMatrixMap(X.data()+n*es_, nao_, nao_) += I.ex_weights(jj) * ZMatrixMap(G.lesptr(n-jj-1,n-jj-1), nao_, nao_);
+  }
+
+  auto QMapBlock = ZMatrixMap(Q.data() + n*es_, nao_, nao_);
+
+  // do last integral
+  for(l = 0; l <= n; l++) {
+    QMapBlock.noalias() += dt * I.gregory_weights(n,l) * ZMatrixMap(Sig.retptr(n,l), nao_, nao_) * ZMatrixMap(X.data()+l*es_, nao_, nao_);
+  }
+
+  // add in hamiltonian term
+  QMapBlock.noalias() += (ZMatrixConstMap(hmf+n*es_, nao_, nao_) - mu*IMap) * ZMatrixMap(X.data()+n*es_, nao_, nao_);
+
+  // for diagonal timestepping
+  ZMatrixMap(Q.data(), nao_, nao_) = -cplxi * (QMapBlock + QMapBlock.adjoint());
+
+  // add in derivative term
+  for(l=1; l<=k_+1; l++) {
+    ZMatrixMap(Q.data(), nao_, nao_) -= 1./dt * I.bd_weights(l) * ZMatrixMap(G.lesptr(n-l,n-l), nao_, nao_);
+  }
+  
+  MMapSmall.noalias() = 1./dt*I.bd_weights(0) * IMap;
+
+  Eigen::FullPivLU<ZMatrix> lu2(MMapSmall);
+  ZMatrixMap(X.data()+n*es_, nao_, nao_) = lu2.solve(ZMatrixMap(Q.data(), nao_, nao_));
+
+
   // Write elements into G
   for(l=0; l<=n; l++) {
     err += (ZColVectorMap(G.lesptr(l,n), es_) - ZColVectorMap(X.data() + l*es_, es_)).norm();
@@ -295,20 +326,20 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
 
 
 void dyson::dyson_step(int n, GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double beta, double dt) const {
-  assert(G.size1() == Sig.size1());
   assert(G.size1() == nao_);
-  assert(G.nt() == Sig.nt());
   assert(G.nt() == nt_);
-  assert(G.ntau() == Sig.ntau());
   assert(G.ntau() == ntau_);
   assert(G.nt() > k_);
-  assert(G.sig() == Sig.sig());
   assert(n > k_);
   assert(n <= G.nt());
 
   double err = 0;
 
-  if(!hfbool_) {
+  if(mode_ == gfmol::Mode::GF2) {
+    assert(G.nt() == Sig.nt());
+    assert(G.size1() == Sig.size1());
+    assert(G.ntau() == Sig.ntau());
+    assert(G.sig() == Sig.sig());
     err += dyson_step_ret(n, G, Sig, hmf, mu, dt);
     err += dyson_step_tv(n, G, Sig, hmf, mu, beta, dt);
     err += dyson_step_les(n, G, Sig, hmf, mu, beta, dt);

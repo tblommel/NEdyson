@@ -4,10 +4,12 @@
 namespace NEdyson {
 
 double dyson::dyson_start_ret_hf(GREEN &G, const cplx *hmf, double mu, double dt) const {
-  // Counters
-  int m, l, n, i;
 
   double err = 0;
+
+/*
+  // Counters
+  int m, l, n, i;
   cplx ncplxi = cplx(0, -1);
 
   ZMatrixMap QMap = ZMatrixMap(Q.data(), nao_*k_, nao_);
@@ -61,7 +63,20 @@ double dyson::dyson_start_ret_hf(GREEN &G, const cplx *hmf, double mu, double dt
       err += (ZColVectorMap(G.retptr(n,l), es_) - ZColVectorMap(G.retptr(n-l,0), es_)).norm();
       ZMatrixMap(G.retptr(n,l), nao_, nao_) = ZMatrixMap(G.retptr(n-l,0), nao_, nao_);
     }
+  }*/
+
+  for(int n = 0; n <= k_; n++) {
+    ZMatrixMap GR = ZMatrixMap(Q.data(), nao_, nao_);
+    GR = G.sig() * ZMatrixMap(G.tvptr(n, G.ntau()), nao_, nao_) - ZMatrixMap(G.tvptr(n,0), nao_, nao_);
+    if(n==0) GR = cplx(0.,-1.) * ZMatrixMap(iden.data(), nao_, nao_);
+
+    for(int l = 0; l <= k_-n; l++) {
+      ZMatrixMap retMap = ZMatrixMap(G.retptr(n+l,l), nao_, nao_);
+      err += (GR - retMap).lpNorm<2>();
+      retMap = GR;
+    }
   }
+
 
   return err;
 }

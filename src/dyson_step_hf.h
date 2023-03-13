@@ -162,7 +162,7 @@ double dyson::dyson_step_les_hf(int n, GREEN &G, const cplx *hmf, double mu, dou
 
   // Timestepping
   ZMatrixMap MMapSmall = ZMatrixMap(M.data(), nao_, nao_);
-  for(m=k_+1; m<=n; m++) {
+  for(m=k_+1; m<n; m++) {
     auto QMapBlock = ZMatrixMap(Q.data() + m*es_, nao_, nao_);
 
     // Set up M
@@ -177,6 +177,30 @@ double dyson::dyson_step_les_hf(int n, GREEN &G, const cplx *hmf, double mu, dou
     Eigen::FullPivLU<ZMatrix> lu2(MMapSmall);
     ZMatrixMap(X.data()+m*es_, nao_, nao_) = lu2.solve(ZMatrixMap(Q.data() + m*es_, nao_, nao_));
   }
+  
+  // Diagonal Component
+  // Extrapolate
+  memset(X.data()+n*es_, 0, nao_*nao_*sizeof(cplx));
+  for(int jj = 0; jj <= k_; jj++) {
+    ZMatrixMap(X.data()+n*es_, nao_, nao_) += I.ex_weights(jj) * ZMatrixMap(G.lesptr(n-jj-1,n-jj-1), nao_, nao_);
+  } 
+  auto QMapBlock = ZMatrixMap(Q.data() + n*es_, nao_, nao_);
+  QMapBlock = ZMatrix::Zero(nao_, nao_);
+  // add in hamiltonian term
+  QMapBlock.noalias() -= cplxi * (ZMatrixConstMap(hmf+n*es_, nao_, nao_) - mu*IMap) * ZMatrixMap(X.data()+n*es_, nao_, nao_);
+  // for diagonal timestepping
+  ZMatrixMap(Q.data(), nao_, nao_) = QMapBlock - QMapBlock.adjoint();
+  // add in derivative term
+  for(l=1; l<=k_+1; l++) {
+    ZMatrixMap(Q.data(), nao_, nao_) -= 1./dt * I.bd_weights(l) * ZMatrixMap(G.lesptr(n-l,n-l), nao_, nao_);
+  }
+
+  MMapSmall.noalias() = 1./dt*I.bd_weights(0) * IMap;
+
+  Eigen::FullPivLU<ZMatrix> lu2(MMapSmall);
+  ZMatrixMap(X.data()+n*es_, nao_, nao_) = lu2.solve(ZMatrixMap(Q.data(), nao_, nao_));
+
+
 
   // Write elements into G
   for(l=1; l<=n; l++) {

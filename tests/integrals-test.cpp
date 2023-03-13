@@ -13,7 +13,7 @@ TEST_CASE("Energy Integral"){
   // Objects
   GREEN S = GREEN(Nt, Ntau, Nao, -1);
   GREEN G = GREEN(Nt, Ntau, Nao, -1);
-  DYSON Dyson(Nt, Ntau, Nao, 5, false);
+  DYSON Dyson(Nt, Ntau, Nao, 5, gfmol::Mode::GF2);
 
   set_up_G_herm(Dyson, G, S, dt, beta);
 
@@ -52,7 +52,7 @@ TEST_CASE("CTV1"){
   GREEN G = GREEN(Nt, Ntau, Nao, -1);
   GREEN Scc = GREEN(Nt, Ntau, Nao, -1);
   GREEN Gcc = GREEN(Nt, Ntau, Nao, -1);
-  DYSON Dyson(Nt, Ntau, Nao, 5, false);
+  DYSON Dyson(Nt, Ntau, Nao, 5, gfmol::Mode::GF2);
 
   ZRowVector res = ZRowVector((Ntau+1) * Nao * Nao);
 
@@ -95,7 +95,7 @@ TEST_CASE("Ctv_tstp"){
   GREEN G = GREEN(Nt, Ntau, Nao, -1);
   GREEN Scc = GREEN(Nt, Ntau, Nao, -1);
   GREEN Gcc = GREEN(Nt, Ntau, Nao, -1);
-  DYSON Dyson(Nt, Ntau, Nao, 5, false);
+  DYSON Dyson(Nt, Ntau, Nao, 5, gfmol::Mode::GF2);
  
   // Values we are comparing to are exact solutions from functional forms
   // given in the set_up_G function
@@ -134,7 +134,7 @@ TEST_CASE("Cles2_tstp"){
   GREEN G = GREEN(Nt, Ntau, Nao, -1);
   GREEN Scc = GREEN(Nt, Ntau, Nao, -1);
   GREEN Gcc = GREEN(Nt, Ntau, Nao, -1);
-  DYSON Dyson(Nt, Ntau, Nao, 5, false);
+  DYSON Dyson(Nt, Ntau, Nao, 5, gfmol::Mode::GF2);
 
   set_up_G(Dyson, G, Gcc, S, Scc, dt, beta);
 
@@ -178,7 +178,7 @@ TEST_CASE("Cles3_tstp"){
   GREEN G = GREEN(Nt, Ntau, Nao, -1);
   GREEN Scc = GREEN(Nt, Ntau, Nao, -1);
   GREEN Gcc = GREEN(Nt, Ntau, Nao, -1);
-  DYSON Dyson(Nt, Ntau, Nao, 5, false);
+  DYSON Dyson(Nt, Ntau, Nao, 5, gfmol::Mode::GF2);
 
   set_up_G(Dyson, G, Gcc, S, Scc, dt, beta);
 
@@ -220,7 +220,7 @@ TEST_CASE("TTI Energy Integral"){
   // Objects
   TTI_GREEN S = TTI_GREEN(Nt, Ntau, Nao, -1);
   TTI_GREEN G = TTI_GREEN(Nt, Ntau, Nao, -1);
-  DYSON Dyson(Nt, Ntau, Nao, 5, false);
+  DYSON Dyson(Nt, Ntau, Nao, 5, gfmol::Mode::GF2);
 
   set_up_G_herm(Dyson, G, S, dt, beta);
 
@@ -258,7 +258,7 @@ TEST_CASE("tti_CTV1"){
   TTI_GREEN G = TTI_GREEN(Nt, Ntau, Nao, -1);
   TTI_GREEN Scc = TTI_GREEN(Nt, Ntau, Nao, -1);
   TTI_GREEN Gcc = TTI_GREEN(Nt, Ntau, Nao, -1);
-  DYSON Dyson(Nt, Ntau, Nao, 5, false);
+  DYSON Dyson(Nt, Ntau, Nao, 5, gfmol::Mode::GF2);
 
   ZRowVector res = ZRowVector((Ntau+1) * Nao * Nao);
 
@@ -301,7 +301,7 @@ TEST_CASE("tti_Ctv_tstp"){
   TTI_GREEN G = TTI_GREEN(Nt, Ntau, Nao, -1);
   TTI_GREEN Scc = TTI_GREEN(Nt, Ntau, Nao, -1);
   TTI_GREEN Gcc = TTI_GREEN(Nt, Ntau, Nao, -1);
-  DYSON Dyson(Nt, Ntau, Nao, 5, false);
+  DYSON Dyson(Nt, Ntau, Nao, 5, gfmol::Mode::GF2);
  
   // Values we are comparing to are exact solutions from functional forms
   // given in the set_up_G function

@@ -200,11 +200,7 @@ cplx *green_func::matptr(int i) const {
 //INPUT OUTPUT
 //======================
 void green_func::print_to_file_mat(h5e::File &File, std::string path) const {
-  std::vector<size_t> dims(1);
-  dims[0] = (ntau_+1) * element_size_;
-  h5::DataSet dataset = File.createDataSet<cplx>(path + "/GM", h5::DataSpace(dims));
-  dataset.write(mat_);
-  File.flush();
+  h5e::dump(File, path + "/M", ZColVectorMap(mat_, (ntau_+1) * element_size_));
 }
 
 void green_func::print_to_file_ret(h5e::File &File, std::string path) const {

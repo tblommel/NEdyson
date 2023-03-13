@@ -44,18 +44,19 @@ void dyson::dyson_step_les(int n, TTI_GREEN &G, const TTI_GREEN &Sig, const doub
 }
 
 void dyson::dyson_step(int n, TTI_GREEN &G, const TTI_GREEN &Sig, const double *hmf, double mu, double beta, double dt) const {
-  assert(G.size1() == Sig.size1());
   assert(G.size1() == nao_);
-  assert(G.nt() == Sig.nt());
   assert(G.nt() == nt_);
-  assert(G.ntau() == Sig.ntau());
   assert(G.ntau() == ntau_);
   assert(G.nt() > k_);
-  assert(G.sig() == Sig.sig());
   assert(n > k_);
   assert(n <= G.nt());
 
-  if(!hfbool_) {
+  if(mode_ == gfmol::Mode::GF2) {
+    assert(G.sig() == Sig.sig());
+    assert(G.ntau() == Sig.ntau());
+    assert(G.nt() == Sig.nt());
+    assert(G.size1() == Sig.size1());
+
     dyson_step_tv(n, G, Sig, hmf, mu, beta, dt);
     dyson_step_ret(n, G, Sig, hmf, mu, dt);
     dyson_step_les(n, G, Sig, hmf, mu, beta, dt);

@@ -51,6 +51,18 @@ public:
         Viaj_(Viaj),
         Zijkl(nao_, nao_, nao_, nao_) {};
 
+  molGF2SolverSpinDecomp(const DTensor<3> &Vija)
+      : molHFSolverSpinDecomp(Vija),
+        X1sija(0,0,0,0),
+        X2sija(0,0,0,0),
+        X3sija(0,0,0,0),
+        Y1sija(0,0,0,0),
+        Y2sija(0,0,0,0),
+        P1ab(0,0),
+        P2ab(0,0),
+        Viaj_(Vija),
+        Zijkl(0,0,0,0) {};
+
   
   void solve(int tstp, std::vector<std::reference_wrapper<GREEN>> &Sigma, std::vector<std::reference_wrapper<GREEN>> &G) const;
 
@@ -98,6 +110,17 @@ public:
         Viaj_(Viaj),
         Zijkl(nao_, nao_, nao_, nao_) {};
 
+  molGF2SolverDecomp(const DTensor<3> &Vija)
+      : molHFSolverDecomp(Vija),
+        X1ija(0,0,0),
+        X2ija(0,0,0),
+        X3ija(0,0,0),
+        Y1ija(0,0,0),
+        Y2ija(0,0,0),
+        P1ab(0,0),
+        P2ab(0,0),
+        Viaj_(Vija),
+        Zijkl(0,0,0,0) {};
   
   void solve(int tstp, GREEN &Sigma, GREEN &G) const;
 
@@ -133,6 +156,14 @@ public:
         A1_aaa(nao_, nao_, nao_),
         Uijkl_exch_(U_exch) {};
 
+  molGF2SolverSpin(const DTensor<4> &U_int)
+      : molHFSolverSpin(U_int),
+        C1_aaa(0,0,0),
+        C2_aaa(0,0,0),
+        B1_aaa(0,0,0),
+        B2_aaa(0,0,0),
+        A1_aaa(0,0,0),
+        Uijkl_exch_(U_int) {};
   
   void solve(int tstp, std::vector<std::reference_wrapper<GREEN>> &Sigma, std::vector<std::reference_wrapper<GREEN>> &G) const;
 
@@ -163,6 +194,12 @@ public:
         A1_aaa(nao_, nao_, nao_),
         Uijkl_exch_(U_exch) {};
 
+  molGF2Solver(const DTensor<4> &U_int)
+      : molHFSolver(U_int),
+        B1_aaa(0,0,0),
+        B2_aaa(0,0,0),
+        A1_aaa(0,0,0),
+        Uijkl_exch_(U_int) {};
   
   void solve(int tstp, GREEN &Sigma, GREEN &G) const;
 
@@ -219,6 +256,19 @@ public:
         Viaj_(Viaj),
         Zijkl(nao_, nao_, nao_, nao_) {};
 
+  tti_molGF2SolverSpinDecomp(const DTensor<3> &Vija)
+      : nao_(Vija.shape()[0]),
+        nalpha_(Vija.shape()[2]),
+        Vija_(Vija),
+        X1sija(0,0,0,0),
+        X2sija(0,0,0,0),
+        X3sija(0,0,0,0),
+        Y1sija(0,0,0,0),
+        Y2sija(0,0,0,0),
+        P1ab(0,0),
+        P2ab(0,0),
+        Viaj_(Vija),
+        Zijkl(0,0,0,0) {};
   
   void solve(int tstp, std::vector<std::reference_wrapper<TTI_GREEN>> &Sigma, std::vector<std::reference_wrapper<TTI_GREEN>> &G) const;
 
@@ -274,6 +324,19 @@ public:
         Viaj_(Viaj),
         Zijkl(nao_, nao_, nao_, nao_) {};
 
+  tti_molGF2SolverDecomp(const DTensor<3> &Vija)
+      : nao_(Vija.shape()[0]),
+        nalpha_(Vija.shape()[2]),
+        Vija_(Vija),
+        X1ija(0,0,0),
+        X2ija(0,0,0),
+        X3ija(0,0,0),
+        Y1ija(0,0,0),
+        Y2ija(0,0,0),
+        P1ab(0,0),
+        P2ab(0,0),
+        Viaj_(Vija),
+        Zijkl(0,0,0,0) {};
   
   void solve(int tstp, TTI_GREEN &Sigma, TTI_GREEN &G) const;
 
@@ -317,6 +380,15 @@ public:
         A1_aaa(nao_, nao_, nao_),
         Uijkl_exch_(Uijkl_exch) {};
 
+  tti_molGF2SolverSpin(const DTensor<4> &U_int)
+      : nao_(U_int.shape()[0]),
+        Uijkl_(U_int),
+        C1_aaa(0,0,0),
+        C2_aaa(0,0,0),
+        B1_aaa(0,0,0),
+        B2_aaa(0,0,0),
+        A1_aaa(0,0,0),
+        Uijkl_exch_(U_int) {};
   
   void solve(int tstp, std::vector<std::reference_wrapper<TTI_GREEN>> &Sigma, std::vector<std::reference_wrapper<TTI_GREEN>> &G) const;
 
@@ -355,6 +427,13 @@ public:
         A1_aaa(nao_, nao_, nao_),
         Uijkl_exch_(u_exch) {};
 
+  tti_molGF2Solver(const DTensor<4> &U_int)
+      : nao_(U_int.shape()[0]),
+        Uijkl_(U_int),
+        B1_aaa(0,0,0),
+        B2_aaa(0,0,0),
+        A1_aaa(0,0,0),
+        Uijkl_exch_(U_int) {};
   
   void solve(int tstp, TTI_GREEN &Sigma, TTI_GREEN &G) const;
 

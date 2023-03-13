@@ -18,7 +18,7 @@ target_compile_definitions(libNEdyson PUBLIC
 target_link_libraries(libNEdyson PUBLIC
   alps::alps-gf
   Eigen3::Eigen
-  HighFive
+#  HighFive
   libgfmol
   cpsitop
   OpenMP::OpenMP_CXX

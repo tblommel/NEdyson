@@ -33,10 +33,9 @@ protected:
   int BootMax_;
   double BootTol_;
   int CorrSteps_;
+  gfmol::Mode mode_;
 
   bool bootstrap_converged;
-  bool hfbool_;
-
   bool boolPumpProbe_;
   double lPumpProbe_;
   double nPumpProbe_;

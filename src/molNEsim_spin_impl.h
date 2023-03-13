@@ -20,15 +20,24 @@ SpinSimulation<Repr>::SpinSimulation(const gfmol::HartreeFock &hf,
                                  h0(hf.hcore()), 
                                  rho(2, nao_, nao_)
 {
+  p_MatSim_ = std::unique_ptr<gfmol::SpinSimulation<Repr> >(new gfmol::SpinSimulation<Repr>(hf, frepr, brepr, p.gfmolmode, 0.));
+  beta_ = p_MatSim_->frepr().beta();
+
   switch (p.gfmolmode) {
+    case gfmol::Mode::HF:
+      p_NEgf2_ = std::unique_ptr<molGF2SolverSpin>(new molGF2SolverSpin(hf.uchem() ));
+      Sup = GREEN(0, 0, 1, -1);
+      Sdown = GREEN(0, 0, 1, -1);
+      break;
     case gfmol::Mode::GF2:
-      p_MatSim_ = std::unique_ptr<gfmol::SpinSimulation<Repr> >(new gfmol::SpinSimulation<Repr>(hf, frepr, brepr, p.gfmolmode, 0., p.hfbool));
-      beta_ = p_MatSim_->frepr().beta();
       p_NEgf2_ = std::unique_ptr<molGF2SolverSpin>(new molGF2SolverSpin(hf.uchem(), dynamic_cast<gfmol::GF2SolverSpin *>(p_MatSim_->p_sigma().get())->Vijkl_exch() ));
+      Sup = GREEN(p.nt, p.ntau, nao_, -1);
+      Sdown = GREEN(p.nt, p.ntau, nao_, -1);
+      break;
+    default:
+      throw std::runtime_error("[Simulation] Unknown mode.");
   }
 
-  Sup = GREEN(p.nt, p.ntau, nao_, -1);
-  Sdown = GREEN(p.nt, p.ntau, nao_, -1);
   Gup = GREEN(p.nt, p.ntau, nao_, -1);
   Gdown = GREEN(p.nt, p.ntau, nao_, -1);
 
@@ -69,7 +78,7 @@ void SpinSimulation<Repr>::do_boot() {
       ZMatrixMap(hmf.data() + tstp*nao2, nao_, nao_) = DMatrixConstMap(p_MatSim_->fock().data(),nao_,nao_);
       ZMatrixMap(hmf.data() + (nt_+1)*nao2 + tstp*nao2, nao_, nao_) = DMatrixConstMap(p_MatSim_->fock().data() + nao2, nao_, nao_);
 
-      if(!hfbool_)  p_NEgf2_->solve(tstp, Sigma, G);
+      if(mode_ == gfmol::Mode::GF2)  p_NEgf2_->solve(tstp, Sigma, G);
     }
 
     // Solve G Equation of Motion
@@ -120,7 +129,7 @@ void SpinSimulation<Repr>::do_tstp(int tstp) {
     ZMatrixMap(hmf.data() + (nt_+1)*nao2 + tstp*nao2, nao_, nao_) = DMatrixConstMap(h0.data(),nao_,nao_);
 
     p_NEgf2_->solve_HF(tstp, hmf, rho);
-    if(!hfbool_) p_NEgf2_->solve(tstp, Sigma, G);
+    if(mode_ == gfmol::Mode::GF2) p_NEgf2_->solve(tstp, Sigma, G);
 
     if(boolPumpProbe_) {
       Dyson.dipole_field(tstp, dfield_, Gup, Gdown, dipole_, lPumpProbe_, nPumpProbe_, dt_);
@@ -207,15 +216,24 @@ tti_SpinSimulation<Repr>::tti_SpinSimulation(const gfmol::HartreeFock &hf,
                                  SimulationBase(hf, p),
                                  h0(hf.hcore())
 {
+  p_MatSim_ = std::unique_ptr<gfmol::SpinSimulation<Repr> >(new gfmol::SpinSimulation<Repr>(hf, frepr, brepr, p.gfmolmode, 0.));
+  beta_ = p_MatSim_->frepr().beta();
+
   switch (p.gfmolmode) {
+    case gfmol::Mode::HF:
+      p_NEgf2_ = std::unique_ptr<tti_molGF2SolverSpin>(new tti_molGF2SolverSpin(hf.uchem() ));
+      Sup = TTI_GREEN(0, 0, 1, -1);
+      Sdown = TTI_GREEN(0, 0, 1, -1);
+      break;
     case gfmol::Mode::GF2:
-      p_MatSim_ = std::unique_ptr<gfmol::SpinSimulation<Repr> >(new gfmol::SpinSimulation<Repr>(hf, frepr, brepr, p.gfmolmode, 0., p.hfbool));
-      beta_ = p_MatSim_->frepr().beta();
       p_NEgf2_ = std::unique_ptr<tti_molGF2SolverSpin>(new tti_molGF2SolverSpin(hf.uchem(), dynamic_cast<gfmol::GF2SolverSpin *>(p_MatSim_->p_sigma().get())->Vijkl_exch() ));
+      Sup = TTI_GREEN(p.nt, p.ntau, nao_, -1);
+      Sdown = TTI_GREEN(p.nt, p.ntau, nao_, -1);
+      break;
+    default:
+      throw std::runtime_error("[Simulation] Unknown mode.");
   }
 
-  Sup = TTI_GREEN(p.nt, p.ntau, nao_, -1);
-  Sdown = TTI_GREEN(p.nt, p.ntau, nao_, -1);
   Gup = TTI_GREEN(p.nt, p.ntau, nao_, -1);
   Gdown = TTI_GREEN(p.nt, p.ntau, nao_, -1);
 
@@ -272,7 +290,7 @@ void tti_SpinSimulation<Repr>::do_boot() {
 
     // Update mean field & self energy
     for(int tstp = 0; tstp <= k_; tstp++){
-      if(!hfbool_) p_NEgf2_->solve(tstp, Sigma, G);
+      if(mode_ == gfmol::Mode::GF2) p_NEgf2_->solve(tstp, Sigma, G);
     }
 
     // Solve G Equation of Motion
@@ -297,7 +315,7 @@ void tti_SpinSimulation<Repr>::do_tstp(int tstp) {
 
   // Corrector
   for(int iter = 0; iter < CorrSteps_; iter++) {
-    if(!hfbool_) p_NEgf2_->solve(tstp, Sigma, G);
+    if(mode_ == gfmol::Mode::GF2) p_NEgf2_->solve(tstp, Sigma, G);
 
     Dyson.dyson_step(tstp, Gup, Sup, p_MatSim_->fock().data(), p_MatSim_->mu()[0], beta_, dt_);
     Dyson.dyson_step(tstp, Gdown, Sdown, p_MatSim_->fock().data() + nao2, p_MatSim_->mu()[1], beta_, dt_);

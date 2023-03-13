@@ -14,7 +14,6 @@ namespace NEdyson {
 
 struct Params {
   std::string mode;
-  bool hfbool;
   bool tti;
   bool unrestricted;
   bool decomposed;
@@ -50,7 +49,7 @@ struct Params {
 
   void validate() const
   {
-    if (mode != "GW" && mode != "GF2")
+    if (mode != "HF" && mode != "GF2")
       throw std::runtime_error("parameter mode: invalid mode " + mode);
 
     if (repr != "cheb" && repr != "ir")
@@ -98,7 +97,6 @@ inline std::ostream &operator<<(std::ostream &os, const Params &p)
 {
   os << std::boolalpha;
   os << "Parameters:" << std::endl;
-  os << "    hfbool:          " << p.hfbool <<std::endl;
   os << "    tti:             " << p.tti <<std::endl;
   os << "    mode:            " << p.mode << std::endl;
   os << "    unrestricted:    " << p.unrestricted << std::endl;
@@ -150,8 +148,7 @@ inline Params parse_args(const int argc, char *const *const argv)
   args::Positional<std::string> inifile(parser, "inifile", "The parameter file");
 
   // Argument list
-  args::ValueFlag<std::string> mode(parser, "mode", "GF2 or GW", {"mode"}, "GF2");
-  args::Flag hfbool(parser, "hfbool", "just do hartree fock calculation", {"hfbool"});
+  args::ValueFlag<std::string> mode(parser, "mode", "GF2 or HF", {"mode"}, "GF2");
   args::Flag tti(parser, "tti", "use time translationally invariant functions if set", {"tti"});
   args::Flag unrestricted(parser, "unrestricted", "use unrestricted spin if set", {"unrestricted"});
   args::Flag decomposed(parser, "decomposed", "use unrestricted spin if set", {"decomposed"});
@@ -197,7 +194,6 @@ inline Params parse_args(const int argc, char *const *const argv)
   param_file.Load(inifile.Get(), true);
 
   Params p{extract_value(param_file, mode),
-           extract_value(param_file, hfbool),
            extract_value(param_file, tti),
            extract_value(param_file, unrestricted),
            extract_value(param_file, decomposed),
@@ -229,8 +225,8 @@ inline Params parse_args(const int argc, char *const *const argv)
 
   if (p.mode == "GF2")
     p.gfmolmode = gfmol::Mode::GF2;
-  else if (p.mode == "GW")
-    throw std::runtime_error("GW solver not implemented");
+  else if (p.mode == "HF")
+    p.gfmolmode = gfmol::Mode::HF;
 
   try {
     p.validate();
