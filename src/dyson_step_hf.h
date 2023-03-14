@@ -183,13 +183,16 @@ double dyson::dyson_step_les_hf(int n, GREEN &G, const cplx *hmf, double mu, dou
   memset(X.data()+n*es_, 0, nao_*nao_*sizeof(cplx));
   for(int jj = 0; jj <= k_; jj++) {
     ZMatrixMap(X.data()+n*es_, nao_, nao_) += I.ex_weights(jj) * ZMatrixMap(G.lesptr(n-jj-1,n-jj-1), nao_, nao_);
-  } 
+  }
+
   auto QMapBlock = ZMatrixMap(Q.data() + n*es_, nao_, nao_);
-  QMapBlock = ZMatrix::Zero(nao_, nao_);
+
   // add in hamiltonian term
-  QMapBlock.noalias() -= cplxi * (ZMatrixConstMap(hmf+n*es_, nao_, nao_) - mu*IMap) * ZMatrixMap(X.data()+n*es_, nao_, nao_);
+  QMapBlock.noalias() += (ZMatrixConstMap(hmf+n*es_, nao_, nao_) - mu*IMap) * ZMatrixMap(X.data()+n*es_, nao_, nao_);
+
   // for diagonal timestepping
-  ZMatrixMap(Q.data(), nao_, nao_) = QMapBlock - QMapBlock.adjoint();
+  ZMatrixMap(Q.data(), nao_, nao_) = -cplxi * (QMapBlock + QMapBlock.adjoint());
+
   // add in derivative term
   for(l=1; l<=k_+1; l++) {
     ZMatrixMap(Q.data(), nao_, nao_) -= 1./dt * I.bd_weights(l) * ZMatrixMap(G.lesptr(n-l,n-l), nao_, nao_);
