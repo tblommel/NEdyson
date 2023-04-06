@@ -99,6 +99,14 @@ void Simulation<Repr>::do_tstp(int tstp) {
     // HF Contractions
     p_NEgf2_->solve_HF(tstp, hmf, rho);
 
+    // ramp for hubbard
+    if(boolhubb_ramp_ && (tstp*dt_ >= t0_)) {
+      double f = 1. / (1.+exp(-(tstp*dt_ - t0_)/tau_));
+      for(int i = 0; i < Nq_; i++) {
+        hmf.data()[tstp*nao_*nao_ + i*nao_ + i] += f;
+      }
+    }
+
     // 2B Contractions
     if(mode_ == gfmol::Mode::GF2) p_NEgf2_->solve(tstp, Sigma, G);
 
