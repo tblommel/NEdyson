@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD 11)
 
 
 find_package(ALPSCore REQUIRED COMPONENTS gf)
+message(STATUS ${ALPSCore_INCLUDE_DIRS})
 find_package(Boost REQUIRED)
 message(STATUS ${Boost_INCLUDE_DIRS})
 find_package(Eigen3 REQUIRED)

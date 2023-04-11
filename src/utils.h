@@ -5,7 +5,7 @@
 
 #include <Eigen/Eigen>
 #include <alps/numeric/tensors.hpp>
-#include <highfive/H5Easy.hpp>
+#include <gfmol/deps/highfive/H5Easy.hpp>
 
 #define INTEG Integration::Integrator
 

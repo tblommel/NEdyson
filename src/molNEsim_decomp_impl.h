@@ -22,7 +22,7 @@ DecompSimulation<Repr>::DecompSimulation(const gfmol::HartreeFock &hf,
 {
   switch (p.gfmolmode) {
     case gfmol::Mode::GF2:
-      p_MatSim_ = std::unique_ptr<gfmol::DecompSimulation<Repr> >(new gfmol::DecompSimulation<Repr>(hf, frepr, brepr, p.gfmolmode, 0., p.decomp_prec, p.hfbool));
+      p_MatSim_ = std::unique_ptr<gfmol::DecompSimulation<Repr> >(new gfmol::DecompSimulation<Repr>(hf, frepr, brepr, p.gfmolmode, 0., p.decomp_prec));
       beta_ = p_MatSim_->frepr().beta();
       p_NEgf2_ = std::unique_ptr<molGF2SolverDecomp>(new molGF2SolverDecomp(p_MatSim_->Vija(), dynamic_cast<gfmol::DecompGF2Solver *>(p_MatSim_->p_sigma().get())->Viaj() ));
   }
@@ -59,7 +59,7 @@ void DecompSimulation<Repr>::do_boot() {
     // Update mean field & self energy
     for(int tstp = 0; tstp <= k_; tstp++){
       ZMatrixMap(hmf.data() + tstp*nao_*nao_, nao_, nao_) = DMatrixConstMap(p_MatSim_->fock().data(),nao_,nao_);
-      if(!hfbool_) p_NEgf2_->solve(tstp, Sigma, G);
+      if(mode_ == gfmol::Mode::GF2) p_NEgf2_->solve(tstp, Sigma, G);
     }
 
     // Solve G Equation of Motion
@@ -84,7 +84,7 @@ void DecompSimulation<Repr>::do_tstp(int tstp) {
     G.get_dm(tstp, rho);
     ZMatrixMap(hmf.data() + tstp*nao_*nao_, nao_, nao_) = DMatrixConstMap(h0.data(),nao_,nao_);
     p_NEgf2_->solve_HF(tstp, hmf, rho);
-    if(!hfbool_) p_NEgf2_->solve(tstp, Sigma, G);
+    if(mode_ == gfmol::Mode::GF2) p_NEgf2_->solve(tstp, Sigma, G);
 
     if(boolPumpProbe_) {
       Dyson.dipole_field(tstp, dfield_, G, G, dipole_, lPumpProbe_, nPumpProbe_, dt_);
@@ -177,7 +177,7 @@ tti_DecompSimulation<Repr>::tti_DecompSimulation(const gfmol::HartreeFock &hf,
 {
   switch (p.gfmolmode) {
     case gfmol::Mode::GF2:
-      p_MatSim_ = std::unique_ptr<gfmol::DecompSimulation<Repr> >(new gfmol::DecompSimulation<Repr>(hf, frepr, brepr, p.gfmolmode, 0., p.decomp_prec, p.hfbool));
+      p_MatSim_ = std::unique_ptr<gfmol::DecompSimulation<Repr> >(new gfmol::DecompSimulation<Repr>(hf, frepr, brepr, p.gfmolmode, 0., p.decomp_prec));
       beta_ = p_MatSim_->frepr().beta();
       p_NEgf2_ = std::unique_ptr<tti_molGF2SolverDecomp>(new tti_molGF2SolverDecomp(p_MatSim_->Vija(), dynamic_cast<gfmol::DecompGF2Solver *>(p_MatSim_->p_sigma().get())->Viaj() ));
   }
@@ -212,7 +212,7 @@ void tti_DecompSimulation<Repr>::do_boot() {
 
     // Update mean field & self energy
     for(int tstp = 0; tstp <= k_; tstp++){
-      if(!hfbool_) p_NEgf2_->solve(tstp, Sigma, G);
+      if(mode_ == gfmol::Mode::GF2) p_NEgf2_->solve(tstp, Sigma, G);
     }
 
     // Solve G Equation of Motion
@@ -250,7 +250,7 @@ void tti_DecompSimulation<Repr>::do_tstp(int tstp) {
 
   // Corrector
   for(int iter = 0; iter < CorrSteps_; iter++) {
-    if(!hfbool_) p_NEgf2_->solve(tstp, Sigma, G);
+    if(mode_ == gfmol::Mode::GF2) p_NEgf2_->solve(tstp, Sigma, G);
     Dyson.dyson_step(tstp, G, Sigma, p_MatSim_->fock(), p_MatSim_->mu(), beta_, dt_);
   }
 }

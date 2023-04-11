@@ -489,20 +489,20 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
 
 
 void dyson::dyson_step(int n, GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double beta, double dt) const {
-  assert(G.size1() == Sig.size1());
   assert(G.size1() == nao_);
-  assert(G.nt() == Sig.nt());
   assert(G.nt() == nt_);
-  assert(G.ntau() == Sig.ntau());
   assert(G.ntau() == ntau_);
   assert(G.nt() > k_);
-  assert(G.sig() == Sig.sig());
   assert(n > k_);
   assert(n <= G.nt());
 
   double err = 0;
 
-  if(!hfbool_) {
+  if(mode_ == gfmol::Mode::GF2) {
+    assert(G.nt() == Sig.nt());
+    assert(G.size1() == Sig.size1());
+    assert(G.ntau() == Sig.ntau());
+    assert(G.sig() == Sig.sig());
     err += dyson_step_ret(n, G, Sig, hmf, mu, dt);
     err += dyson_step_tv(n, G, Sig, hmf, mu, beta, dt);
     err += dyson_step_les(n, G, Sig, hmf, mu, beta, dt);

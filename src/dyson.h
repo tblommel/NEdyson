@@ -4,6 +4,7 @@
 #include <Eigen/Eigen>
 #include <unsupported/Eigen/MatrixFunctions>
 
+#include "gfmol/sim.h"
 #include "greens.h"
 #include "integration.h"
 #include "utils.h"
@@ -20,7 +21,7 @@ private:
   int nao_;
   int es_;
   int k_;
-  bool hfbool_;
+  gfmol::Mode mode_;
 
   mutable ZTensor<1> ex_weights;
   mutable ZTensor<1> tmp;
@@ -36,7 +37,7 @@ private:
   mutable cpsitop::nonequilibrium::convolution Conv;
 
 public:
-  dyson(int nt, int ntau, int nao, int k, bool hfbool_);
+  dyson(int nt, int ntau, int nao, int k, gfmol::Mode mode);
 
   const INTEG &II() { return I; }
 

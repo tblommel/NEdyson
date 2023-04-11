@@ -22,12 +22,12 @@
 
 namespace NEdyson{
 
-dyson::dyson(int nt, int ntau, int nao, int k, bool hfbool) : nt_(nt),
+dyson::dyson(int nt, int ntau, int nao, int k, gfmol::Mode mode) : nt_(nt),
                                                  ntau_(ntau),
                                                  nao_(nao),
                                                  es_(nao*nao),
                                                  k_(k),
-                                                 hfbool_(hfbool),
+                                                 mode_(mode),
                                                  ex_weights(k+1),
                                                  tmp(es_),
                                                  tmp2(es_),

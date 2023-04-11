@@ -33,6 +33,7 @@ protected:
   int BootMax_;
   double BootTol_;
   int CorrSteps_;
+  gfmol::Mode mode_;
 
   bool bootstrap_converged;
   bool hfbool_;

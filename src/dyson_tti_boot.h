@@ -116,16 +116,16 @@ double dyson::dyson_start_les(TTI_GREEN &G, const TTI_GREEN &Sig, const double *
 
 double dyson::dyson_start(TTI_GREEN &G, const TTI_GREEN &Sig, const double* hmf, double mu, double beta, double dt) const {
   assert(G.size1() == nao_);
-  assert(G.size1() == Sig.size1());
   assert(G.nt() == nt_);
-  assert(G.nt() == Sig.nt());
   assert(G.nt() >= k_);
-  assert(G.ntau() == Sig.ntau());
   assert(G.ntau() == ntau_);
-  assert(G.sig() == Sig.sig());
 
   double err=0;
-  if(!hfbool_) {
+  if(mode_ == gfmol::Mode::GF2) {
+    assert(G.sig() == Sig.sig());
+    assert(G.ntau() == Sig.ntau());
+    assert(G.nt() == Sig.nt());
+    assert(G.size1() == Sig.size1());
     err += dyson_start_tv(G, Sig, hmf, mu, beta, dt);
     err += dyson_start_ret(G, Sig, hmf, mu, dt);
     err += dyson_start_les(G, Sig, hmf, mu, beta, dt);
