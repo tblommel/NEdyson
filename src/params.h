@@ -45,6 +45,12 @@ struct Params {
   std::string outputPP;
   bool boolOutputPP;
 
+  bool boolhubb_ramp;
+  double q;
+  double tau;
+  double t0;
+  int Nq;
+
   gfmol::Mode gfmolmode;
 
   void validate() const
@@ -90,6 +96,9 @@ struct Params {
 
     if (boolPumpProbe && tti)
       throw std::runtime_error("Pump Probe calculation requires full time-dependant calculation (tti == false)");
+
+    if (boolhubb_ramp && (dt*k >= t0))
+      throw std::runtime_error("must have t0 > dt*k");
   }
 };
 
@@ -126,6 +135,11 @@ inline std::ostream &operator<<(std::ostream &os, const Params &p)
   os << "    nPumpProbe:      " << p.nPumpProbe << std::endl;
   os << "    outputPP:        " << p.outputPP << std::endl;
   os << "    boolOutputPP:    " << p.boolOutputPP << std::endl;
+  os << "    boolhubb_ramp:   " << p.boolhubb_ramp << std::endl;
+  os << "    q:               " << p.q << std::endl;
+  os << "    tau:             " << p.boolOutputPP << std::endl;
+  os << "    t0:              " << p.boolOutputPP << std::endl;
+  os << "    Nq:              " << p.Nq << std::endl;
   os << std::noboolalpha;
   return os;
 }
@@ -149,7 +163,7 @@ inline Params parse_args(const int argc, char *const *const argv)
 
   // Argument list
   args::ValueFlag<std::string> mode(parser, "mode", "GF2 or HF", {"mode"}, "GF2");
-  args::Flag tti(parser, "tti", "use time translationally invariant functions if set", {"tti"});
+  args::Flag tti(parser, "tti", "use time translationally invariant functions if set", {"tti"}, false);
   args::Flag unrestricted(parser, "unrestricted", "use unrestricted spin if set", {"unrestricted"});
   args::Flag decomposed(parser, "decomposed", "use unrestricted spin if set", {"decomposed"});
   args::ValueFlag<std::string> repr(parser, "repr", "type of representation: cheb or ir", {"repr"}, "cheb");
@@ -179,8 +193,13 @@ inline Params parse_args(const int argc, char *const *const argv)
   args::ValueFlag<std::string> PumpProbe_file(parser, "PumpProbe-file", "The file that contains the pump and probe fields", {"PumpProbe-file"});
   args::ValueFlag<double> lPumpProbe(parser, "lPumpProbe", "length of system that appears in the PumpProbe induced field equation", {"lPumpProbe"});
   args::ValueFlag<double> nPumpProbe(parser, "nPumpProbe", "density of system that appears in the PumpProbe induced field equation", {"nPumpProbe"});
-  args::Flag boolOutputPP(parser, "boolOutputPP", "output PumpProbe results", {"boolOutputPP"});
+  args::Flag boolOutputPP(parser, "boolOutputPP", "output PumpProbe results", {"boolOutputPP"}, false);
   args::ValueFlag<std::string> outputPP(parser, "outputPP", "The file that contains the pump and probe fields output", {"outputPP"});
+  args::Flag boolhubb_ramp(parser, "boolhubb_ramp", "flag to set ramp for extended hubbard model", {"boolhubb_ramp"}, false);
+  args::ValueFlag<double> q(parser, "q", "ramp strength", {"q"});
+  args::ValueFlag<double> tau(parser, "tau", "ramp duration parameter", {"tau"});
+  args::ValueFlag<double> t0(parser, "t0", "initial ramp time", {"t0"});
+  args::ValueFlag<int> Nq(parser, "Nq", "number of sites that are ramped", {"Nq"});
 
   args::HelpFlag help(parser, "help", "Display this help menu", {'h', "help"});
   try {
@@ -221,7 +240,12 @@ inline Params parse_args(const int argc, char *const *const argv)
            extract_value(param_file, lPumpProbe),
            extract_value(param_file, nPumpProbe),
            extract_value(param_file, outputPP),
-           extract_value(param_file, boolOutputPP)};
+           extract_value(param_file, boolOutputPP),
+           extract_value(param_file, boolhubb_ramp),
+           extract_value(param_file, q),
+           extract_value(param_file, tau),
+           extract_value(param_file, t0),
+           extract_value(param_file, Nq)};
 
   if (p.mode == "GF2")
     p.gfmolmode = gfmol::Mode::GF2;

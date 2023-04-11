@@ -206,8 +206,11 @@ double dyson::dyson_start(GREEN &G, const GREEN &Sig, const cplx *hmf, double mu
     assert(G.sig() == Sig.sig());
 
     err += dyson_start_tv(G, Sig, hmf, mu, beta, dt);
+    std::cout << err << std::endl;
     err += dyson_start_ret(G, Sig, hmf, mu, dt);
+    std::cout << err << std::endl;
     err += dyson_start_les(G, Sig, hmf, mu, beta, dt);
+    std::cout << err << std::endl;
   }
   else {
     err += dyson_start_tv_hf(G, hmf, mu, beta, dt);
