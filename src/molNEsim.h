@@ -52,6 +52,12 @@ protected:
 
   dyson Dyson;
 
+  bool boolhubb_ramp_;
+  double q_;
+  double tau_;
+  double t0_;
+  int Nq_;
+
   void save_base(h5::File &file, const std::string &path) const;
   
 public:

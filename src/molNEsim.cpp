@@ -54,6 +54,13 @@ SimulationBase::SimulationBase(const gfmol::HartreeFock &hf,
   BootMax_ =p.BootMaxIter;
   BootTol_ = p.BootMaxErr;
   CorrSteps_ = p.CorrSteps;
+
+  boolhubb_ramp_ = p.boolhubb_ramp;
+  q_ = p.q;
+  tau_ = p.tau;
+  t0_ = p.t0;
+  Nq_ = p.Nq;
+  
 }
 
 void SimulationBase::save_base(h5::File &file, const std::string &path) const {

@@ -278,7 +278,7 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
     Eigen::FullPivLU<ZMatrix> lu2(MMapSmall);
     ZMatrixMap(X.data()+m*es_, nao_, nao_) = lu2.solve(ZMatrixMap(Q.data() + m*es_, nao_, nao_));
   }
-
+///*
   // Diagonal Component
   // Extrapolate
   memset(X.data()+n*es_, 0, nao_*nao_*sizeof(cplx));
@@ -308,7 +308,7 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
 
   Eigen::FullPivLU<ZMatrix> lu2(MMapSmall);
   ZMatrixMap(X.data()+n*es_, nao_, nao_) = lu2.solve(ZMatrixMap(Q.data(), nao_, nao_));
-
+//*/
 
   // Write elements into G
   for(l=0; l<=n; l++) {
