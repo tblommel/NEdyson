@@ -118,9 +118,9 @@ double dyson::dyson_step_ret(int tstp, GREEN &G, const GREEN &Sig, const cplx *h
   //TIMING
   std::ofstream out;
   std::string timing_data_dir = std::string(TIMING_DATA_DIR);
-  out.open(timing_data_dir + "Nao" + std::to_string(G.size1()) + "Nt" + std::to_string(G.nt()) + "Ntau" + std::to_string(G.ntau()) + "ret_int.dat", std::ofstream::app);
-  out << inttime.count() << "\n" ;
-  out.close();
+//  out.open(timing_data_dir + "Nao" + std::to_string(G.size1()) + "Nt" + std::to_string(G.nt()) + "Ntau" + std::to_string(G.ntau()) + "ret_int.dat", std::ofstream::app);
+//  out << inttime.count() << "\n" ;
+//  out.close();
   // TIMING
 
   return err;
@@ -197,9 +197,9 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
   //TIMING
   std::ofstream out;
   std::string timing_data_dir = std::string(TIMING_DATA_DIR);
-  out.open(timing_data_dir + "Nao" + std::to_string(G.size1()) + "Nt" + std::to_string(G.nt()) + "Ntau" + std::to_string(G.ntau()) + "les_int_tvvt.dat", std::ofstream::app);
-  out << int2.count() << "\n" ;
-  out.close();
+//  out.open(timing_data_dir + "Nao" + std::to_string(G.size1()) + "Nt" + std::to_string(G.nt()) + "Ntau" + std::to_string(G.ntau()) + "les_int_tvvt.dat", std::ofstream::app);
+//  out << int2.count() << "\n" ;
+//  out.close();
   // TIMING
 
   intstart = std::chrono::system_clock::now();
@@ -208,9 +208,9 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
   int1 = intend-intstart;
   //TIMING
   std::ofstream out2;
-  out2.open(timing_data_dir + "Nao" + std::to_string(G.size1()) + "Nt" + std::to_string(G.nt()) + "Ntau" + std::to_string(G.ntau()) + "les_int_la.dat", std::ofstream::app);
-  out2 << int1.count() << "\n" ;
-  out2.close();
+//  out2.open(timing_data_dir + "Nao" + std::to_string(G.size1()) + "Nt" + std::to_string(G.nt()) + "Ntau" + std::to_string(G.ntau()) + "les_int_la.dat", std::ofstream::app);
+//  out2 << int1.count() << "\n" ;
+//  out2.close();
   // TIMING
 
   // Set up the kxk linear problem MX=Q
@@ -317,9 +317,9 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
   }
   //TIMING
   std::ofstream out3;
-  out3.open(timing_data_dir + "Nao" + std::to_string(G.size1()) + "Nt" + std::to_string(G.nt()) + "Ntau" + std::to_string(G.ntau()) + "les_int_rl.dat", std::ofstream::app);
-  out3 << int3.count() << "\n" ;
-  out3.close();
+//  out3.open(timing_data_dir + "Nao" + std::to_string(G.size1()) + "Nt" + std::to_string(G.nt()) + "Ntau" + std::to_string(G.ntau()) + "les_int_rl.dat", std::ofstream::app);
+//  out3 << int3.count() << "\n" ;
+//  out3.close();
   // TIMING
 
   return err;
@@ -334,6 +334,13 @@ void dyson::dyson_step(int n, GREEN &G, const GREEN &Sig, const cplx *hmf, doubl
   assert(n > k_);
   assert(n <= G.nt());
 
+  std::chrono::time_point<std::chrono::system_clock> start, end;
+  std::chrono::duration<double> dur;
+
+  std::ofstream out;
+  std::string timing_data_dir = std::string(TIMING_DATA_DIR);
+  out.open(timing_data_dir + "timings.dat", std::ofstream::app);
+
   double err = 0;
 
   if(mode_ == gfmol::Mode::GF2) {
@@ -341,15 +348,32 @@ void dyson::dyson_step(int n, GREEN &G, const GREEN &Sig, const cplx *hmf, doubl
     assert(G.size1() == Sig.size1());
     assert(G.ntau() == Sig.ntau());
     assert(G.sig() == Sig.sig());
+
+    start = std::chrono::system_clock::now();
     err += dyson_step_ret(n, G, Sig, hmf, mu, dt);
+    end = std::chrono::system_clock::now();
+    dur = end-start;
+    out << n << " " << dur.count();
+
+    start = std::chrono::system_clock::now();
     err += dyson_step_tv(n, G, Sig, hmf, mu, beta, dt);
+    end = std::chrono::system_clock::now();
+    dur = end-start;
+    out << " " << dur.count();
+
+    start = std::chrono::system_clock::now();
     err += dyson_step_les(n, G, Sig, hmf, mu, beta, dt);
+    end = std::chrono::system_clock::now();
+    dur = end-start;
+    out << " " << dur.count() << std::endl;
   }
   else {
     err += dyson_step_ret_hf(n, G, hmf, mu, dt);
     err += dyson_step_tv_hf(n, G, hmf, mu, beta, dt);
     err += dyson_step_les_hf(n, G, hmf, mu, beta, dt);
   }
+
+  out.close();
 
   std::cout << "err = " << err << std::endl;
 }

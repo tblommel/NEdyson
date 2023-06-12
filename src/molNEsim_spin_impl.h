@@ -187,11 +187,13 @@ inline void SpinSimulation<gfmol::ChebyshevRepr>::L_to_Tau(){
     Eigen::Map<ZColVector, 0, Eigen::InnerStride<> >(Gdown.matptr(0)+i, ntau_+1, Eigen::InnerStride<>(nao2)) = Trans *
       Eigen::Map<const DColVector, 0, Eigen::InnerStride<> >(p_MatSim_->gl().data() + nL*nao_*nao_ + i, nL, Eigen::InnerStride<>(nao2));
 
-    Eigen::Map<ZColVector, 0, Eigen::InnerStride<> >(Sup.matptr(0)+i, ntau_+1, Eigen::InnerStride<>(nao2)) = Trans *
-      Eigen::Map<const DColVector, 0, Eigen::InnerStride<> >(p_MatSim_->sigmal().data()+i, nL, Eigen::InnerStride<>(nao2));
+    if(mode_ != gfmol::Mode::HF) {
+      Eigen::Map<ZColVector, 0, Eigen::InnerStride<> >(Sup.matptr(0)+i, ntau_+1, Eigen::InnerStride<>(nao2)) = Trans *
+        Eigen::Map<const DColVector, 0, Eigen::InnerStride<> >(p_MatSim_->sigmal().data()+i, nL, Eigen::InnerStride<>(nao2));
 
-    Eigen::Map<ZColVector, 0, Eigen::InnerStride<> >(Sdown.matptr(0)+i, ntau_+1, Eigen::InnerStride<>(nao2)) = Trans *
-      Eigen::Map<const DColVector, 0, Eigen::InnerStride<> >(p_MatSim_->sigmal().data() + nL*nao_*nao_ + i, nL, Eigen::InnerStride<>(nao2));
+      Eigen::Map<ZColVector, 0, Eigen::InnerStride<> >(Sdown.matptr(0)+i, ntau_+1, Eigen::InnerStride<>(nao2)) = Trans *
+        Eigen::Map<const DColVector, 0, Eigen::InnerStride<> >(p_MatSim_->sigmal().data() + nL*nao_*nao_ + i, nL, Eigen::InnerStride<>(nao2));
+    }
   }
 }
 
@@ -368,11 +370,13 @@ inline void tti_SpinSimulation<gfmol::ChebyshevRepr>::L_to_Tau(){
     Eigen::Map<ZColVector, 0, Eigen::InnerStride<> >(Gdown.matptr(0)+i, ntau_+1, Eigen::InnerStride<>(nao2)) = Trans *
       Eigen::Map<const DColVector, 0, Eigen::InnerStride<> >(p_MatSim_->gl().data() + nL*nao_*nao_ + i, nL, Eigen::InnerStride<>(nao2));
 
-    Eigen::Map<ZColVector, 0, Eigen::InnerStride<> >(Sup.matptr(0)+i, ntau_+1, Eigen::InnerStride<>(nao2)) = Trans *
-      Eigen::Map<const DColVector, 0, Eigen::InnerStride<> >(p_MatSim_->sigmal().data()+i, nL, Eigen::InnerStride<>(nao2));
+    if(mode_ != gfmol::Mode::HF) {
+      Eigen::Map<ZColVector, 0, Eigen::InnerStride<> >(Sup.matptr(0)+i, ntau_+1, Eigen::InnerStride<>(nao2)) = Trans *
+        Eigen::Map<const DColVector, 0, Eigen::InnerStride<> >(p_MatSim_->sigmal().data()+i, nL, Eigen::InnerStride<>(nao2));
 
-    Eigen::Map<ZColVector, 0, Eigen::InnerStride<> >(Sdown.matptr(0)+i, ntau_+1, Eigen::InnerStride<>(nao2)) = Trans *
-      Eigen::Map<const DColVector, 0, Eigen::InnerStride<> >(p_MatSim_->sigmal().data() + nL*nao_*nao_ + i, nL, Eigen::InnerStride<>(nao2));
+      Eigen::Map<ZColVector, 0, Eigen::InnerStride<> >(Sdown.matptr(0)+i, ntau_+1, Eigen::InnerStride<>(nao2)) = Trans *
+        Eigen::Map<const DColVector, 0, Eigen::InnerStride<> >(p_MatSim_->sigmal().data() + nL*nao_*nao_ + i, nL, Eigen::InnerStride<>(nao2));
+    }
   }
 }
 

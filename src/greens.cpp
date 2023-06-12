@@ -117,7 +117,7 @@ void green_func::set_conv_tensor(const cpsitop::nonequilibrium::convolution &Con
   Tensor<complex, 3> G_nij_(ntau_+1, nao_, nao_);
   Tensor<complex, 4> T (ntau_+1, ntau_+1, nao_, nao_);
   Tensor<complex, 4> T2(ntau_+1, ntau_+1, nao_, nao_);
- 
+
   ZMatrixMap(G_nij_.data(), ntau_+1, nao_*nao_) = DMatrixConstMap(Convolution.collocation().S_ni().data(), ntau_+1, ntau_+1) * ZMatrixMap(mat_, ntau_+1, nao_*nao_);
   for(int i = 0; i <= ntau_; i++) {
     ZMatrixMap(G_nij_.data() + i*es_, nao_, nao_) *= sig_ * pow(-1., i);
