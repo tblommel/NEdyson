@@ -146,9 +146,9 @@ void molGF2Solver::solve(int tstp, GREEN &Sigma, GREEN &G) const {
   if(tstp > 5) {
     std::ofstream out1;
     std::string timing_data_dir = std::string(TIMING_DATA_DIR);
-    out1.open(timing_data_dir + "Nao" + std::to_string(G.size1()) + "Nt" + std::to_string(G.nt()) + "Ntau" + std::to_string(G.ntau()) + "les_cont.dat", std::ofstream::app);
-    out1 << elapsed_seconds.count() << "\n" ;
-    out1.close();
+//    out1.open(timing_data_dir + "Nao" + std::to_string(G.size1()) + "Nt" + std::to_string(G.nt()) + "Ntau" + std::to_string(G.ntau()) + "les_cont.dat", std::ofstream::app);
+//    out1 << elapsed_seconds.count() << "\n" ;
+//    out1.close();
   }
   // TIMING
 
@@ -160,9 +160,9 @@ void molGF2Solver::solve(int tstp, GREEN &Sigma, GREEN &G) const {
   if(tstp > 5) {
     std::ofstream out2;
     std::string timing_data_dir = std::string(TIMING_DATA_DIR);
-    out2.open(timing_data_dir + "Nao" + std::to_string(G.size1()) + "Nt" + std::to_string(G.nt()) + "Ntau" + std::to_string(G.ntau()) + "tv_cont.dat", std::ofstream::app);
-    out2 << elapsed_seconds.count() << "\n" ;
-    out2.close();
+//    out2.open(timing_data_dir + "Nao" + std::to_string(G.size1()) + "Nt" + std::to_string(G.nt()) + "Ntau" + std::to_string(G.ntau()) + "tv_cont.dat", std::ofstream::app);
+//    out2 << elapsed_seconds.count() << "\n" ;
+//    out2.close();
   }
   // TIMING
 
@@ -174,9 +174,9 @@ void molGF2Solver::solve(int tstp, GREEN &Sigma, GREEN &G) const {
   if(tstp > 5) {
     std::ofstream out3;
     std::string timing_data_dir = std::string(TIMING_DATA_DIR);
-    out3.open(timing_data_dir + "Nao" + std::to_string(G.size1()) + "Nt" + std::to_string(G.nt()) + "Ntau" + std::to_string(G.ntau()) + "ret_cont.dat", std::ofstream::app);
-    out3 << elapsed_seconds.count() << "\n" ;
-    out3.close();
+//    out3.open(timing_data_dir + "Nao" + std::to_string(G.size1()) + "Nt" + std::to_string(G.nt()) + "Ntau" + std::to_string(G.ntau()) + "ret_cont.dat", std::ofstream::app);
+//    out3 << elapsed_seconds.count() << "\n" ;
+//    out3.close();
   }
   // TIMING
 }

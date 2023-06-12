@@ -38,8 +38,10 @@ SimulationBase::SimulationBase(const gfmol::HartreeFock &hf,
     // Bootstrapping is tti so we need to make sure e and E are zero
     // for first k+1 timesteps
     for(int d = 0; d < 3; d++) {
-      double enorm = DRowVectorMap(efield_.data() + d * (nt_+1), k_+1).norm();
-      double Enorm = DRowVectorMap(Efield_.data() + d * (nt_+1), k_+1).norm();
+      int erows = efield_.shape()[1];
+      int Erows = Efield_.shape()[2];
+      double enorm = DRowVectorMap(efield_.data() + d * erows, k_+1).norm();
+      double Enorm = DRowVectorMap(Efield_.data() + d * Erows, k_+1).norm();
       if(enorm > 1e-15 || Enorm > 1e-15) {
         std::cout << "applied field is nonzero in the first k timesteps" << std::endl;
         std::exit(0);
