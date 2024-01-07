@@ -34,12 +34,43 @@ Simulation<Repr>::Simulation(const gfmol::HartreeFock &hf,
 
 template <typename Repr>
 void Simulation<Repr>::free_gf() {
+
+  cplx cplxi = cplx(0.,1.);
+/*
+  G.lesptr(0,0)[0]  = cplxi * 0.5;
+  G.lesptr(0,0)[1]  = cplxi * 0.444505;
+  G.lesptr(0,0)[2]  = cplxi * 3.72966e-17;
+  G.lesptr(0,0)[3]  = cplxi * -0.219471;
+  G.lesptr(0,0)[4]  = cplxi * 0.444505;
+  G.lesptr(0,0)[5]  = cplxi * 0.5;
+  G.lesptr(0,0)[6]  = cplxi * 0.22256;
+  G.lesptr(0,0)[7]  = cplxi * -1.30104e-17;
+  G.lesptr(0,0)[8]  = cplxi * 3.72966e-17;
+  G.lesptr(0,0)[9]  = cplxi * 0.22256;
+  G.lesptr(0,0)[10] = cplxi * 0.5;
+  G.lesptr(0,0)[11] = cplxi * 0.444505;
+  G.lesptr(0,0)[12] = cplxi * -0.219471;
+  G.lesptr(0,0)[13] = cplxi * -1.30104e-17;
+  G.lesptr(0,0)[14] = cplxi * 0.444505;
+  G.lesptr(0,0)[15] = cplxi * 0.5;
+*/
+
+  G.get_dm(0, rho);
+  ZMatrixMap(hmf.data() + 0*nao_*nao_, nao_, nao_) = DMatrixConstMap(h0.data(),nao_,nao_);
+  p_NEgf2_->solve_HF(0, hmf, rho);
+
+  DMatrix A(4,4);
+  A = ZMatrixMap(hmf.data(), 4, 4).real();
+
+
+//  Dyson.G0_from_h0_dm(G, p_MatSim_->mu(), A.data(), p_MatSim_->frepr().beta(), dt_);
   Dyson.G0_from_h0(G, p_MatSim_->mu(), p_MatSim_->fock(), p_MatSim_->frepr().beta(), dt_);
 }
 
 
 template <typename Repr>
 void Simulation<Repr>::do_mat() {
+  std::cout << " do_mat" << std::endl;
   p_MatSim_->run(MatMax_, MatTol_, nullptr);
 }
 
@@ -59,7 +90,11 @@ void Simulation<Repr>::do_boot() {
 
     // Update mean field & self energy
     for(int tstp = 0; tstp <= k_; tstp++){
-      ZMatrixMap(hmf.data() + tstp*nao_*nao_, nao_, nao_) = DMatrixConstMap(p_MatSim_->fock().data(),nao_,nao_);
+//      ZMatrixMap(hmf.data() + tstp*nao_*nao_, nao_, nao_) = DMatrixConstMap(p_MatSim_->fock().data(),nao_,nao_);
+      G.get_dm(tstp, rho);
+      ZMatrixMap(hmf.data() + tstp*nao_*nao_, nao_, nao_) = DMatrixConstMap(h0.data(),nao_,nao_);
+      p_NEgf2_->solve_HF(tstp, hmf, rho);
+
       if(mode_ == gfmol::Mode::GF2)  p_NEgf2_->solve(tstp, Sigma, G);
     }
 
@@ -94,6 +129,9 @@ void Simulation<Repr>::do_tstp(int tstp) {
 
     // HF Contractions
     p_NEgf2_->solve_HF(tstp, hmf, rho);
+//    for(int i = 0; i < nao_; i++) {
+//      hmf.data()[tstp*nao_*nao_ + i*nao_ + i] += 0.5 * (2-i-0.5) * std::exp(-(tstp*dt_ - 5)*(tstp*dt_ - 5)/0.5/0.5/2);
+//    }
 
     // 2B Contractions
     if(mode_ == gfmol::Mode::GF2) p_NEgf2_->solve(tstp, Sigma, G);
@@ -104,7 +142,8 @@ void Simulation<Repr>::do_tstp(int tstp) {
       Ed_contractions(tstp);
     }
 
-    Dyson.dyson_step(tstp, G, Sigma, hmf, p_MatSim_->mu(), beta_, dt_);
+    double err = Dyson.dyson_step(tstp, G, Sigma, hmf, p_MatSim_->mu(), beta_, dt_);
+    if(err < 1e-10) break;
   }
 }
 

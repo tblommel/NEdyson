@@ -46,15 +46,15 @@ double dyson::dyson_step_ret(int tstp, GREEN &G, const GREEN &Sig, const cplx *h
   
       // Integral term
       if(l==0){ // Goes into Q
-        QMapBlock.noalias() += dt*I.gregory_weights(n,l) * (ZMatrixMap(G.retptr(tstp,tstp), nao_, nao_)
-                                               * ZMatrixMap(Sig.retptr(tstp,tstp-n), nao_, nao_)).transpose();
+//        QMapBlock.noalias() += dt*I.gregory_weights(n,l) * (ZMatrixMap(G.retptr(tstp,tstp), nao_, nao_)
+//                                               * ZMatrixMap(Sig.retptr(tstp,tstp-n), nao_, nao_)).transpose();
       }
       else{ // Goes into M
         if(tstp-l >= tstp-n) { // We have Sig
-          MMapBlock.noalias() -= dt*I.gregory_weights(n,l) * ZMatrixMap(Sig.retptr(tstp-l,tstp-n), nao_, nao_).transpose();
+//          MMapBlock.noalias() -= dt*I.gregory_weights(n,l) * ZMatrixMap(Sig.retptr(tstp-l,tstp-n), nao_, nao_).transpose();
         }
         else{ // Don't have Sig
-          MMapBlock.noalias() += dt*I.gregory_weights(n,l) * ZMatrixMap(Sig.retptr(tstp-n,tstp-l), nao_, nao_).conjugate();
+//          MMapBlock.noalias() += dt*I.gregory_weights(n,l) * ZMatrixMap(Sig.retptr(tstp-n,tstp-l), nao_, nao_).conjugate();
         }
       }
     }
@@ -76,8 +76,8 @@ double dyson::dyson_step_ret(int tstp, GREEN &G, const GREEN &Sig, const cplx *h
   for(n = k_+1; n <= tstp; n++) {
     ZMatrixMap QMapBlock = ZMatrixMap(Q.data() + n*es_, nao_, nao_);
     for(l=0; l<=k_; l++) {
-      QMapBlock.noalias() += I.gregory_weights(n,l) * (ZMatrixMap(G.retptr(tstp,tstp-l), nao_, nao_)
-                                          * ZMatrixMap(Sig.retptr(tstp-l,tstp-n), nao_, nao_)).transpose();
+//      QMapBlock.noalias() += I.gregory_weights(n,l) * (ZMatrixMap(G.retptr(tstp,tstp-l), nao_, nao_)
+//                                          * ZMatrixMap(Sig.retptr(tstp-l,tstp-n), nao_, nao_)).transpose();
     }
   }
   intend = std::chrono::system_clock::now();
@@ -95,7 +95,7 @@ double dyson::dyson_step_ret(int tstp, GREEN &G, const GREEN &Sig, const cplx *h
 
     // Set up M
     MMapSmall.noalias() = -ZMatrixConstMap(hmf+(tstp-n)*es_, nao_, nao_).transpose();
-    MMapSmall.noalias() -= dt*I.omega(0) * ZMatrixMap(Sig.retptr(tstp-n,tstp-n), nao_, nao_).transpose();
+//    MMapSmall.noalias() -= dt*I.omega(0) * ZMatrixMap(Sig.retptr(tstp-n,tstp-n), nao_, nao_).transpose();
     MMapSmall.noalias() += (mu - I.bd_weights(0)*ncplxi/dt)*IMap;
 
     // Solve XM=Q for X
@@ -107,20 +107,20 @@ double dyson::dyson_step_ret(int tstp, GREEN &G, const GREEN &Sig, const cplx *h
     // Add this newly computed value to the integrals which need it
     intstart = std::chrono::system_clock::now();
     for(m=n+1; m<=tstp; m++) {
-      ZMatrixMap(Q.data() + m*es_, nao_, nao_).noalias() += I.gregory_weights(m,n)
-                                          *(ZMatrixMap(G.retptr(tstp,tstp-n), nao_, nao_)
-                                          * ZMatrixMap(Sig.retptr(tstp-n,tstp-m), nao_, nao_)).transpose();
+//      ZMatrixMap(Q.data() + m*es_, nao_, nao_).noalias() += I.gregory_weights(m,n)
+//                                          *(ZMatrixMap(G.retptr(tstp,tstp-n), nao_, nao_)
+//                                          * ZMatrixMap(Sig.retptr(tstp-n,tstp-m), nao_, nao_)).transpose();
     }
     intend = std::chrono::system_clock::now();
     inttime += intend-intstart;
   }
 
   //TIMING
-  std::ofstream out;
-  std::string timing_data_dir = std::string(TIMING_DATA_DIR);
-  out.open(timing_data_dir + "Nao" + std::to_string(G.size1()) + "Nt" + std::to_string(G.nt()) + "Ntau" + std::to_string(G.ntau()) + "ret_int.dat", std::ofstream::app);
-  out << inttime.count() << "\n" ;
-  out.close();
+//  std::ofstream out;
+//  std::string timing_data_dir = std::string(TIMING_DATA_DIR);
+//  out.open(timing_data_dir + "Nao" + std::to_string(G.size1()) + "Nt" + std::to_string(G.nt()) + "Ntau" + std::to_string(G.ntau()) + "ret_int.dat", std::ofstream::app);
+//  out << inttime.count() << "\n" ;
+//  out.close();
   // TIMING
 
   return err;
@@ -192,11 +192,11 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
   intend = std::chrono::system_clock::now();
   int2 = intend-intstart;
   //TIMING
-  std::ofstream out;
-  std::string timing_data_dir = std::string(TIMING_DATA_DIR);
-  out.open(timing_data_dir + "Nao" + std::to_string(G.size1()) + "Nt" + std::to_string(G.nt()) + "Ntau" + std::to_string(G.ntau()) + "les_int_tvvt.dat", std::ofstream::app);
-  out << int2.count() << "\n" ;
-  out.close();
+//  std::ofstream out;
+//  std::string timing_data_dir = std::string(TIMING_DATA_DIR);
+//  out.open(timing_data_dir + "Nao" + std::to_string(G.size1()) + "Nt" + std::to_string(G.nt()) + "Ntau" + std::to_string(G.ntau()) + "les_int_tvvt.dat", std::ofstream::app);
+//  out << int2.count() << "\n" ;
+//  out.close();
   // TIMING
 
   intstart = std::chrono::system_clock::now();
@@ -204,10 +204,10 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
   intend = std::chrono::system_clock::now();
   int1 = intend-intstart;
   //TIMING
-  std::ofstream out2;
-  out2.open(timing_data_dir + "Nao" + std::to_string(G.size1()) + "Nt" + std::to_string(G.nt()) + "Ntau" + std::to_string(G.ntau()) + "les_int_la.dat", std::ofstream::app);
-  out2 << int1.count() << "\n" ;
-  out2.close();
+//  std::ofstream out2;
+//  out2.open(timing_data_dir + "Nao" + std::to_string(G.size1()) + "Nt" + std::to_string(G.nt()) + "Ntau" + std::to_string(G.ntau()) + "les_int_la.dat", std::ofstream::app);
+//  out2 << int1.count() << "\n" ;
+//  out2.close();
   // TIMING
 
 
@@ -335,10 +335,10 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
   }
 
   //TIMING
-  std::ofstream out3;
-  out3.open(timing_data_dir + "Nao" + std::to_string(G.size1()) + "Nt" + std::to_string(G.nt()) + "Ntau" + std::to_string(G.ntau()) + "les_int_rl.dat", std::ofstream::app);
-  out3 << int3.count() << "\n" ;
-  out3.close();
+//  std::ofstream out3;
+//  out3.open(timing_data_dir + "Nao" + std::to_string(G.size1()) + "Nt" + std::to_string(G.nt()) + "Ntau" + std::to_string(G.ntau()) + "les_int_rl.dat", std::ofstream::app);
+//  out3 << int3.count() << "\n" ;
+//  out3.close();
 
   // TIMING
   return err;
@@ -488,7 +488,7 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
 }
 
 
-void dyson::dyson_step(int n, GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double beta, double dt) const {
+double dyson::dyson_step(int n, GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double beta, double dt) const {
   assert(G.size1() == nao_);
   assert(G.nt() == nt_);
   assert(G.ntau() == ntau_);
@@ -504,26 +504,29 @@ void dyson::dyson_step(int n, GREEN &G, const GREEN &Sig, const cplx *hmf, doubl
     assert(G.ntau() == Sig.ntau());
     assert(G.sig() == Sig.sig());
     err += dyson_step_ret(n, G, Sig, hmf, mu, dt);
-    err += dyson_step_tv(n, G, Sig, hmf, mu, beta, dt);
+    std::cout << "err = " << err;
+//    err += dyson_step_tv(n, G, Sig, hmf, mu, beta, dt);
+    std::cout << " " << err;
     err += dyson_step_les(n, G, Sig, hmf, mu, beta, dt);
+    std::cout << " " << err << std::endl;
   }
   else {
     err += dyson_step_ret_hf(n, G, hmf, mu, dt);
     err += dyson_step_tv_hf(n, G, hmf, mu, beta, dt);
     err += dyson_step_les_hf(n, G, hmf, mu, beta, dt);
   }
-
-  std::cout << "err = " << err << std::endl;
+  return err; 
 }
 
 
 
-void dyson::dyson_step(int n, GREEN &G, const GREEN &Sig, const ZTensor<3> &hmf, double mu, double beta, double dt) const {
+double dyson::dyson_step(int n, GREEN &G, const GREEN &Sig, const ZTensor<3> &hmf, double mu, double beta, double dt) const {
   assert(G.size1() == hmf.shape()[2]);
   assert(G.size1() == hmf.shape()[1]);
   assert(G.nt() == (hmf.shape()[0]-1));
 
-  dyson_step(n, G, Sig, hmf.data(), mu, beta, dt);
+  double err = dyson_step(n, G, Sig, hmf.data(), mu, beta, dt);
+  return err;
 }
 
 

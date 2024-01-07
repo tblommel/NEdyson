@@ -52,6 +52,7 @@ void molHFSolver::solve_HF(int tstp, ZTensor<3> &hmf, const ZTensor<2> &rho) con
   }
   
   ZColVectorMap(hmf.data()+tstp*nao2, nao2).noalias() += 2*DMatrixConstMap(Uijkl_.data(),nao2,nao2) * ZColVectorConstMap(rho.data(), nao2);
+//  ZColVectorMap(hmf.data()+tstp*nao2, nao2).noalias() += DMatrixConstMap(Uijkl_.data(),nao2,nao2) * ZColVectorConstMap(rho.data(), nao2);
 }
 
 

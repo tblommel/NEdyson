@@ -23,10 +23,12 @@ int main(const int argc, char *const *const argv)
     gfmol::ChebyshevRepr frepr(repr_f, "/fermi", gfmol::Stats::Fermi, p.beta);
     gfmol::ChebyshevRepr brepr(repr_f, "/bose", gfmol::Stats::Bose, p.beta);
 
+    std::cout << "Making Simulation " << p.repr_file << std::endl;
     // Make the sim
     std::unique_ptr<SimulationBase> p_sim =
         make_simulation(hf, frepr, brepr, p);
 
+    std::cout << "Running Simulation " << p.repr_file << std::endl;
     // Run the sim
     p_sim->run();
 

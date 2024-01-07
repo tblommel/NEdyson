@@ -50,6 +50,7 @@ public:
   // Constant free GF ==================================================
   void G0_from_h0(GREEN &G, double mu, const DTensor<2> &H0, double beta, double h) const ;
   void G0_from_h0(GREEN &G, double mu, const double *H0, double beta, double h) const ;
+  void G0_from_h0_dm(GREEN &G, double mu, const double *H0, double beta, double h) const ;
   void G0_from_h0(TTI_GREEN &G, double mu, const DTensor<2> &H0, double beta, double h) const ;
   void G0_from_h0(TTI_GREEN &G, double mu, const double *H0, double beta, double h) const ;
 
@@ -82,8 +83,8 @@ public:
   double dyson_start_tv_hf(TTI_GREEN &G, const double *hmf, double mu, double beta, double dt) const ;
 
   // Step functions ===================================================
-  void dyson_step(int n, GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double beta, double dt) const ;
-  void dyson_step(int n, GREEN &G, const GREEN &Sig, const ZTensor<3> &hmf, double mu, double beta, double dt) const ;
+  double dyson_step(int n, GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double beta, double dt) const ;
+  double dyson_step(int n, GREEN &G, const GREEN &Sig, const ZTensor<3> &hmf, double mu, double beta, double dt) const ;
 
   // Step functions individual components ============================
   double dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double beta, double dt) const ;

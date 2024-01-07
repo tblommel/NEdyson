@@ -179,6 +179,8 @@ void molGF2Solver::solve(int tstp, GREEN &Sigma, GREEN &G) const {
     out3.close();
   }
   // TIMING
+  
+//  ZMatrixMap(Sigma.retptr(tstp,0), (tstp+1)*nao_*nao_, 1) = ZMatrix::Constant((tstp+1)*nao_*nao_,1,0.1);
 }
   
 

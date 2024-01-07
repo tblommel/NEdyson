@@ -16,7 +16,8 @@ SimulationBase::SimulationBase(const gfmol::HartreeFock &hf,
                                  efield_(3, p.nt+1),
                                  Efield_(3, p.nt+1),
                                  dfield_(3, p.nt+1),
-                                 dipole_(3, nao_, nao_) {
+                                 dipole_(3, nao_, nao_),
+                                 timing(p.nt+1) {
   nt_ = p.nt;
   ntau_ = p.ntau;
   dt_ = p.dt;
@@ -70,6 +71,8 @@ void SimulationBase::save_base(h5::File &file, const std::string &path) const {
   h5e::dump(file, path + "/solve/params/BootMax", BootMax_);
   h5e::dump(file, path + "/solve/params/BootTol", BootTol_);
   h5e::dump(file, path + "/solve/params/CorrSteps", CorrSteps_);
+
+  h5e::dump(file, path + "/timing", timing);
   
   h5e::dump(file, path + "/solve/params/boot_conv", (int)bootstrap_converged);
   if(mode_ == gfmol::Mode::GF2) {
@@ -92,12 +95,15 @@ void SimulationBase::save_PP(h5::File &file, const std::string &path) const {
 void SimulationBase::run(){
   std::chrono::time_point<std::chrono::system_clock> start, end;
   std::chrono::duration<double> elapsed_seconds;
+  std::cout << "running Matsubara" << std::endl;
   // Run the gfmol Matsubara solver
   do_mat();
 
+  std::cout << "running free" << std::endl;
   // Calculate the free GF
   free_gf();
 
+  std::cout << "running L_to_tau" << std::endl;
   // Take the coefficients from gfmol and transform them into Legendre mesh
   L_to_Tau();
   
@@ -112,7 +118,11 @@ void SimulationBase::run(){
   if (bootstrap_converged == true) {
     for(int tstp = k_+1; tstp <= nt_; tstp++){
       std::cout<<tstp<<std::endl;
+      std::chrono::time_point<std::chrono::system_clock> start, end;
+      start = std::chrono::system_clock::now();
       do_tstp(tstp);
+      end = std::chrono::system_clock::now();
+      timing(tstp) = (end-start).count();
     }
 
     do_energy();

@@ -32,14 +32,15 @@ double dyson::dyson_start_ret(GREEN &G, const GREEN &Sig, const cplx *hmf, doubl
       auto QMapBlock = QMap.block((n-m-1)*nao_, 0, nao_, nao_);
   
       for(l=0; l<=m; l++) {
-        QMapBlock.noalias() -= -ncplxi/dt * I.poly_diff(n,l) * -1.*ZMatrixMap(G.retptr(m,l), nao_, nao_).adjoint() - dt * I.poly_integ(m,n,l) * ZMatrixMap(Sig.retptr(n,l), nao_, nao_) * -1. * ZMatrixMap(G.retptr(m,l), nao_, nao_).adjoint();
+//        QMapBlock.noalias() -= -ncplxi/dt * I.poly_diff(n,l) * -1.*ZMatrixMap(G.retptr(m,l), nao_, nao_).adjoint() - dt * I.poly_integ(m,n,l) * ZMatrixMap(Sig.retptr(n,l), nao_, nao_) * -1. * ZMatrixMap(G.retptr(m,l), nao_, nao_).adjoint();
+        QMapBlock.noalias() -= -ncplxi/dt * I.poly_diff(n,l) * -1.*ZMatrixMap(G.retptr(m,l), nao_, nao_).adjoint();// - dt * I.poly_integ(m,n,l) * ZMatrixMap(Sig.retptr(n,l), nao_, nao_) * -1. * ZMatrixMap(G.retptr(m,l), nao_, nao_).adjoint();
       }
 
       for(l = m+1; l <= k_; l++) {
         MMap.block((n-m-1)*nao_, (l-m-1)*nao_, nao_, nao_) += -ncplxi/dt * I.poly_diff(n,l) * IMap;
         if(n==l) MMap.block((n-m-1)*nao_, (l-m-1)*nao_, nao_, nao_) += mu*IMap - ZMatrixConstMap(hmf + l*es_, nao_, nao_);
-        if(n>=l) MMap.block((n-m-1)*nao_, (l-m-1)*nao_, nao_, nao_) += -dt*I.poly_integ(m,n,l) * ZMatrixMap(Sig.retptr(n,l), nao_, nao_);
-        else     MMap.block((n-m-1)*nao_, (l-m-1)*nao_, nao_, nao_) -= -dt*I.poly_integ(m,n,l) * ZMatrixMap(Sig.retptr(n,l), nao_, nao_).adjoint();
+//        if(n>=l) MMap.block((n-m-1)*nao_, (l-m-1)*nao_, nao_, nao_) += -dt*I.poly_integ(m,n,l) * ZMatrixMap(Sig.retptr(n,l), nao_, nao_);
+//        else     MMap.block((n-m-1)*nao_, (l-m-1)*nao_, nao_, nao_) -= -dt*I.poly_integ(m,n,l) * ZMatrixMap(Sig.retptr(n,l), nao_, nao_).adjoint();
       }
 
     }
@@ -146,6 +147,47 @@ double dyson::dyson_start_tv(GREEN &G, const GREEN &Sig, const cplx *hmf, double
 double dyson::dyson_start_les(GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double beta, double dt) const {
   cplx cplxi = cplx(0,1);
   ZMatrixMap(G.lesptr(0,0), nao_, nao_) = -(-cplxi*ZMatrixMap(G.matptr(ntau_), nao_, nao_)).adjoint();
+
+/*
+  G.lesptr(0,0)[0]  = cplxi * 0.5;
+  G.lesptr(0,0)[1]  = cplxi * 0.447214;
+  G.lesptr(0,0)[2]  = cplxi * 4.7358e-16;
+  G.lesptr(0,0)[3]  = cplxi * -0.223607;
+  G.lesptr(0,0)[4]  = cplxi * 0.447214;
+  G.lesptr(0,0)[5]  = cplxi * 0.5;
+  G.lesptr(0,0)[6]  = cplxi * 0.223607;
+  G.lesptr(0,0)[7]  = cplxi * -4.7358e-16;
+  G.lesptr(0,0)[8]  = cplxi * 4.7358e-16;
+  G.lesptr(0,0)[9]  = cplxi * 0.223607;
+  G.lesptr(0,0)[10] = cplxi * 0.5;
+  G.lesptr(0,0)[11] = cplxi * 0.447214;
+  G.lesptr(0,0)[12] = cplxi * -0.223607;
+  G.lesptr(0,0)[13] = cplxi * -4.7358e-16;
+  G.lesptr(0,0)[14] = cplxi * 0.447214;
+  G.lesptr(0,0)[15] = cplxi * 0.5;
+
+
+  G.lesptr(0,0)[0]  = cplxi * 0.5;
+  G.lesptr(0,0)[1]  = cplxi * 0.444505;
+  G.lesptr(0,0)[2]  = cplxi * 3.72966e-17;
+  G.lesptr(0,0)[3]  = cplxi * -0.219471;
+  G.lesptr(0,0)[4]  = cplxi * 0.444505;
+  G.lesptr(0,0)[5]  = cplxi * 0.5;
+  G.lesptr(0,0)[6]  = cplxi * 0.22256;
+  G.lesptr(0,0)[7]  = cplxi * -1.30104e-17;
+  G.lesptr(0,0)[8]  = cplxi * 3.72966e-17;
+  G.lesptr(0,0)[9]  = cplxi * 0.22256;
+  G.lesptr(0,0)[10] = cplxi * 0.5;
+  G.lesptr(0,0)[11] = cplxi * 0.444505;
+  G.lesptr(0,0)[12] = cplxi * -0.219471;
+  G.lesptr(0,0)[13] = cplxi * -1.30104e-17;
+  G.lesptr(0,0)[14] = cplxi * 0.444505;
+  G.lesptr(0,0)[15] = cplxi * 0.5;
+
+*/
+
+
+
 
   ZMatrix QIC = ZMatrix::Zero(k_*nao_, nao_);
   ZMatrix XIC = ZMatrix::Zero(k_*nao_, nao_);

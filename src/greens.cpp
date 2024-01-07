@@ -172,19 +172,16 @@ void green_func::print_to_file_mat(h5e::File &File, std::string path) const {
 }
 
 void green_func::print_to_file_ret(h5e::File &File, std::string path) const {
-  std::vector<size_t> dims(1);
-  dims[0] = ((nt_+1)*(nt_+2))/2 * element_size_;
-  h5::DataSet dataset = File.createDataSet<cplx>(path + "/GR", h5::DataSpace(dims));
-  dataset.write(ret_);
-  File.flush();
+  h5e::dump(File, path+"/GR", ZColVectorMap(ret_, ((nt_+1)*(nt_+2))/2 * element_size_));
 }
 
 void green_func::print_to_file_les(h5e::File &File, std::string path) const {
-  std::vector<size_t> dims(1);
-  dims[0] = ((nt_+1)*(nt_+2))/2 * element_size_;
-  h5::DataSet dataset = File.createDataSet<cplx>(path + "/GL", h5::DataSpace(dims));
-  dataset.write(les_);
-  File.flush();
+//  std::vector<size_t> dims(1);
+//  dims[0] = ((nt_+1)*(nt_+2))/2 * element_size_;
+//  h5::DataSet dataset = File.createDataSet<cplx>(path + "/GL", h5::DataSpace(dims));
+//  dataset.write(les_);
+//  File.flush();
+  h5e::dump(File, path+"/GL", ZColVectorMap(les_, ((nt_+1)*(nt_+2))/2 * element_size_));
 }
 
 void green_func::print_to_file_tv(h5e::File &File, std::string path) const {
@@ -196,10 +193,10 @@ void green_func::print_to_file_tv(h5e::File &File, std::string path) const {
 }
 
 void green_func::print_to_file(h5e::File &File, std::string path) const {
-  green_func::print_to_file_mat(File,path);
+//  green_func::print_to_file_mat(File,path);
   green_func::print_to_file_ret(File,path);
   green_func::print_to_file_les(File,path);
-  green_func::print_to_file_tv(File,path);
+//  green_func::print_to_file_tv(File,path);
   h5e::dump(File,path+"/nt",nt_);
   h5e::dump(File,path+"/ntau",ntau_);
   h5e::dump(File,path+"/sig",sig_);

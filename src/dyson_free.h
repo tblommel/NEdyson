@@ -223,6 +223,56 @@ void dyson::G0_from_h0(GREEN &G, double mu, const double *hM, const double *ht, 
 // G^{TV}(n,\tau) = -is U_{n,0} f_s(h-mu) exp((h-mu)\tau)
 // G^R(n,j) = -iU_{n,j} = U_{n,0} (U_{j,0})^\dagger
 // G^L(j,n) = -siU_{j,0} f_s(h-mu) (U_{n,0})^\dagger
+void dyson::G0_from_h0_dm(GREEN &G, double mu, const double *H0, double beta, double h) const {
+  assert(G.nt() == nt_);
+  assert(G.nt() >= k_);
+  assert(G.ntau() == ntau_);
+  assert(G.size1() == nao_);
+
+  int sign=G.sig();
+  double tau,t;
+  
+  // Make Hamiltonian and solve eigen problem
+  ZMatrix Hmu = mu*ZMatrixMap(iden.data(), nao_, nao_) - DMatrixConstMap(H0, nao_, nao_);
+  Eigen::SelfAdjointEigenSolver<ZMatrix> eigensolver(Hmu);
+  
+  ZMatrix evec0(nao_, nao_);
+  DColVector eval0(nao_), eval0m(nao_);
+  
+  evec0 = eigensolver.eigenvectors();
+  eval0 = eigensolver.eigenvalues();
+  eval0m = -eval0;
+
+  // Udt
+  ZMatrixMap IHdt = ZMatrixMap(tmp.data(), nao_, nao_);
+  ZMatrixMap Udt = ZMatrixMap(tmp2.data(), nao_, nao_);
+  IHdt = std::complex<double>(0,1.0) * h * Hmu;
+  Udt = IHdt.exp();
+
+  // Ut
+  ZMatrixMap(M.data(), nao_, nao_) = ZMatrixMap(iden.data(), nao_, nao_);
+  for(int n=1; n<=k_; n++) {
+    ZMatrixMap(M.data() + n*es_, nao_, nao_) = ZMatrixMap(M.data() + (n-1)*es_, nao_, nao_) * Udt;
+  }
+
+  // Ret and Less
+  ZMatrix rho0 = ZMatrixMap(G.lesptr(0,0), nao_, nao_);
+  for(int m=0; m<=k_; m++) {
+    for(int n=0; n<=m; n++) {
+      ZMatrixMap Ut1 = ZMatrixMap(M.data() + m*es_, nao_, nao_);
+      ZMatrixMap Ut2 = ZMatrixMap(M.data() + n*es_, nao_, nao_);
+      ZMatrixMap(G.retptr(m,n), nao_, nao_) = std::complex<double>(0,-1.0) * Ut1 * Ut2.adjoint();
+      ZMatrixMap(G.lesptr(n,m), nao_, nao_) = Ut2 * rho0 * Ut1.adjoint();
+    }
+  }
+}
+
+
+// Gives free green's function from constant hamiltonian
+// G^M(\tau) = s f_s(mu-h) exp((mu-h)\tau)
+// G^{TV}(n,\tau) = -is U_{n,0} f_s(h-mu) exp((h-mu)\tau)
+// G^R(n,j) = -iU_{n,j} = U_{n,0} (U_{j,0})^\dagger
+// G^L(j,n) = -siU_{j,0} f_s(h-mu) (U_{n,0})^\dagger
 void dyson::G0_from_h0(GREEN &G, double mu, const double *H0, double beta, double h) const {
   assert(G.nt() == nt_);
   assert(G.nt() >= k_);

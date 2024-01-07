@@ -53,6 +53,7 @@ protected:
   DTensor<1> gf2_time;
 
   dyson Dyson;
+  DColVector timing;
 
   void save_base(h5::File &file, const std::string &path) const;
   
