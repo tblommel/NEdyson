@@ -116,8 +116,8 @@ double dyson::dyson_step_ret(int tstp, GREEN &G, const GREEN &Sig, const cplx *h
   }
 
   //TIMING
-  std::ofstream out;
-  std::string timing_data_dir = std::string(TIMING_DATA_DIR);
+//  std::ofstream out;
+//  std::string timing_data_dir = std::string(TIMING_DATA_DIR);
 //  out.open(timing_data_dir + "Nao" + std::to_string(G.size1()) + "Nt" + std::to_string(G.nt()) + "Ntau" + std::to_string(G.ntau()) + "ret_int.dat", std::ofstream::app);
 //  out << inttime.count() << "\n" ;
 //  out.close();
@@ -195,8 +195,8 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
   intend = std::chrono::system_clock::now();
   int2 = intend-intstart;
   //TIMING
-  std::ofstream out;
-  std::string timing_data_dir = std::string(TIMING_DATA_DIR);
+//  std::ofstream out;
+//  std::string timing_data_dir = std::string(TIMING_DATA_DIR);
 //  out.open(timing_data_dir + "Nao" + std::to_string(G.size1()) + "Nt" + std::to_string(G.nt()) + "Ntau" + std::to_string(G.ntau()) + "les_int_tvvt.dat", std::ofstream::app);
 //  out << int2.count() << "\n" ;
 //  out.close();
@@ -207,7 +207,7 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
   intend = std::chrono::system_clock::now();
   int1 = intend-intstart;
   //TIMING
-  std::ofstream out2;
+//  std::ofstream out2;
 //  out2.open(timing_data_dir + "Nao" + std::to_string(G.size1()) + "Nt" + std::to_string(G.nt()) + "Ntau" + std::to_string(G.ntau()) + "les_int_la.dat", std::ofstream::app);
 //  out2 << int1.count() << "\n" ;
 //  out2.close();
@@ -316,7 +316,7 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
     ZMatrixMap(G.lesptr(l,n), nao_, nao_).noalias() = ZMatrixMap(X.data() + l*es_, nao_, nao_);
   }
   //TIMING
-  std::ofstream out3;
+//  std::ofstream out3;
 //  out3.open(timing_data_dir + "Nao" + std::to_string(G.size1()) + "Nt" + std::to_string(G.nt()) + "Ntau" + std::to_string(G.ntau()) + "les_int_rl.dat", std::ofstream::app);
 //  out3 << int3.count() << "\n" ;
 //  out3.close();
@@ -337,9 +337,9 @@ void dyson::dyson_step(int n, GREEN &G, const GREEN &Sig, const cplx *hmf, doubl
   std::chrono::time_point<std::chrono::system_clock> start, end;
   std::chrono::duration<double> dur;
 
-  std::ofstream out;
-  std::string timing_data_dir = std::string(TIMING_DATA_DIR);
-  out.open(timing_data_dir + "timings.dat", std::ofstream::app);
+//  std::ofstream out;
+//  std::string timing_data_dir = std::string(TIMING_DATA_DIR);
+//  out.open(timing_data_dir + "timings.dat", std::ofstream::app);
 
   double err = 0;
 
@@ -353,19 +353,22 @@ void dyson::dyson_step(int n, GREEN &G, const GREEN &Sig, const cplx *hmf, doubl
     err += dyson_step_ret(n, G, Sig, hmf, mu, dt);
     end = std::chrono::system_clock::now();
     dur = end-start;
-    out << n << " " << dur.count();
+    std::cout << err << " ";
+//    out << n << " " << dur.count();
 
     start = std::chrono::system_clock::now();
     err += dyson_step_tv(n, G, Sig, hmf, mu, beta, dt);
     end = std::chrono::system_clock::now();
     dur = end-start;
-    out << " " << dur.count();
+    std::cout << err << " ";
+//    out << " " << dur.count();
 
     start = std::chrono::system_clock::now();
     err += dyson_step_les(n, G, Sig, hmf, mu, beta, dt);
     end = std::chrono::system_clock::now();
     dur = end-start;
-    out << " " << dur.count() << std::endl;
+    std::cout << err << " ";
+//    out << " " << dur.count() << std::endl;
   }
   else {
     err += dyson_step_ret_hf(n, G, hmf, mu, dt);
@@ -373,7 +376,7 @@ void dyson::dyson_step(int n, GREEN &G, const GREEN &Sig, const cplx *hmf, doubl
     err += dyson_step_les_hf(n, G, hmf, mu, beta, dt);
   }
 
-  out.close();
+//  out.close();
 
   std::cout << "err = " << err << std::endl;
 }
