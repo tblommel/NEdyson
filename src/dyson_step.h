@@ -5,15 +5,137 @@ namespace NEdyson{
 
 // i dt' GR(t,t-t') - GR(t-t')hmf(t-t') - \int_0^t' GR(t,t-s) SR(t-s,t-t') = 0
 double dyson::dyson_step_ret(int tstp, GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double dt) const {
+
+  cplx cplxi = cplx(0,1);
+  double err = 0;
+  ZMatrixMap(Q.data(), (tstp+1)*nao_*nao_, 1) = ZMatrix::Zero((tstp+1)*nao_*nao_, 1);
+  ZMatrixMap IMap(iden.data(), nao_, nao_);
+
+  // Initial condition
+  ZMatrixMap(G.retptr(tstp,tstp), nao_, nao_) = -cplxi * IMap;
+
+/*
+  for(int tp = 0; tp < tstp; tp++) {
+    // M
+    double weight = std::min(tp, tstp-k_) == tstp-k_ ? I.poly_integ(tp-tstp+k_, k_, k_) : I.omega(0);
+    ZMatrixMap(M.data(), nao_, nao_) = ZMatrixConstMap(hmf+tstp*nao_*nao_, nao_, nao_) - (mu + cplxi/dt*I.bd_weights(0)) * ZMatrixMap(iden.data(), nao_, nao_) + dt * weight * ZMatrixMap(Sig.retptr(tstp, tstp), nao_, nao_);
+
+    ZMatrixMap XMap(X.data() + tp*nao_*nao_, nao_, nao_);
+    ZMatrixMap QMap(Q.data() + tp*nao_*nao_, nao_, nao_);
+
+    if(tp >= tstp-k_ ) {
+      ZMatrix BD_M(k_+2, k_+2);
+      ZMatrix BD_P(k_+2, nao_*nao_);
+      ZMatrix BD_I = ZMatrix::Identity(k_+2, k_+2);
+      ZMatrix BD_MI(k_+2, k_+2);
+
+      // first rows are for f'
+      for(int i = 0; i < tp-tstp+k_+1; i++) {
+        for(int j = 0; j <= k_+1; j++) {
+          BD_M(i,j) = j==0 ? 0 : j*std::pow(i*dt,j-1);
+        }
+      }
+      // last rows are for f
+      for(int i = tp-tstp+k_+1; i <= k_+1; i++) {
+        for(int j = 0; j <= k_+1; j++) {
+          BD_M(i,j) = std::pow(i*dt,j);
+        }
+      }
+      Eigen::FullPivLU<ZMatrix> BD_lu(BD_M);
+      BD_MI = BD_lu.solve(BD_I);
+
+      // Fill in P
+      for(int i = 0; i < tp-tstp+k_+1; i++) {
+        ZMatrixMap(BD_P.data() + i*nao_*nao_, nao_, nao_) = -cplxi * ZMatrixConstMap(hmf+(tstp-k_-1+i)*nao_*nao_, nao_, nao_) * -ZMatrixMap(G.retptr(tp, tstp-k_-1+i), nao_, nao_).adjoint();
+        for(int l = 0; l <= k_; l++) {
+          if(tstp-k_-1+i >= tstp-k_-1+l && tstp-k_-1+l >= tp) {
+            ZMatrixMap(BD_P.data() + i*nao_*nao_, nao_, nao_) -= cplxi * dt * I.poly_integ(i, k_+1-(tstp-tp), l) * ZMatrixMap(Sig.retptr(tstp-k_-1+i, tstp-k_-1+l), nao_, nao_)
+                                                                                                                 * ZMatrixMap(G  .retptr(tstp-k_-1+l, tp)         , nao_, nao_);
+          }
+          else if(tstp-k_-1+i < tstp-k_-1+l && tstp-k_-1+l >= tp) {
+            ZMatrixMap(BD_P.data() + i*nao_*nao_, nao_, nao_) += cplxi * dt * I.poly_integ(i, k_+1-(tstp-tp), l) * ZMatrixMap(Sig.retptr(tstp-k_-1+l, tstp-k_-1+i), nao_, nao_).adjoint()
+                                                                                                                 * ZMatrixMap(G  .retptr(tstp-k_-1+l, tp)         , nao_, nao_);
+          }
+          else if(tstp-k_-1+i >= tstp-k_-1+l && tstp-k_-1+l < tp) {
+            ZMatrixMap(BD_P.data() + i*nao_*nao_, nao_, nao_) += cplxi * dt * I.poly_integ(i, k_+1-(tstp-tp), l) * ZMatrixMap(Sig.retptr(tstp-k_-1+i, tstp-k_-1+l), nao_, nao_)
+                                                                                                                 * ZMatrixMap(G  .retptr(tp, tstp-k_-1+l)         , nao_, nao_).adjoint();
+          }
+          else if(tstp-k_-1+i < tstp-k_-1+l && tstp-k_-1+l < tp) {
+            ZMatrixMap(BD_P.data() + i*nao_*nao_, nao_, nao_) -= cplxi * dt * I.poly_integ(i, k_+1-(tstp-tp), l) * ZMatrixMap(Sig.retptr(tstp-k_-1+l, tstp-k_-1+i), nao_, nao_).adjoint()
+                                                                                                                 * ZMatrixMap(G  .retptr(tp, tstp-k_-1+l)         , nao_, nao_).adjoint();
+          }
+        }
+      }
+      for(int i = tp-tstp+k_+1; i <= k_+1; i++) {
+        ZMatrixMap(BD_P.data() + i*nao_*nao_, nao_, nao_) = ZMatrixMap(G.retptr(tstp-k_-1+i, tp), nao_, nao_);
+      }
+
+      // remove bd_w(0) from M
+      ZMatrixMap(M.data(), nao_, nao_) += cplxi/dt*I.bd_weights(0) * ZMatrixMap(iden.data(), nao_, nao_);
+
+      // add to M
+      for(int i = 0; i <= k_+1; i++) {
+        ZMatrixMap(M.data(), nao_, nao_) += -cplxi * (double)i * BD_MI(i,k_+1) * std::pow((k_+1)*dt, i-1) * ZMatrix::Identity(nao_, nao_);
+      }
+      
+      // add to Q
+      for(int i = 0; i <= k_+1; i++) {
+        for(int j = 0; j < k_+1; j++) {
+          QMap += cplxi * (double)i * BD_MI(i,j) * std::pow((k_+1)*dt, i-1) * ZMatrixMap(BD_P.data() + j*nao_*nao_, nao_, nao_);
+        }
+      }
+
+    }
+    else {
+      for(int l = 1; l <= k_+1; l++) {
+        if(tstp-l >= tp)  QMap +=  cplxi/dt*I.bd_weights(l) * ZMatrixMap(G.retptr(tstp-l,tp), nao_, nao_);
+        else              QMap += -cplxi/dt*I.bd_weights(l) * ZMatrixMap(G.retptr(tp,tstp-l), nao_, nao_).adjoint();
+      }
+    }
+
+    int min = std::min(tp, tstp-k_);
+    if(min == tstp-k_) {
+      for(int l = min; l<tstp; l++) {
+        if(l>=tp)  QMap -=  dt * I.poly_integ( tp-min, k_, l-min) * ZMatrixMap(Sig.retptr(tstp, l), nao_, nao_) * ZMatrixMap(G.retptr(l,tp), nao_, nao_);
+        else       QMap -= -dt * I.poly_integ( tp-min, k_, l-min) * ZMatrixMap(Sig.retptr(tstp, l), nao_, nao_) * ZMatrixMap(G.retptr(tp,l), nao_, nao_).adjoint();
+      }
+    }
+    else {
+      for(int l = min; l<tstp; l++) {
+        if(l>=tp)  QMap -=  dt * I.gregory_weights(tstp-tp, l-min) * ZMatrixMap(Sig.retptr(tstp, l), nao_, nao_) * ZMatrixMap(G.retptr(l,tp), nao_, nao_);
+        else       QMap -= -dt * I.gregory_weights(tstp-tp, l-min) * ZMatrixMap(Sig.retptr(tstp, l), nao_, nao_) * ZMatrixMap(G.retptr(tp,l), nao_, nao_).adjoint();
+      }
+    }
+    ZMatrixMap MMap2 = ZMatrixMap(M.data(), nao_, nao_);
+    Eigen::FullPivLU<ZMatrix> lu2(MMap2);
+    XMap = lu2.solve(QMap);
+  }
+
+//  err = (ZMatrixMap(X.data(), tstp*nao_*nao_, 1) - ZMatrixMap(G.retptr(tstp,0), tstp*nao_*nao_, 1)).norm();
+//  ZMatrixMap(G.retptr(tstp,0), tstp*nao_*nao_, 1) = ZMatrixMap(X.data(), tstp*nao_*nao_, 1);
+  cplx *check_conj = new cplx[tstp*nao_*nao_];
+  cplx *G_old = new cplx[tstp*nao_*nao_];
+  ZMatrixMap(check_conj, tstp*nao_*nao_, 1) = ZMatrixMap(X.data(), tstp*nao_*nao_, 1);
+  ZMatrixMap(G_old, tstp*nao_*nao_, 1) = ZMatrixMap(G.retptr(tstp,0), tstp*nao_*nao_, 1);
+
+//  return err;
+
+*/
+
+
+
+
+
+
   int m, l, n, i;
 
-  double err = 0;
+//  double err = 0;
 
   std::chrono::time_point<std::chrono::system_clock> intstart, intend;
   std::chrono::duration<double> inttime;
 
   cplx ncplxi = cplx(0,-1);
-  ZMatrixMap IMap = ZMatrixMap(iden.data(), nao_, nao_);
+//  ZMatrixMap IMap = ZMatrixMap(iden.data(), nao_, nao_);
   ZMatrixMap QMap = ZMatrixMap(Q.data(), k_*nao_, nao_);
   ZMatrixMap MMap = ZMatrixMap(M.data(), k_*nao_, k_*nao_);
   ZMatrixMap XMap = ZMatrixMap(X.data(), k_*nao_, nao_);
@@ -46,15 +168,15 @@ double dyson::dyson_step_ret(int tstp, GREEN &G, const GREEN &Sig, const cplx *h
   
       // Integral term
       if(l==0){ // Goes into Q
-//        QMapBlock.noalias() += dt*I.gregory_weights(n,l) * (ZMatrixMap(G.retptr(tstp,tstp), nao_, nao_)
-//                                               * ZMatrixMap(Sig.retptr(tstp,tstp-n), nao_, nao_)).transpose();
+        QMapBlock.noalias() += dt*I.gregory_weights(n,l) * (ZMatrixMap(G.retptr(tstp,tstp), nao_, nao_)
+                                               * ZMatrixMap(Sig.retptr(tstp,tstp-n), nao_, nao_)).transpose();
       }
       else{ // Goes into M
         if(tstp-l >= tstp-n) { // We have Sig
-//          MMapBlock.noalias() -= dt*I.gregory_weights(n,l) * ZMatrixMap(Sig.retptr(tstp-l,tstp-n), nao_, nao_).transpose();
+          MMapBlock.noalias() -= dt*I.gregory_weights(n,l) * ZMatrixMap(Sig.retptr(tstp-l,tstp-n), nao_, nao_).transpose();
         }
         else{ // Don't have Sig
-//          MMapBlock.noalias() += dt*I.gregory_weights(n,l) * ZMatrixMap(Sig.retptr(tstp-n,tstp-l), nao_, nao_).conjugate();
+          MMapBlock.noalias() += dt*I.gregory_weights(n,l) * ZMatrixMap(Sig.retptr(tstp-n,tstp-l), nao_, nao_).conjugate();
         }
       }
     }
@@ -76,8 +198,8 @@ double dyson::dyson_step_ret(int tstp, GREEN &G, const GREEN &Sig, const cplx *h
   for(n = k_+1; n <= tstp; n++) {
     ZMatrixMap QMapBlock = ZMatrixMap(Q.data() + n*es_, nao_, nao_);
     for(l=0; l<=k_; l++) {
-//      QMapBlock.noalias() += I.gregory_weights(n,l) * (ZMatrixMap(G.retptr(tstp,tstp-l), nao_, nao_)
-//                                          * ZMatrixMap(Sig.retptr(tstp-l,tstp-n), nao_, nao_)).transpose();
+      QMapBlock.noalias() += I.gregory_weights(n,l) * (ZMatrixMap(G.retptr(tstp,tstp-l), nao_, nao_)
+                                          * ZMatrixMap(Sig.retptr(tstp-l,tstp-n), nao_, nao_)).transpose();
     }
   }
   intend = std::chrono::system_clock::now();
@@ -95,7 +217,7 @@ double dyson::dyson_step_ret(int tstp, GREEN &G, const GREEN &Sig, const cplx *h
 
     // Set up M
     MMapSmall.noalias() = -ZMatrixConstMap(hmf+(tstp-n)*es_, nao_, nao_).transpose();
-//    MMapSmall.noalias() -= dt*I.omega(0) * ZMatrixMap(Sig.retptr(tstp-n,tstp-n), nao_, nao_).transpose();
+    MMapSmall.noalias() -= dt*I.omega(0) * ZMatrixMap(Sig.retptr(tstp-n,tstp-n), nao_, nao_).transpose();
     MMapSmall.noalias() += (mu - I.bd_weights(0)*ncplxi/dt)*IMap;
 
     // Solve XM=Q for X
@@ -107,13 +229,23 @@ double dyson::dyson_step_ret(int tstp, GREEN &G, const GREEN &Sig, const cplx *h
     // Add this newly computed value to the integrals which need it
     intstart = std::chrono::system_clock::now();
     for(m=n+1; m<=tstp; m++) {
-//      ZMatrixMap(Q.data() + m*es_, nao_, nao_).noalias() += I.gregory_weights(m,n)
-//                                          *(ZMatrixMap(G.retptr(tstp,tstp-n), nao_, nao_)
-//                                          * ZMatrixMap(Sig.retptr(tstp-n,tstp-m), nao_, nao_)).transpose();
+      ZMatrixMap(Q.data() + m*es_, nao_, nao_).noalias() += I.gregory_weights(m,n)
+                                          *(ZMatrixMap(G.retptr(tstp,tstp-n), nao_, nao_)
+                                          * ZMatrixMap(Sig.retptr(tstp-n,tstp-m), nao_, nao_)).transpose();
     }
     intend = std::chrono::system_clock::now();
     inttime += intend-intstart;
   }
+
+//  std::cout << "RET ERR CONJ & NOCONJ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+//  for(int i = 0; i < tstp; i++) {
+//    std::cout << tstp << " " << i << " " << (ZMatrixMap(G.retptr(tstp,i), nao_, nao_) - ZMatrixMap(check_conj+i*nao_*nao_, nao_, nao_)).norm()<< std::endl;
+//  }
+
+//  if(tstp >= 50 && false) {
+//    err = (ZMatrixMap(G_old, tstp*nao_*nao_, 1) - ZMatrixMap(check_conj, tstp*nao_*nao_, 1)).norm();
+//    ZMatrixMap(G.retptr(tstp,0), tstp*nao_*nao_, 1) = ZMatrixMap(check_conj, tstp*nao_*nao_, 1);
+//  }
 
   //TIMING
 //  std::ofstream out;
@@ -124,6 +256,7 @@ double dyson::dyson_step_ret(int tstp, GREEN &G, const GREEN &Sig, const cplx *h
   // TIMING
 
   return err;
+
 }
 
 // idt GRM(tstp,m) - hmf(tstp) GRM(t,m) - \int_0^t dT SR(t,T) GRM(T,m) = \int_0^{beta} dT SRM(t,T) GM(T-m)
@@ -169,17 +302,97 @@ double dyson::dyson_step_tv(int tstp, GREEN &G, const GREEN &Sig, const cplx *hm
 }
 
 double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double beta, double dt) const {
+
+  int tstp = n;
+  cplx cplxi = cplx(0,1);
+  double err = 0;
+  ZMatrixMap(Q.data(), (tstp+1)*nao_*nao_, 1) = ZMatrix::Zero((tstp+1)*nao_*nao_, 1);
+
+/*
+  // M
+  ZMatrixMap(M.data(), nao_, nao_) = (ZMatrixConstMap(hmf+tstp*nao_*nao_, nao_, nao_) - (mu - cplxi/dt*I.bd_weights(0)) * ZMatrixMap(iden.data(), nao_, nao_) + dt*I.omega(0)*ZMatrixMap(Sig.retptr(tstp,tstp), nao_, nao_).adjoint()).transpose();
+  ZMatrixMap MMap2 = ZMatrixMap(M.data(), nao_, nao_);
+  Eigen::FullPivLU<ZMatrix> lu3(MMap2);
+
+  for(int t = 0; t < tstp; t++) {
+    ZMatrixMap XMap(X.data() + t*nao_*nao_, nao_, nao_);
+    ZMatrixMap QMap(Q.data() + t*nao_*nao_, nao_, nao_);
+
+    for(int l = 1; l <= k_+1; l++) {
+      if(tstp-l>=t) QMap += -cplxi/dt*I.bd_weights(l) * ZMatrixMap(G.lesptr(t,tstp-l), nao_, nao_);
+      else          QMap +=  cplxi/dt*I.bd_weights(l) * ZMatrixMap(G.lesptr(tstp-l,t), nao_, nao_).adjoint();
+    }
+
+    for(int l = 0; l < tstp; l++) {
+      if(l>=t) QMap += -dt * I.gregory_weights(tstp, l) * ZMatrixMap(G.lesptr(t,l), nao_, nao_)           * ZMatrixMap(Sig.retptr(tstp,l), nao_, nao_).adjoint();
+      else     QMap +=  dt * I.gregory_weights(tstp, l) * ZMatrixMap(G.lesptr(l,t), nao_, nao_).adjoint() * ZMatrixMap(Sig.retptr(tstp,l), nao_, nao_).adjoint();
+    }
+
+    int max = std::max(k_,t);
+    for(int l = 0; l <= max; l++) {
+      if(t>=l) QMap += -dt * I.gregory_weights(t, l) * ZMatrixMap(G.retptr(t,l), nao_, nao_)           * ZMatrixMap(Sig.lesptr(l,tstp), nao_, nao_);
+      else     QMap +=  dt * I.gregory_weights(t, l) * ZMatrixMap(G.retptr(l,t), nao_, nao_).adjoint() * ZMatrixMap(Sig.lesptr(l,tstp), nao_, nao_);
+    }
+
+    XMap = QMap.transpose();
+    QMap = lu3.solve(XMap).transpose();
+    XMap = QMap;
+
+  }
+
+
+  int t = tstp;
+  ZMatrixMap XMap(X.data() + t*nao_*nao_, nao_, nao_);
+  XMap = ZMatrixMap(G.lesptr(t,t), nao_, nao_);
+  ZMatrixMap QMap(Q.data() + t*nao_*nao_, nao_, nao_);
+
+  for(int l = 0; l <= tstp; l++) {
+    QMap += -dt * I.gregory_weights(tstp, l) * ZMatrixMap(X.data() + l*nao_*nao_, nao_, nao_)           * ZMatrixMap(Sig.retptr(tstp,l), nao_, nao_).adjoint();
+  }
+
+  int max = std::max(k_,t);
+  for(int l = 0; l <= max; l++) {
+    if(t>=l) QMap += -dt * I.gregory_weights(t, l) * ZMatrixMap(G.retptr(t,l), nao_, nao_)           * ZMatrixMap(Sig.lesptr(l,tstp), nao_, nao_);
+    else     QMap +=  dt * I.gregory_weights(t, l) * ZMatrixMap(G.retptr(l,t), nao_, nao_).adjoint() * ZMatrixMap(Sig.lesptr(l,tstp), nao_, nao_);
+  }
+
+  QMap += -ZMatrixMap(G.lesptr(tstp,tstp), nao_, nao_) * (ZMatrixConstMap(hmf+tstp*nao_*nao_, nao_, nao_) - mu * ZMatrixMap(iden.data(), nao_, nao_));
+  
+  QMap = cplxi*QMap;
+  XMap = QMap-QMap.adjoint();
+  QMap = XMap;
+  for(int l = 1; l <= k_+1; l++) {
+    QMap += 1./dt*I.bd_weights(l) * ZMatrixMap(G.lesptr(tstp-l,tstp-l), nao_, nao_);
+  }
+  ZMatrixMap(M.data(), nao_, nao_) =  -1./dt*I.bd_weights(0) * ZMatrixMap(iden.data(), nao_, nao_);
+  Eigen::FullPivLU<ZMatrix> lud(MMap2);
+  XMap = lud.solve(QMap);
+
+
+//  err = (ZMatrixMap(X.data(), (tstp+1)*nao_*nao_, 1) - ZMatrixMap(G.lesptr(0,tstp), (tstp+1)*nao_*nao_, 1)).norm();
+//  ZMatrixMap(G.lesptr(0,tstp), (tstp+1)*nao_*nao_, 1) = ZMatrixMap(X.data(), (tstp+1)*nao_*nao_, 1);
+  cplx *check_conj = new cplx[(tstp+1)*nao_*nao_];
+  cplx *G_old = new cplx[(tstp+1)*nao_*nao_];
+  ZMatrixMap(check_conj, (tstp+1)*nao_*nao_, 1) = ZMatrixMap(X.data(), (tstp+1)*nao_*nao_, 1);
+  ZMatrixMap(G_old, (tstp+1)*nao_*nao_, 1) = ZMatrixMap(G.lesptr(0,tstp), (tstp+1)*nao_*nao_, 1);
+
+//  return err;
+
+*/
+
+
+
   // iterators
   int m, l, i;
   int num = n>=k_ ? n : k_;
 
-  double err=0;
+//  double err=0;
 
   std::chrono::time_point<std::chrono::system_clock> intstart, intend;
   std::chrono::duration<double> int1, int2, int3;
 
   // Matricies
-  cplx cplxi = cplx(0,1);
+//  cplx cplxi = cplx(0,1);
   ZMatrixMap MMap = ZMatrixMap(M.data(), nao_*k_, nao_*k_);
   ZMatrixMap IMap = ZMatrixMap(iden.data(), nao_, nao_);
 
@@ -230,6 +443,7 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
   Eigen::FullPivLU<ZMatrix> luIC(MIC);
   ZMatrixMap(X.data(), nao_, nao_).noalias() = luIC.solve(QIC).transpose();
   ZMatrixMap(G.lesptr(0,n), nao_, nao_).noalias() = ZMatrixMap(X.data(), nao_, nao_);
+
 // ===================== CASE FOR NO MATSUBARA BRANCH =========================
 
 
@@ -340,6 +554,21 @@ double dyson::dyson_step_les(int n, GREEN &G, const GREEN &Sig, const cplx *hmf,
 //  out3 << int3.count() << "\n" ;
 //  out3.close();
 
+/*
+  std::cout << std::endl << "LES ERR ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+  for(int i = 0; i <= tstp; i++) {
+    std::cout << tstp << " " << i << " " << (ZMatrixMap(G.lesptr(i,tstp), nao_, nao_) - ZMatrixMap(check_conj+i*nao_*nao_, nao_, nao_)).norm()<< std::endl;
+  }
+
+  if(tstp >= 50) {
+    int nconj = tstp-k_+5;
+    err = (ZMatrixMap(G_old          , nconj*nao_*nao_,          1) - ZMatrixMap(check_conj          , nconj*nao_*nao_,          1)).norm();
+    err = (ZMatrixMap(G_old+nconj*es_, (tstp+1-nconj)*nao_*nao_, 1) - ZMatrixMap(X.data() + nconj*es_, (tstp+1-nconj)*nao_*nao_, 1)).norm();
+
+    ZMatrixMap(G.lesptr(0,tstp)      , nconj*nao_*nao_,          1) = ZMatrixMap(check_conj          , nconj*nao_*nao_,          1);
+    ZMatrixMap(G.lesptr(nconj,tstp)  , (tstp+1-nconj)*nao_*nao_, 1) = ZMatrixMap(X.data() + nconj*es_, (tstp+1-nconj)*nao_*nao_, 1);
+  }
+*/
   // TIMING
   return err;
 

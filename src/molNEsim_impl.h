@@ -124,7 +124,7 @@ void Simulation<Repr>::do_tstp(int tstp) {
     // DEBUG  RAMP
     ZMatrix A = ZMatrix::Zero(2,2);
     A(0,0) = 1;
-//    ZMatrixMap(hmf.data() + tstp*nao_*nao_, nao_, nao_) += 1 * (tanh(10*(tstp*dt_-1))+1) * A + 1 * (tanh(10*(tstp*dt_-3))+1) * A;
+    ZMatrixMap(hmf.data() + tstp*nao_*nao_, nao_, nao_) += 1 * (tanh(10*(tstp*dt_-1))+1) * A + 1 * (tanh(10*(tstp*dt_-3))+1) * A - 1 * (tanh(10*(tstp*dt_-10))+1) * A - 1 * (tanh(10*(tstp*dt_-12))+1) * A;
     // END DEBUG
 
     // HF Contractions
@@ -143,8 +143,17 @@ void Simulation<Repr>::do_tstp(int tstp) {
     }
 
     double err = Dyson.dyson_step(tstp, G, Sigma, hmf, p_MatSim_->mu(), beta_, dt_);
-    if(err < 1e-10) break;
+    if(err < 1e-8) break;
   }
+
+  G.get_dm(tstp, rho);
+  ZMatrixMap(hmf.data() + tstp*nao_*nao_, nao_, nao_) = DMatrixConstMap(h0.data(),nao_,nao_);
+  ZMatrix A = ZMatrix::Zero(2,2);
+  A(0,0) = 1;
+  ZMatrixMap(hmf.data() + tstp*nao_*nao_, nao_, nao_) += 1 * (tanh(10*(tstp*dt_-1))+1) * A + 1 * (tanh(10*(tstp*dt_-3))+1) * A - 1 * (tanh(10*(tstp*dt_-10))+1) * A - 1 * (tanh(10*(tstp*dt_-12))+1) * A;
+  p_NEgf2_->solve_HF(tstp, hmf, rho);
+  if(mode_ == gfmol::Mode::GF2) p_NEgf2_->solve(tstp, Sigma, G);
+  
 }
 
 

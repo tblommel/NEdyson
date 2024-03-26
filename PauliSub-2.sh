@@ -6,4 +6,4 @@
 #SBATCH --partition=ludicrous
 #SBATCH --exclusive
 
-./build/programs/molNEdyson ./inputs/NEdyson-input-H2.ini
+./build/programs/molNEdyson ./inputs/NEdyson-input-H2-2.ini

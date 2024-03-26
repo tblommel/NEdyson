@@ -32,15 +32,16 @@ double dyson::dyson_start_ret(GREEN &G, const GREEN &Sig, const cplx *hmf, doubl
       auto QMapBlock = QMap.block((n-m-1)*nao_, 0, nao_, nao_);
   
       for(l=0; l<=m; l++) {
-//        QMapBlock.noalias() -= -ncplxi/dt * I.poly_diff(n,l) * -1.*ZMatrixMap(G.retptr(m,l), nao_, nao_).adjoint() - dt * I.poly_integ(m,n,l) * ZMatrixMap(Sig.retptr(n,l), nao_, nao_) * -1. * ZMatrixMap(G.retptr(m,l), nao_, nao_).adjoint();
-        QMapBlock.noalias() -= -ncplxi/dt * I.poly_diff(n,l) * -1.*ZMatrixMap(G.retptr(m,l), nao_, nao_).adjoint();// - dt * I.poly_integ(m,n,l) * ZMatrixMap(Sig.retptr(n,l), nao_, nao_) * -1. * ZMatrixMap(G.retptr(m,l), nao_, nao_).adjoint();
+        QMapBlock.noalias() -= -ncplxi/dt * I.poly_diff(n,l) * -1.*ZMatrixMap(G.retptr(m,l), nao_, nao_).adjoint() - dt * I.poly_integ(m,n,l) * ZMatrixMap(Sig.retptr(n,l), nao_, nao_) * -1. * ZMatrixMap(G.retptr(m,l), nao_, nao_).adjoint();
+//        QMapBlock.noalias() -= -ncplxi/dt * I.poly_diff(n,l) * -1.*ZMatrixMap(G.retptr(m,l), nao_, nao_).adjoint();// - dt * I.poly_integ(m,n,l) * ZMatrixMap(Sig.retptr(n,l), nao_, nao_) * -1. * ZMatrixMap(G.retptr(m,l), nao_, nao_).adjoint();
       }
 
       for(l = m+1; l <= k_; l++) {
         MMap.block((n-m-1)*nao_, (l-m-1)*nao_, nao_, nao_) += -ncplxi/dt * I.poly_diff(n,l) * IMap;
         if(n==l) MMap.block((n-m-1)*nao_, (l-m-1)*nao_, nao_, nao_) += mu*IMap - ZMatrixConstMap(hmf + l*es_, nao_, nao_);
-//        if(n>=l) MMap.block((n-m-1)*nao_, (l-m-1)*nao_, nao_, nao_) += -dt*I.poly_integ(m,n,l) * ZMatrixMap(Sig.retptr(n,l), nao_, nao_);
-//        else     MMap.block((n-m-1)*nao_, (l-m-1)*nao_, nao_, nao_) -= -dt*I.poly_integ(m,n,l) * ZMatrixMap(Sig.retptr(n,l), nao_, nao_).adjoint();
+// REMOVED Integral
+        if(n>=l) MMap.block((n-m-1)*nao_, (l-m-1)*nao_, nao_, nao_) += -dt*I.poly_integ(m,n,l) * ZMatrixMap(Sig.retptr(n,l), nao_, nao_);
+        else     MMap.block((n-m-1)*nao_, (l-m-1)*nao_, nao_, nao_) -= -dt*I.poly_integ(m,n,l) * ZMatrixMap(Sig.retptr(n,l), nao_, nao_).adjoint();
       }
 
     }
@@ -199,12 +200,15 @@ double dyson::dyson_start_les(GREEN &G, const GREEN &Sig, const cplx *hmf, doubl
   // FIRST COLUMN, T=0
   for(int n = 1; n <= k_; n++) {
     auto QBlock = QIC.block((n-1)*nao_, 0, nao_, nao_);
+// REMOVED INTEGRAL
+
     for(int l = 0; l <= k_; l++) {
       if(m>=l && n>=l) QBlock += (dt * I.poly_integ(0,m,l) * ZMatrixMap(G.retptr(m,l), nao_, nao_) * ZMatrixMap(Sig.lesptr(l,n), nao_, nao_)).transpose();
       else if(m<l && n>=l) QBlock -= (dt * I.poly_integ(0,m,l) * ZMatrixMap(G.retptr(l,m), nao_, nao_).adjoint() * ZMatrixMap(Sig.lesptr(l,n), nao_, nao_)).transpose();
       else if(m>=l && n<l) QBlock -= (dt * I.poly_integ(0,m,l) * ZMatrixMap(G.retptr(m,l), nao_, nao_) * ZMatrixMap(Sig.lesptr(n,l), nao_, nao_).adjoint()).transpose();
       else if(m<l && n<l) QBlock += (dt * I.poly_integ(0,m,l) * ZMatrixMap(G.retptr(l,m), nao_, nao_).adjoint() * ZMatrixMap(Sig.lesptr(n,l), nao_, nao_).adjoint()).transpose();
     }
+
     int l = 0;
     QBlock += (dt * I.poly_integ(0,n,l) * ZMatrixMap(G.lesptr(m,l), nao_, nao_) * ZMatrixMap(Sig.retptr(n,l), nao_, nao_).adjoint()).transpose();
     QBlock += (cplxi/dt * I.poly_diff(n,l) * ZMatrixMap(G.lesptr(m,l), nao_, nao_)).transpose();
@@ -240,12 +244,15 @@ double dyson::dyson_start_les(GREEN &G, const GREEN &Sig, const cplx *hmf, doubl
 
     for(int n = 1; n <= k_; n++) {
       auto QBlock = QIC.block((n-1)*nao_, 0, nao_, nao_);
+// REMOVED INTEGRAL
+
       for(int l = 0; l <= k_; l++) {
         if(m>=l && n>=l) QBlock += (dt * I.poly_integ(0,m,l) * ZMatrixMap(G.retptr(m,l), nao_, nao_) * ZMatrixMap(Sig.lesptr(l,n), nao_, nao_)).transpose();
         else if(m<l && n>=l) QBlock -= (dt * I.poly_integ(0,m,l) * ZMatrixMap(G.retptr(l,m), nao_, nao_).adjoint() * ZMatrixMap(Sig.lesptr(l,n), nao_, nao_)).transpose();
         else if(m>=l && n<l) QBlock -= (dt * I.poly_integ(0,m,l) * ZMatrixMap(G.retptr(m,l), nao_, nao_) * ZMatrixMap(Sig.lesptr(n,l), nao_, nao_).adjoint()).transpose();
         else if(m<l && n<l) QBlock += (dt * I.poly_integ(0,m,l) * ZMatrixMap(G.retptr(l,m), nao_, nao_).adjoint() * ZMatrixMap(Sig.lesptr(n,l), nao_, nao_).adjoint()).transpose();
       }
+
       QBlock -= (dt * I.poly_integ(0,n,0) * ZMatrixMap(G.lesptr(0,m), nao_, nao_).adjoint() * ZMatrixMap(Sig.retptr(n,0), nao_, nao_).adjoint()).transpose();
       QBlock -= (cplxi/dt * I.poly_diff(n,0) * ZMatrixMap(G.lesptr(0,m), nao_, nao_).adjoint()).transpose();
     }
@@ -282,12 +289,15 @@ double dyson::dyson_start_les(GREEN &G, const GREEN &Sig, const cplx *hmf, doubl
     auto QBlock = QIC.block((i-1)*nao_, 0, nao_, nao_);
     QBlock += cplxi * ZMatrixMap(G.lesptr(i,i), nao_, nao_) * (ZMatrixConstMap(hmf+i*es_, nao_, nao_) - mu*IMap);
 
+// REMOVED INTEGRAL
+
     for(int l = 0; l <= i; l++) {
       QBlock += cplxi * I.poly_integ(0,i,l) * dt * ZMatrixMap(G.retptr(i,l), nao_, nao_) * ZMatrixMap(Sig.lesptr(l,i), nao_, nao_);
     }
     for(int l = i+1; l <= k_; l++) {
       QBlock += cplxi * I.poly_integ(0,i,l) * dt * ZMatrixMap(G.retptr(l,i), nao_, nao_).adjoint() * ZMatrixMap(Sig.lesptr(i,l), nao_, nao_).adjoint();
     }
+
     for(int l = 0; l <= i; l++) {
       QBlock -= cplxi * I.poly_integ(0,i,l) * dt * ZMatrixMap(G.lesptr(l,i), nao_, nao_).adjoint() * ZMatrixMap(Sig.retptr(i,l), nao_, nao_).adjoint();
     }

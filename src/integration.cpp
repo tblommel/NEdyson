@@ -76,7 +76,10 @@ void make_poly_diff(int k, double *P, double *D){
 }
 
 void make_poly_integ(int k, double *P, double *I){
-	long double npow, mpow,x;
+	long double x, npow, mpow;
+  int k2 = k+2;
+	long double *PP = new long double [k2*k2];
+	make_poly_interp(k,PP);
 	int k1=k+1;
 	for(int m=0;m<=k;m++){
 		for(int n=0;n<=k;n++){
@@ -85,7 +88,7 @@ void make_poly_integ(int k, double *P, double *I){
 				npow=n;
 				x=0.;
 				for(int a=0;a<=k;a++){
-					x+=(long double)P[a*k1+l]*(npow-mpow)/(a+1);
+					x+=(long double)PP[a*k1+l]*(npow-mpow)/(a+1.);
 					mpow*=m;
 					npow*=n;
 				}
