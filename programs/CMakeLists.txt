@@ -11,3 +11,9 @@ target_link_libraries(SC PUBLIC libNEdyson
                                         libgfmol
                                         args
                                         iniparser)
+add_executable(hubb main_hubb.cpp)
+target_include_directories(SC INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(hubb PUBLIC libNEdyson
+                                        libgfmol
+                                        args
+                                        iniparser)

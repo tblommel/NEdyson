@@ -1,6 +1,8 @@
 add_library(libNEdyson
   molHFSolver.cpp molHFSolver.h
   mol2bSolver.cpp mol2bSolver.h
+  hubHFSolver.cpp hubHFSolver.h
+  hub2bSolver.cpp hub2bSolver.h
   dyson.cpp dyson.h
   greens.cpp greens.h
   integration.cpp integration.h

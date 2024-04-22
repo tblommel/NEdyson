@@ -13,7 +13,8 @@ namespace NEdyson{
 
 class molHFSolver{
 protected:
-  const int nao_;
+  int nao_;
+  double U_;
   const DTensor<4> &Uijkl_;
 
 private:
@@ -21,18 +22,16 @@ private:
 
 public:
   //Constructor
-  molHFSolver(const DTensor<4> &Uijkl) : nao_(Uijkl.shape()[0]), 
-                                         Uijkl_(Uijkl),
-                                         rho_T(nao_,nao_) {}
+  molHFSolver(  const DTensor<4> &Uijkl) : nao_(0), U_(0), Uijkl_(Uijkl) { }
 
   int nao() const { return nao_; }
   
   void solve_HF_loop(int tstp, ZTensor<3> &hmf, const ZTensor<2> &rho) const;
   
   void solve_HF(int tstp, ZTensor<3> &hmf, const ZTensor<2> &rho) const;
+  void solve_HF(int tstp, ZMatrix &hmf, ZMatrix &rho) const;
 
   virtual ~molHFSolver(){};
-
   const DTensor<4> &Uijkl() { return Uijkl_; }
 
 };

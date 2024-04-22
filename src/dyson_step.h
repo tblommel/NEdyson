@@ -733,11 +733,8 @@ double dyson::dyson_step(int n, GREEN &G, const GREEN &Sig, const cplx *hmf, dou
     assert(G.ntau() == Sig.ntau());
     assert(G.sig() == Sig.sig());
     err += dyson_step_ret(n, G, Sig, hmf, mu, dt);
-    std::cout << "err = " << err;
 //    err += dyson_step_tv(n, G, Sig, hmf, mu, beta, dt);
-    std::cout << " " << err;
     err += dyson_step_les(n, G, Sig, hmf, mu, beta, dt);
-    std::cout << " " << err << std::endl;
   }
   else {
     err += dyson_step_ret_hf(n, G, hmf, mu, dt);

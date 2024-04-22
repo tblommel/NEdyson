@@ -61,7 +61,7 @@ double dyson::dyson_start_ret(GREEN &G, const GREEN &Sig, const cplx *hmf, doubl
 }
 
 double dyson::dyson_start_tv(GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double beta, double dt) const {
-  // Counters and sizes
+/*  // Counters and sizes
   int m, l, n, i;
   double err=0;
 
@@ -142,12 +142,12 @@ double dyson::dyson_start_tv(GREEN &G, const GREEN &Sig, const cplx *hmf, double
     }
   }
 
-  return err;
+  return err;*/
 }
 
 double dyson::dyson_start_les(GREEN &G, const GREEN &Sig, const cplx *hmf, double mu, double beta, double dt) const {
   cplx cplxi = cplx(0,1);
-  ZMatrixMap(G.lesptr(0,0), nao_, nao_) = -(-cplxi*ZMatrixMap(G.matptr(ntau_), nao_, nao_)).adjoint();
+//  ZMatrixMap(G.lesptr(0,0), nao_, nao_) = -(-cplxi*ZMatrixMap(G.matptr(ntau_), nao_, nao_)).adjoint();
 
 /*
   G.lesptr(0,0)[0]  = cplxi * 0.5;
@@ -382,12 +382,12 @@ double dyson::dyson_start(GREEN &G, const GREEN &Sig, const cplx *hmf, double mu
     assert(G.ntau() == Sig.ntau());
     assert(G.size1() == Sig.size1());
     err += dyson_start_ret(G, Sig, hmf, mu, dt);
-    err += dyson_start_tv(G, Sig, hmf, mu, beta, dt);
+//    err += dyson_start_tv(G, Sig, hmf, mu, beta, dt);
     err += dyson_start_les(G, Sig, hmf, mu, beta, dt);
   }
   else {
     err += dyson_start_ret_hf(G, hmf, mu, dt);
-    err += dyson_start_tv_hf(G, hmf, mu, beta, dt);
+//    err += dyson_start_tv_hf(G, hmf, mu, beta, dt);
     err += dyson_start_les_hf(G, hmf, mu, beta, dt);
   }
   return err;

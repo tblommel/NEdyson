@@ -146,22 +146,20 @@ public:
 /////////////////////////////////////////////////////////////////////////////
 class molGF2Solver : public molHFSolver {
 private:
-  mutable ZTensor<3> A1_aaa;
   mutable ZTensor<3> B1_aaa;
   mutable ZTensor<3> B2_aaa;
-  const DTensor<4> &Uijkl_exch_;
+  mutable ZTensor<3> A1_aaa;
 
   void solve_les(int tstp, GREEN &Sigma, GREEN &G) const;
   void solve_ret(int tstp, GREEN &Sigma, GREEN &G) const;
   void solve_tv(int tstp,  GREEN &Sigma, GREEN &G) const;
 
 public:
-  molGF2Solver(const DTensor<4> &U_int, const DTensor<4> &U_exch)
-      : molHFSolver(U_int),
+  molGF2Solver(const DTensor<4> &U_int , const DTensor<4> &U_int2)
+      : molHFSolver(U_int ),
         B1_aaa(nao_, nao_, nao_),
         B2_aaa(nao_, nao_, nao_),
-        A1_aaa(nao_, nao_, nao_),
-        Uijkl_exch_(U_exch) {};
+        A1_aaa(nao_, nao_, nao_) {};
 
   
   void solve(int tstp, GREEN &Sigma, GREEN &G) const;
