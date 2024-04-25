@@ -113,7 +113,7 @@ int main(const int argc, char *argv[]) {
   for(int i = 0; i <= nt; i++) {
     G.get_dm(i, rho_t + i*4);
   }
-  h5e::File out_file_res("/pauli-storage/tblommel/hodlr_SC/cubic_timing.h5", h5e::File::Overwrite | h5e::File::ReadWrite | h5e::File::Create);
+  h5e::File out_file_res("/pauli-storage/tblommel/hodlr_SC/cubic_timing_nes_" + std::to_string(phi0) + ".h5", h5e::File::Overwrite | h5e::File::ReadWrite | h5e::File::Create);
   h5e::dump<ZMatrix>(out_file_res, "rho", ZMatrixMap(rho_t, (nt+1)*4, 1));
   h5e::dump<DMatrix>(out_file_res, "time", DMatrixMap(timings.data(), nt+1, 1));
 
