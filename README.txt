@@ -14,3 +14,7 @@ To run the program, one must provide an input file which contains all of the par
 necessary for the calculation.  An example input file is given in data/NEdyson-input.ini.
 For information on what the input parameters are, one can call the program with the -h
 flag for a list of parameters and their meaning.
+
+This package also forms the basis for the compression-based integration package: hodlr.  As well as NEadapt,
+an adaptive implementation which interfaces with the SUNDIALS package.  For further information on either of these
+implementations, please contact the author.
